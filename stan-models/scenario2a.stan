@@ -1,10 +1,11 @@
 functions{
-  real scenario1b_lpdf(real x,
-                      real max_shed,
-                      real alpha1,      
-                      real beta1,   
-                      real alpha2,    
-                      real beta2) {   
+  real scenario1a_2pdf(real x,
+                       real nu, 
+                       real max_shed,
+                       real alpha1,      
+                       real beta1,   
+                       real alpha2,    
+                       real beta2) {   
 
     // out = 0;
     // for i in 0:x
@@ -26,28 +27,29 @@ functions{
       out = out + exp(inf_density + inc_density);
     }
     out = log(out);
+    // Now do -log(F(nu))
+    out = out - gamma_lcdf(nu|alpha1, beta1)
     return out;
     
 }
 }
 data{
   int N; // number of data points
-  real si[N];
+  real si[N]; // Serial Interval
+  real nu[N]; // Time of isolation
   real max_shed;
+  real <lower = 0> alpha2; // incubation period parameter
+  real <lower = 0> beta2; // incubation period parameter  
 }
 parameters{
   real <lower = 0> alpha1; // infectious profile parameter
   real <lower = 0> beta1; // // infectious profile parameter
-  real <lower = 0> alpha2; // incubation period parameter
-  real <lower = 0> beta2; // incubation period parameter
+
 }
 model{
   alpha1 ~ uniform(1, 30);
   beta1 ~ uniform(1, 30);
-  alpha2 ~ uniform(1, 20);
-  beta2 ~ uniform(1, 20);
   for (n in 1:N) {
-    si[n] ~ scenario1b(max_shed, alpha1, beta1, alpha2, beta2);
+    si[n] ~ scenario2a(nu[n], max_shed, alpha1, beta1, alpha2, beta2);
   }
-
 }
