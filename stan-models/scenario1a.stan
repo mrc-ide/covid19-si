@@ -15,14 +15,14 @@ functions{
     real inf_density;
     real inc_density;
     // s is the time of infection
-    inf_density = gamma_lpdf(0.5|alpha1, beta1);
-    inc_density = gamma_lpdf(x - 0.5|alpha2, beta2);
+    inf_density = gamma_lpdf(0.5|alpha1, beta1) + log(0.5);
+    inc_density = gamma_lpdf(x - 0.5|alpha2, beta2) + log(0.5);
     out =  exp(inf_density + inc_density);
     s = 0.5;
     while(s <= x) {
       s = s + 0.5;
-      inf_density = gamma_lpdf(s|alpha1, beta1);
-      inc_density = gamma_lpdf(x - s|alpha2, beta2);
+      inf_density = gamma_lpdf(s|alpha1, beta1) + log(0.5);
+      inc_density = gamma_lpdf(x - s|alpha2, beta2)+ log(0.5);
       out = out + exp(inf_density + inc_density);
     }
     out = log(out);
@@ -43,8 +43,8 @@ parameters{
 
 }
 model{
-  alpha1 ~ uniform(1, 30);
-  beta1 ~ uniform(1, 30);
+  alpha1 ~ uniform(1, 300);
+  beta1 ~ uniform(0.1, 300);
   for (n in 1:N) {
     si[n] ~ scenario1a(max_shed, alpha1, beta1, alpha2, beta2);
   }

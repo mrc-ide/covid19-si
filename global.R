@@ -2,6 +2,10 @@ library(dplyr)
 library(rstan)
 library(drake)
 library(hermione)
+library(ggmcmc)
+library(ggplot2)
+library(epitrix)
+library(purrr)
 max_shed <- 21
 
 ## https://doi.org/10.1016/S1473-3099(20)30287-5
