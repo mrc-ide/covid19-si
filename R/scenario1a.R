@@ -3,106 +3,60 @@ simulated_1 <- simulate_si(
   sd_ip = sd_inc,
   mean_inf = mean_inf,
   sd_inf = sd_inf,
-  nsim = 3000
+  nsim = 300
 )
 
-nsim <- seq(from = 10, to = 50, by = 10)
-names(nsim) <- nsim
-ndatasets <- 10
-
-sim_data <- map(
-  nsim,
-  function(n) {
-    map(
-      seq_len(ndatasets),
-      function(i) {
-        idx <- sample(seq_len(nrow(simulated_1)), n)
-        out <- simulated_1[idx, ]
-        out
-      }
-    )
-  }
+fits_1a <- stan(
+  file = here::here("stan-models/scenario1a.stan"),
+  data = list(
+    N = nrow(simulated_1),
+    si = simulated_1$si,
+    max_shed = 21,
+    alpha2 = params_inc[["shape"]],
+    beta2 = 1 / params_inc[["scale"]]
+  ),
+  chains = 3,
+  iter = 6000,
+  verbose = TRUE
+  ##control = list(adapt_delta = 0.99)
 )
 
 
-fits_1a <- map_depth(
-  sim_data,
-  2,
-  function(df) {
-      stan(
-        file = here::here("stan-models/scenario1a.stan"),
-        data = list(
-          N = nrow(df),
-          si = df$si,
-          max_shed = 21,
-          alpha2 = params_inc[["shape"]],
-          beta2 = 1 / params_inc[["scale"]]
-        ),
-        chains = 3,
-        iter = 6000
-        ##control = list(adapt_delta = 0.99)
-      )
-  }
-)
 ## Check convergence etc, using ggmcmc
 ## test_fit <- ggmcmc(ggs(fit_1a), here::here("figures/1a.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
-fitted_params <- map_depth(fits_1a, 2, rstan::extract)
+fitted_params <- rstan::extract(fits_1a)
 
-fitted_params <- map_depth(
-  fitted_params, 2, function(out) {
-    x <- gamma_shapescale2mucv(
-      out[["alpha1"]], 1 / out[["beta1"]]
-    )
-    out[["mu"]] <- x[["mu"]]
-    out[["cv"]] <- x[["cv"]]
-    out
-  }
+x <- gamma_shapescale2mucv(
+  fitted_params[["alpha1"]], 1 / fitted_params[["beta1"]]
 )
 
-fitted_summary <- map_depth(
-  fitted_params, 2, ~ map_dfr(., quantile, .id = "param")
-)
+p1 <- ggplot(NULL, aes(x[["mu"]])) +
+  geom_histogram(alpha = 0.3) +
+  geom_vline(xintercept = mean_inf, linetype = "dashed")
 
-fitted_summary <- map_dfr(
-  fitted_summary, ~ bind_rows(., .id = "sim"), .id = "size"
-)
+p2 <- ggplot(NULL, aes(x[["cv"]])) +
+  geom_histogram(alpha = 0.3) +
+  geom_vline(xintercept = sd_inf / mean_inf, linetype = "dashed")
 
+p <- cowplot::plot_grid(p1, p2, ncol = 1)
 
-### Figures
-pmu <- ggplot() +
-  geom_linerange(
-    data = fitted_summary[fitted_summary$param %in% c("mu", "cv"), ],
-    aes(x = sim, ymin = `25%`, ymax = `75%`),
-  ) +
-  facet_grid(size ~ param) +
-  ##geom_vline(xintercept = mean_inf, col = "red", linetype = "dashed") +
-  theme_minimal()
-  ##xlab("Mean Infectious Period")
+ggsave("infectious_profile_params.png", p)
 
-
-pcv <- ggplot() +
-  geom_histogram(
-    data = NULL, aes(x = params_inf_est[["cv"]], y = ..density..),
-    alpha = 0.3
-  ) +
-  geom_vline(
-    xintercept = sd_inf / mean_inf, col = "red", linetype = "dashed"
-  ) +
-  theme_minimal() +
-  xlab("CV Infectious Period")
 
 ## Simulate with draws from posterior
-posterior_mean <- sample(params_inf_est[["mu"]], size = 100)
-posterior_sd <- sample(
-  params_inf_est[["mu"]] * params_inf_est[["cv"]], size = 100
-)
-
+nsamples <- length(fitted_params[[1]])
+idx <- sample(nsamples, size = 3000, replace = TRUE)
+## The two parameters are highly correlated. So we want to sample
+## them as tuples rather than independently.
+shape <- fitted_params[[1]][idx]
+rate <- fitted_params[[2]][idx]
+posterior_params <- epitrix::gamma_shapescale2mucv(shape, 1 / rate)
 simulated_post <- map2_dfr(
-  posterior_mean,
-  posterior_sd,
-  function(x, y) simulate_si(mean_inc, sd_inc, x, y, nsim = 20)
+  posterior_params[[1]],
+  posterior_params[[2]],
+  function(mu, cv) simulate_si(mean_inc, sd_inc, mu,  cv * mu, nsim = 20)
 )
 
 psi <- ggplot() +
@@ -120,6 +74,8 @@ psi <- ggplot() +
   ) +
   theme_minimal() +
   xlab("Serial Interval")
+
+ggsave("posterior_serial_interval.png", psi)
 
 
 

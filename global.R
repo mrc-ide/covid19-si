@@ -1,6 +1,5 @@
 library(dplyr)
 library(rstan)
-library(drake)
 library(hermione)
 library(ggmcmc)
 library(ggplot2)
