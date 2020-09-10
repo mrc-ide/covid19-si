@@ -15,8 +15,8 @@ fits_1a <- stan(
     alpha2 = params_inc[["shape"]],
     beta2 = 1 / params_inc[["scale"]]
   ),
-  chains = 3,
-  iter = 6000,
+  chains = 1,
+  iter = 2000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
@@ -26,6 +26,8 @@ fits_1a <- stan(
 ## test_fit <- ggmcmc(ggs(fit_1a), here::here("figures/1a.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
+
+
 fitted_params <- rstan::extract(fits_1a)
 
 x <- gamma_shapescale2mucv(
