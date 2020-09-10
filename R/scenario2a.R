@@ -51,8 +51,6 @@ out <- pmap(
 
 simulated_2 <- simulated_2[simulated_2$t_1 < simulated_2$nu, ]
 
-
-
 fits_2a <- stan(
   file = here::here("stan-models/scenario2a.stan"),
   data = list(
@@ -64,7 +62,7 @@ fits_2a <- stan(
     beta2 = 1 / params_inc[["scale"]]
   ),
   chains = 1,
-  iter = 4000,
+  iter = 200,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )

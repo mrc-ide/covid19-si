@@ -23,7 +23,6 @@ functions{
     out =  exp(inf_density + inc_density);
     s = 0.2;
     while(s < ulim) {
-      print("s / max_shed = ", s/max_shed);
       inf_density = beta_lpdf(s/max_shed|alpha1, beta1) + log(0.1);
       inc_density = gamma_lpdf(x - s|alpha2, beta2)+ log(0.1);
       out = out + exp(inf_density + inc_density);
