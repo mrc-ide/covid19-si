@@ -15,7 +15,9 @@ functions{
     real out;
     real inf_density;
     real inc_density;
-    real ulim;    
+    real ulim;
+    real width;
+    width = 0.05;
     // time of infection can be no larger than the
     // max shedding time
     if(x > max_shed) ulim = max_shed;
@@ -24,18 +26,15 @@ functions{
     if(ulim > nu) ulim = nu;
 
     // s is the time of infection
-    inf_density = beta_lpdf(0.1|alpha1, beta1) + log(0.1);
-    
-    // s is the time of infection
-    inf_density = gamma_lpdf(0.1|alpha1, beta1) + log(0.1);
-    inc_density = gamma_lpdf(x - 0.1|alpha2, beta2) + log(0.1);
+    inf_density = beta_lpdf(width/max_shed|alpha1, beta1) + log(width);
+    inc_density = gamma_lpdf(x - width|alpha2, beta2) + log(width);
     out =  exp(inf_density + inc_density);
-    s = 0.1;
+    s = 2 * width;
     while(s < ulim) {
-      inf_density = beta_lpdf(s/max_shed|alpha1, beta1) + log(0.1);
-      inc_density = gamma_lpdf(x - s|alpha2, beta2) + log(0.1);
+      inf_density = beta_lpdf(s/max_shed|alpha1, beta1) + log(width);
+      inc_density = gamma_lpdf(x - s|alpha2, beta2) + log(width);
       out = out + exp(inf_density + inc_density);
-      s = s + 0.1;      
+      s = s + width;      
     }
     out = log(out);
     // Now do -log(F(nu))
@@ -55,8 +54,8 @@ parameters{
   real <lower = 0> alpha1; // infectious profile parameter
   real <lower = 0> beta1; // // infectious profile parameter
 } model{
-  alpha1 ~ uniform(1, 1000);
-  beta1 ~ uniform(1, 1000);
+  alpha1 ~ uniform(1, 2000);
+  beta1 ~ uniform(1, 2000);
   for (n in 1:N) {
     si[n] ~ scenario2a(nu[n], max_shed, alpha1, beta1, alpha2, beta2);
   }
