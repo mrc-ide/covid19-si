@@ -5,6 +5,10 @@ library(ggmcmc)
 library(ggplot2)
 library(epitrix)
 library(purrr)
+
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+
 max_shed <- 21
 
 ## https://doi.org/10.1016/S1473-3099(20)30287-5
