@@ -35,6 +35,8 @@ simulated_2 <- simulate_si(
   nsim = 1000
 )
 
+simulated_2 <- simulated_2[simulated_2$t_1 < simulated_2$nu, ]
+
 grid <- expand.grid(
   alpha1 = seq(1, 100, by = 1), beta1 = seq(0.1, 100, by = 0.5)
 )
@@ -49,7 +51,7 @@ out <- pmap(
   }
 )
 
-simulated_2 <- simulated_2[simulated_2$t_1 < simulated_2$nu, ]
+
 
 fits_2a <- stan(
   file = here::here("stan-models/scenario2a.stan"),
@@ -61,10 +63,32 @@ fits_2a <- stan(
     alpha2 = params_inc[["shape"]],
     beta2 = 1 / params_inc[["scale"]]
   ),
-  chains = 1,
-  iter = 200,
+  chains = 3,
+  iter = 5000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
+
+fitted_params <- rstan::extract(fits_2a)
+
+x <- hermione::beta_shape1shape22muvar(
+  fitted_params[["alpha1"]], fitted_params[["beta1"]]
+)
+
+x[["mu"]] <- max_shed * x[["mu"]]
+x[["sigma2"]] <- max_shed^2 * x[["sigma2"]]
+x[["sd"]] <- sqrt(x[["sigma2"]])
+
+p1 <- ggplot(NULL, aes(x[["mu"]])) +
+  geom_histogram(alpha = 0.3) +
+  geom_vline(xintercept = mean_inf, linetype = "dashed")
+
+p2 <- ggplot(NULL, aes(x[["sd"]])) +
+  geom_histogram(alpha = 0.3) +
+  geom_vline(xintercept = sd_inf, linetype = "dashed")
+
+p <- cowplot::plot_grid(p1, p2, ncol = 1)
+
+ggsave("infectious_profile_params.png", p)
 
 
