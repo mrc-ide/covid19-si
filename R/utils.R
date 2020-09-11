@@ -1,65 +1,65 @@
-vscenario_1 <- Vectorize(probability_basic)
-
-ll_scenario1 <- function(t, inf_distr, inc_distr, inf_params, inc_params) {
-  message(paste(inf_params, collapse = " "))
-  out <- vscenario_1(t, inf_distr, inc_distr, inf_params, inc_params)
-  sum(log(out))
-}
-
-mh_scenario1 <- function(t, start, n_iter, prop_sd, params_prior, inc_params) {
-
-  chain <- matrix(NA, ncol = length(start), nrow = n_iter + 1)
-  posterior <- matrix(NA, ncol = 1, nrow = n_iter + 1)
-  chain[1, ] <- start
-  ## Uniform prior
-  prior <- sum(dunif(t, min(t), max(t), log = TRUE))
-  inf_params <- list(shape = start[1], scale = start[2])
-  ll <- ll_scenario1(t, "dgamma", "dgamma", inf_params, inc_params)
-  posterior[1] <- ll + prior
-
-  for (idx in 1:n_iter){
-
-    proposal <- chain[idx, ] + rnorm(length(start), 0, prop_sd)
-    if (any(proposal < 0)) {
-      chain[idx + 1,] <- chain[idx, ]
-      posterior[idx + 1] <- posterior[idx]
-    } else {
-      inf_params <- list(shape = proposal[1], scale = proposal[2])
-      posterior_new <- prior +
-        ll_scenario1(
-          t, "dgamma", "dgamma", list(shape = proposal[1], scale = proposal[2]), inc_params
-      )
-      posterior_old <- prior +
-        ll_scenario1(
-          t, "dgamma", "dgamma", list(shape = chain[idx, 1], scale = chain[idx, 2]), inc_params
-        )
-      prob <- exp(posterior_new - posterior_old)
-      if (runif(1) < prob) {
-        chain[idx + 1, ] <- proposal
-        posterior[idx + 1] <- posterior
-      }
-      else {
-        chain[idx + 1,] <- chain[idx, ]
-        posterior[idx + 1] <- posterior[idx]
-      }
-    }
-  }
-  list(
-    chain = chain, posterior = posterior
+simulate_si <- function(mean_ip,
+                        sd_ip,
+                        shape1_inf,
+                        shape2_inf,
+                        max_shed,
+                        mean_iso = NULL,
+                        sd_iso = NULL,
+                        nsim = 50) {
+  params_ip <- epitrix::gamma_mucv2shapescale(
+    mu = mean_ip, cv = sd_ip / mean_ip
   )
+
+  t_1 <- max_shed * stats::rbeta(
+    n = nsim, shape1 = shape1_inf, shape2 = shape2_inf
+  )
+
+  t_2 <- stats::rgamma(
+    n = nsim, shape = params_ip$shape, rate = 1 / params_ip$scale
+  )
+
+  out <- data.frame(t_1 = t_1, t_2 = t_2, si = t_1 + t_2)
+
+  if (!is.null(mean_iso)) {
+
+    params_iso <- epitrix::gamma_mucv2shapescale(
+      mu = mean_iso, cv = sd_iso / mean_iso
+    )
+    out$nu <- stats::rgamma(
+      n = nsim, shape = params_iso$shape, rate = 1 / params_iso$scale
+    )
+  }
+  ## 0 Serial Interval is not allowed if we do not account for
+  ## pre-symptomatic infectivity.
+
+
+  out
 }
 
+## Scenario 2 log-likelihood as implemented in Stan.
+scenario2_ll <- function(x, nu, alpha1, beta1, alpha2, beta2) {
 
+  inf_density <- dgamma(
+    0.5, shape = alpha1, rate = beta1, log = TRUE
+  ) + log(0.5)
+  inc_density <- dgamma(
+    0.5, shape = alpha2, rate = beta2, log = TRUE
+  ) + log(0.5)
+  out <- exp(inf_density + inc_density)
+  s <- 0.5
+  while (s <= x) {
+    s <- s + 0.5
+    inf_density <- dgamma(
+      0.5, shape = alpha1, rate = beta1, log = TRUE
+    ) + log(0.5)
+    inc_density <- dgamma(
+      0.5, shape = alpha2, rate = beta2, log = TRUE
+    ) + log(0.5)
+    out <- out + exp(inf_density + inc_density)
+  }
+  out <- log(out)
+  out <- out - pgamma(nu, alpha1, beta1, log = TRUE)
+  out
+}
 
-
-inf_params <- list(mu = 2.2, cv = 3 / 2.2)
-inc_params <- list(mu = 6.48, cv = 3.83 / 6.48)
-
-x <- hermione::simulate_si(
-  mean_ip = inc_params$mu,
-  sd_ip = inc_params$mu * inc_params$cv,
-  mean_inf = inf_params$mu,
-  sd_inf = inf_params$mu * inf_params$cv,
-  nsim = 20
-)
-out <- mh_scenario1(x$si, start, 10000, 1, NULL, inc_params)
+vscenario2_ll <- Vectorize(scenario2_ll)
