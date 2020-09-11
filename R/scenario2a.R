@@ -64,7 +64,7 @@ fits_2a <- stan(
     beta2 = 1 / params_inc[["scale"]]
   ),
   chains = 3,
-  iter = 5000,
+  iter = 10000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
