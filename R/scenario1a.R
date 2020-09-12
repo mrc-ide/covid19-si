@@ -4,7 +4,7 @@ simulated_1 <- simulate_si(
   shape1_inf = params_inf$shape1,
   shape2_inf = params_inf$shape2,
   max_shed = max_shed,
-  nsim = 100
+  nsim = 500
 )
 
 fits_1a <- stan(
