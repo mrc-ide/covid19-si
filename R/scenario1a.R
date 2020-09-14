@@ -58,15 +58,8 @@ p1 <- ggplot() +
   ) +
   theme_minimal()
 
-p2 <- ggplot(NULL, aes(x[["sd"]])) +
-  geom_density(aes(simulated_1$t_1))
 
-  geom_vline(xintercept = sd_inf, linetype = "dashed") +
-  theme_minimal()
-
-p <- cowplot::plot_grid(p1, p2, ncol = 1)
-
-ggsave("figures/infectious_profile_params_1a.png", p)
+ggsave("figures/infectious_profile_params_1a.png", p1)
 
 
 ## Simulate with draws from posterior
