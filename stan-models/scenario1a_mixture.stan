@@ -60,8 +60,8 @@ model{
   
   for (n in 1:N) {
     //vector[2] lps = log_theta;
-    //target += log(pinvalid) +
-    //  beta_lpdf(si[n]/ max_si| alpha_invalid, beta_invalid);
+    target += log(pinvalid) +
+      beta_lpdf(si[n]/ max_si| alpha_invalid, beta_invalid);
     //target += log(pinvalid) + uniform_lpdf(si[n]|min_si, max_si);
     target += log(1 - pinvalid) +
       scenario1a_lpdf(si[n] | max_shed, alpha1, beta1, alpha2, beta2);

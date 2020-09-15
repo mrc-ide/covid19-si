@@ -1,23 +1,47 @@
 valid_si <- simulate_si(
   mean_ip = mean_inc,
   sd_ip = sd_inc,
-  shape1_inf = params_inf$shape1,
-  shape2_inf = params_inf$shape2,
+  shape1_inf = 6.5,
+  shape2_inf = 1.5,
   max_shed = max_shed,
-  nsim = 500
+  nsim = 100
 )
-invalid_si <- runif(500, min(valid_si$si), max(valid_si$si))
+
+##invalid_si <- runif(100, max(valid_si$si), 3 * max(valid_si$si))
+
+invalid_si <- max(valid_si$si) * rbeta(100, shape1 = 1.5, shape2 = 6.5)
+
+p1 <- ggplot() +
+  geom_density(aes(valid_si$si, fill = "blue"), alpha = 0.3) +
+  geom_density(aes(invalid_si, fill = "red"), alpha = 0.3) +
+  theme_minimal() +
+  scale_fill_identity(
+    guide = "legend",
+    breaks = c("blue", "red"),
+    labels = c("Valid", "Invalid")
+  ) +
+  xlim(0, NA) +
+  xlab("Serial Interval") +
+  theme(legend.title = element_blank())
+
+
 pinvalid <- 0.3
 
-toss <- runif(500)
+toss <- runif(100)
 
 simulated_si <- c(
   invalid_si[toss <= pinvalid], valid_si$si[toss > pinvalid]
 )
 
-ggplot() + geom_density(aes(simulated_si))
-## simulated_si <- simulated_si[1:10]
+p2 <- ggplot() +
+  geom_density(aes(simulated_si), fill = "purple", alpha = 0.3) +
+  theme_minimal() +
+  xlim(0, NA) +
+  xlab("Serial Interval")
 
+p <- cowplot::plot_grid(p1, p2, ncol = 1, align = "hv")
+
+ggsave("figures/simulated_data_1a_mix.png", p)
 
 fit_mixture  <- stan(
   file = here::here("stan-models/scenario1a_mixture.stan"),
@@ -27,9 +51,9 @@ fit_mixture  <- stan(
     max_shed = 21,
     alpha2 = params_inc[["shape"]],
     beta2 = 1 / params_inc[["scale"]],
-    alpha_invalid = 1,
-    beta_invalid = 1,
-    max_si = max(simulated_si),
+    alpha_invalid = 1.5,
+    beta_invalid = 6.5,
+    max_si = max(simulated_si) + 0.001,
     min_si = min(simulated_si)
   ),
   chains = 2,
@@ -46,7 +70,7 @@ nsamples <- length(fitted_params[["alpha1"]])
 idx <- sample(nsamples, size = ceiling(nsamples / 2), replace = FALSE)
 shape1 <- fitted_params[["alpha1"]][idx]
 shape2 <- fitted_params[["beta1"]][idx]
-pinv <- fitted_params[["pinvalid"]][idx]
+pinv <- sample(fitted_params[["pinvalid"]], ceiling(nsamples / 2))
 
 xvalid <- max_shed *
   rbeta(
@@ -93,7 +117,7 @@ p <- ggplot() +
   theme_minimal() +
   theme(legend.title = element_blank())
 
-ggsave("posterior_distr_pinvalid.png", p)
+ggsave("figures/posterior_distr_pinvalid.png", p)
 
 params <- data.frame(shape1 = shape1, shape2 = shape2, p = pinv)
 ## g <- Vectorize(simulate_mixture)
@@ -101,13 +125,19 @@ params <- data.frame(shape1 = shape1, shape2 = shape2, p = pinv)
 si_post <- pmap_dfr(
   params,
   function(shape1, shape2, p) {
-    out <- simulate_mixture(
-      params_inc,
-      params_inf = list(shape1 = shape1, shape2 = shape2),
-      params_invalid = params_invalid,
-      pinvalid = p,
+    valid_si <- simulate_si(
+      mean_ip = mean_inc,
+      sd_ip = sd_inc,
+      shape1_inf = shape1,
+      shape2_inf = shape2,
       max_shed = max_shed,
-      nsim = 10
+      nsim = 100
+    )
+
+    invalid_si <- runif(100, max(valid_si$si), 3 * max(valid_si$si))
+    toss <- runif(100)
+    out <- c(
+      invalid_si[toss <= p], valid_si$si[toss > p]
     )
     data.frame(si = out)
   }
