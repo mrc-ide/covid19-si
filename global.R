@@ -15,9 +15,9 @@ max_shed <- 21
 mean_inf <- 6.3 ## days
 sd_inf <- 4.2 ## days
 ##params_inf <- epitrix::gamma_mucv2shapescale(mean_inf, sd_inf/ mean_inf)
-##params_inf <- hermione::beta_muvar2shape1shape2(
-##  mean_inf/max_shed, sd_inf^2 / max_shed^2
-##)
+params_inf <- beta_muvar2shape1shape2(
+  mean_inf/max_shed, sd_inf^2 / max_shed^2
+)
 ## https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7014672/
 mean_inc <- 6.5 ## days
 sd_inc <- 2.6 ## days
