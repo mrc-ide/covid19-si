@@ -63,3 +63,21 @@ scenario2_ll <- function(x, nu, alpha1, beta1, alpha2, beta2) {
 }
 
 vscenario2_ll <- Vectorize(scenario2_ll)
+
+# beta mu and cv <-> shape 1 and 2
+
+
+beta_muvat2shape1shape2 <- function(mu, sigma2) {
+  
+  shape1 <- (mu^2 * (1 - mu) / sigma2) - mu
+  shape2 <- shape1 * (1 - mu) / mu
+  list(shape1 = shape1, shape2 = shape2)
+}
+
+beta_shape1shape22muvar <- function(shape1, shape2) {
+  
+  mu <- shape1 / (shape1 + shape2)
+  sigma2 <- (shape1 * shape2) / ((shape1 + shape2)^2 * (shape1 + shape2 + 1))
+  list(mu = mu, sigma2 = sigma2)
+}
+
