@@ -37,6 +37,23 @@ functions{
     return out;
 }
 }
+transformed data{
+  real <lower = 0, upper = 1> pinvalid_;
+  real <lower = 1, upper = 100> alpha1_; // infectious profile parameter
+  real <lower = 1, upper = 100> beta1_;  // infectious profile parameter
+  real toss;
+  real y;
+  pinvalid_ ~ uniform_rng(0, 1);
+  alpha1_ ~ uniform_rng(1, 100);
+  beta_ ~ uniform_rng(1, 100);
+  toss ~ uniform_rng(0, 1);
+  if (toss < pinvalid_) {
+    y ~ beta_rng(alpha_invalid, beta_invalid);
+  } else {
+    y ~ beta_rng(alpha1_, beta1_);
+  }
+  
+}
 data{
   int N; // number of data points
   real si[N];  
@@ -67,4 +84,14 @@ model{
       scenario1a_lpdf(si[n] | max_shed, alpha1, beta1, alpha2, beta2);
   }
 }
+generated quantities {
+  real y_ = y;
+  vector[1] pars_;
+  int ranks_[1] = {pinvalid > pinvalid_};
+  vector[N] log_lik;
+  pars_[1] = pinvalid_;
+  //for (n in 1:y) log_lik[n] = bernoulli_lpmf(1 | pi);
+  //for (n in (y + 1):N) log_lik[n] = bernoulli_lpmf(0 | pi);
+}
+
 

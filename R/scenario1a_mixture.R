@@ -115,7 +115,8 @@ p <- ggplot() +
   xlab("Probability(SI invalid)") +
   geom_vline(xintercept = pinvalid, linetype = "dashed") +
   theme_minimal() +
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank()) +
+  xlim(0, 1)
 
 ggsave("figures/posterior_distr_pinvalid.png", p)
 
@@ -134,7 +135,8 @@ si_post <- pmap_dfr(
       nsim = 100
     )
 
-    invalid_si <- runif(100, max(valid_si$si), 3 * max(valid_si$si))
+    invalid_si <- max(valid_si$si) *
+      rbeta(100, shape1 = 1.5, shape2 = 6.5)
     toss <- runif(100)
     out <- c(
       invalid_si[toss <= p], valid_si$si[toss > p]
