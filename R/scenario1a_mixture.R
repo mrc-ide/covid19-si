@@ -1,11 +1,3 @@
-valid_si <- simulate_si(
-  mean_ip = mean_inc,
-  sd_ip = sd_inc,
-  shape1_inf = 6.5,
-  shape2_inf = 1.5,
-  max_shed = max_shed,
-  nsim = 100
-)
 
 ##invalid_si <- runif(100, max(valid_si$si), 3 * max(valid_si$si))
 
