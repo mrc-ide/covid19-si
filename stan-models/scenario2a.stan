@@ -38,7 +38,8 @@ functions{
     }
     out = log(out);
     // Now do -log(F(nu))
-    out = out - beta_lcdf(nu/max_shed|alpha1, beta1);
+    if (nu>max_shed) out = out - beta_lcdf(0.999999|alpha1, beta1);
+    else out = out - beta_lcdf(nu/max_shed|alpha1, beta1);
     return out;
  }
 }
