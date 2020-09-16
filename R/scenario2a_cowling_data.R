@@ -1,43 +1,27 @@
-simulated_2 <- simulate_si(
-  mean_ip = mean_inc,
-  sd_ip = sd_inc,
-  shape1_inf = params_inf$shape1,
-  shape2_inf = params_inf$shape2,
-  max_shed = max_shed,
-  mean_iso = 2,
-  sd_iso = 2,
-  nsim = 1000
-)
+# load the data
 
-simulated_2 <- simulated_2[simulated_2$t_1 < simulated_2$nu, ]
+data <- readRDS("data/cowling_data_clean.rds")
+data_pos <- data%>%
+  filter(si>0)%>%
+  filter(onset_first_iso>0)%>%
+  mutate(si = as.numeric(si))%>%
+  mutate(nu = as.numeric(onset_first_iso))
 
-## grid <- expand.grid(
-##   alpha1 = seq(1, 100, by = 1), beta1 = seq(0.1, 100, by = 0.5)
-## )
-
-## out <- pmap(
-##   grid,
-##   function(alpha1, beta1) {
-##     y <- g(simulated_2$si, simulated_2$nu, alpha1, beta1,
-##       params_inc[["shape"]], 1 / params_inc[["scale"]]
-##       )
-##     sum(y)
-##   }
-## )
-
+data_pos_test <- data_pos%>%
+  filter(nu<21)
 
 
 fits_2a <- stan(
   file = here::here("stan-models/scenario2a.stan"),
   data = list(
-    N = nrow(simulated_2),
-    si = simulated_2$si,
-    nu = simulated_2$nu,
+    N = nrow(data_pos),
+    si = data_pos$si,
+    nu = data_pos$nu,
     max_shed = 21,
     alpha2 = params_inc[["shape"]],
     beta2 = 1 / params_inc[["scale"]]
   ),
-  chains = 3,
+  chains = 1,
   iter = 1000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
@@ -45,7 +29,7 @@ fits_2a <- stan(
 
 fitted_params <- rstan::extract(fits_2a)
 
-x <- hermione::beta_shape1shape22muvar(
+x <- beta_shape1shape22muvar(
   fitted_params[["alpha1"]], fitted_params[["beta1"]]
 )
 
@@ -77,7 +61,7 @@ psi <- ggplot() +
     data = simulated_2, aes(si),
     alpha = 0.3, fill = "blue"
   ) +
-
+  
   geom_density(
     data = si_post, aes(si),
     alpha = 0.3, fill = "red"
