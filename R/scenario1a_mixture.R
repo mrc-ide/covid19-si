@@ -1,4 +1,24 @@
+## Checking how much of a difference it makes to approximate
+## convultion with discete sum as opposed to integrating it,
+g <- Vectorize(probability_basic)
+t <- 1:10
+integrated <- g(t, inf_params = list(shape = 1, scale = 10),
+  inc_params = list(shape = 1, scale = 10)
+  )
+convolution_as_sum <- function(t, inf_params, inc_params, width) {
 
+  out <- 0
+  s <- width
+  while (s <= t) {
+    out <- out +
+      dgamma(s, shape = inf_params$shape, scale = inf_params$scale) *
+      dgamma(t - s, shape = inc_params$shape, scale = inc_params$scale)
+
+    s <- s + width
+  }
+  out
+}
+summed <-
 ##invalid_si <- runif(100, max(valid_si$si), 3 * max(valid_si$si))
 
 invalid_si <- max(valid_si$si) * rbeta(100, shape1 = 1.5, shape2 = 6.5)

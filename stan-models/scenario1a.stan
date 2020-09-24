@@ -40,8 +40,8 @@ data{
   real <lower = 0> beta2; // incubation period parameter  
 }
 parameters{
-  real <lower = 0, upper = 10> alpha1; // infectious profile parameter
-  real <lower = 0, upper = 10> beta1;  // infectious profile parameter
+  real <lower = 0, upper = 50> alpha1; // infectious profile parameter
+  real <lower = 0, upper = 50> beta1;  // infectious profile parameter
 }
 model{
   //alpha1 ~ uniform(1, 10);
