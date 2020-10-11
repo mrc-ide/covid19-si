@@ -1,10 +1,11 @@
 functions{
   real scenario1a_lpdf(real x,
-                      real max_shed,
-                      real alpha1,      
-                      real beta1,   
-                      real alpha2,    
-                      real beta2) {   
+                       real max_shed,
+                       real alpha1,      
+                       real beta1,   
+                       real alpha2,    
+                       real beta2,
+                       real width) {   
 
     // out = 0;
     // for i in 0:x
@@ -15,17 +16,18 @@ functions{
     real inf_density;
     real inc_density;
     real ulim;
-    real width;
-    width = 0.1;
+    // width should be smaller than the smallest SI otherwise
+    // x - width will be -ve and gamma_lpdf will be 0, messing up
+    // everything.
     if(x > max_shed) ulim = max_shed;
     else ulim = x;
     // s is the time of infection
-    inf_density = beta_lpdf(width|alpha1, beta1) + log(width);
+    inf_density = beta_lpdf(width/max_shed|alpha1, beta1) + log(width) - log(max_shed);
     inc_density = gamma_lpdf(x - width|alpha2, beta2) + log(width);
     out =  exp(inf_density + inc_density);
-    s = 0.2;
+    s = 2 * width;
     while(s < ulim) {
-      inf_density = beta_lpdf(s/max_shed|alpha1, beta1) + log(width);
+      inf_density = beta_lpdf(s/max_shed|alpha1, beta1) + log(width) - log(max_shed);
       inc_density = gamma_lpdf(x - s|alpha2, beta2)+ log(width);
       out = out + exp(inf_density + inc_density);
       s = s + width;
@@ -39,20 +41,33 @@ data{
   real si[N];  
   real max_shed;
   real <lower = 0> alpha2; // incubation period parameter
-  real <lower = 0> beta2; // incubation period parameter  
+  real <lower = 0> beta2; // incubation period parameter
+  real <lower = 0> alpha_invalid;
+  real <lower = 0> beta_invalid;
+  real <lower = 0> max_si;
+  real <lower = 0> min_si;
+  real <lower = 0> width;
+
 }
 parameters{
-  real <lower = 1> alpha1; // infectious profile parameter
-  real <lower = 1> beta1;  // infectious profile parameter
-  real <lower = 0, upper = 1> p; //mixture probability
+  // simplex[2] theta;
+  real <lower = 0, upper = 1> pinvalid;
+  real <lower = 1, upper = 50> alpha1; // infectious profile parameter
+  real <lower = 1, upper = 50> beta1;  // infectious profile parameter    
 }
 model{
-  real alpha_invalid = 0.75;
-  real beta_invalid = 0.75;  
-  alpha1 ~ uniform(1, 1000);
-  beta1 ~ uniform(1, 1000);
+  //vector[2] log_theta = log(theta);
+  //real max_si = max(si) + 0.001; // so that the max si is not mapped to 1
+  
   for (n in 1:N) {
-    target += log_sum_exp(log(p) + beta_lpdf(si[n] | alpha_invalid, beta_invalid),
-                          log(1 - p) + scenario1a_lpdf(si[n] | max_shed, alpha1, beta1, alpha2, beta2));
+    //vector[2] lps = log_theta;
+    //target += log(pinvalid) +
+
+    //lps[1] += beta_lpdf(si[n]/ max_si| alpha_invalid, beta_invalid);
+    target += log(pinvalid) +
+      beta_lpdf(si[n]/ max_si| alpha_invalid, beta_invalid) +
+      log(1 - pinvalid) +
+      scenario1a_lpdf(si[n] | max_shed, alpha1, beta1, alpha2, beta2, width);
+    //target += log_sum_exp(lps);
   }
 }

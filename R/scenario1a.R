@@ -7,6 +7,7 @@ simulated_1 <- simulate_si(
   nsim = 500
 )
 
+
 fits_1a <- stan(
   file = here::here("stan-models/scenario1a.stan"),
   data = list(
@@ -31,27 +32,34 @@ fits_1a <- stan(
 
 fitted_params <- rstan::extract(fits_1a)
 
-x <- hermione::beta_shape1shape22muvar(
-  fitted_params[["alpha1"]], fitted_params[["beta1"]]
-)
+## x <- hermione::beta_shape1shape22muvar(
+##   fitted_params[["alpha1"]], fitted_params[["beta1"]]
+## )
 
-x[["mu"]] <- max_shed * x[["mu"]]
-x[["sigma2"]] <- max_shed^2 * x[["sigma2"]]
-x[["sd"]] <- sqrt(x[["sigma2"]])
+## x[["mu"]] <- max_shed * x[["mu"]]
+## x[["sigma2"]] <- max_shed^2 * x[["sigma2"]]
+## x[["sd"]] <- sqrt(x[["sigma2"]])
 
-p1 <- ggplot(NULL, aes(x[["mu"]])) +
-  geom_density(alpha = 0.3, fill = "red") +
+x <- max_shed *
+  rbeta(
+    n = length(fitted_params[["alpha1"]]),
+    shape1 = fitted_params[["alpha1"]],
+    shape2 = fitted_params[["beta1"]]
+  )
+
+p1 <- ggplot() +
+  geom_density(aes(x, fill = "blue"), alpha = 0.3) +
+  geom_density(aes(simulated_1$t_1, fill = "red"), alpha = 0.3) +
   geom_vline(xintercept = mean_inf, linetype = "dashed") +
+  scale_fill_identity(
+    guide = "legend",
+    labels = c("Simulated", "Posterior"),
+    breaks = c("blue", "red")
+  ) +
   theme_minimal()
 
-p2 <- ggplot(NULL, aes(x[["sd"]])) +
-  geom_density(alpha = 0.3, fill = "red") +
-  geom_vline(xintercept = sd_inf, linetype = "dashed") +
-  theme_minimal()
 
-p <- cowplot::plot_grid(p1, p2, ncol = 1)
-
-ggsave("figures/infectious_profile_params_1a.png", p)
+ggsave("figures/infectious_profile_params_1a.png", p1)
 
 
 ## Simulate with draws from posterior
@@ -64,19 +72,25 @@ si_post <- simulate_si(mean_inc, sd_inc, shape1, shape2, max_shed, 2, 2)
 
 psi <- ggplot() +
   geom_density(
-    data = simulated_1, aes(si),
-    alpha = 0.3, fill = "blue"
+    data = simulated_1, aes(si, fill = "blue"),
+    alpha = 0.3
   ) +
 
   geom_density(
-    data = si_post, aes(si),
-    alpha = 0.3, fill = "red"
+    data = si_post, aes(si, fill = "red"),
+    alpha = 0.3
   ) +
   geom_vline(
     xintercept = mean(simulated_1$si), col = "red", linetype = "dashed"
   ) +
+  scale_fill_identity(
+    guide = "legend",
+    labels = c("Simulated", "Posterior"),
+    breaks = c("blue", "red")
+  ) +
   theme_minimal() +
-  xlab("Serial Interval")
+  xlab("Serial Interval") +
+  theme(legend.title = element_blank())
 
 ggsave("figures/posterior_serial_interval_1a.png", psi)
 
