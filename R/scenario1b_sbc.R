@@ -1,7 +1,7 @@
 gen_data <- function(seed) {
   set.seed(seed + 16)
   list(
-    N = 30, max_shed = 21,  width = 0.1
+    N = 200, max_shed = 21,  width = 0.1
   )
 }
 
@@ -38,6 +38,7 @@ sample_from_model <- function(seed, data, params, modeled_data, iters) {
   data_for_stan <- c(data, modeled_data)
   rstan::sampling(s1b_model, data = data_for_stan, seed = seed,
                   chains = 1, iter = 2 * iters, warmup = iters,
+                  thin = 10,
                   open_progress = FALSE, show_messages = FALSE,
                   refresh = 1000)
 }
@@ -54,7 +55,7 @@ s1b_sbc <- SBC$new(data = gen_data,
                    )
 
 ##doParallel::registerDoParallel(cores = parallel::detectCores())
-cal <- s1b_sbc$calibrate(N = 300, L = 15, keep_stan_fit = FALSE)
+cal <- s1b_sbc$calibrate(N = 30, L = 15, keep_stan_fit = FALSE)
 cal$summary()
 cal$plot()
 
@@ -66,7 +67,11 @@ rank_b1 <- map_dbl(cal$calibrations, ~ .$ranks$beta1)
 hist(rank_b1, breaks = seq(0, max(rank_b1), by = 1))
 
 rank_a2 <- map_dbl(cal$calibrations, ~ .$ranks$alpha2)
-hist(rank_a2, breaks = seq(0, max(rank_a1), by = 1))
+hist(rank_a2, breaks = seq(0, max(rank_a2), by = 1))
 
 rank_b2 <- map_dbl(cal$calibrations, ~ .$ranks$beta2)
-hist(rank_b2, breaks = seq(0, max(rank_b1), by = 1))
+hist(rank_b2, breaks = seq(0, max(rank_b2), by = 1))
+
+
+
+neff <- map(cal$calibrations, ~ .$n_eff)
