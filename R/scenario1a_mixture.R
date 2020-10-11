@@ -55,8 +55,6 @@ fit_mixture <- stan(
     beta_invalid = beta_invalid,
     max_si = max(simulated_si) + 0.001,
     min_si = min(simulated_si),
-    ##alpha1 = params_inf$shape1,
-    ##beta1 = params_inf$shape2,
     width = min(simulated_si) / 2
   ),
   chains = 2,
@@ -67,38 +65,51 @@ fit_mixture <- stan(
 
 
 fitted_params <- rstan::extract(fit_mixture)
-
+map_idx <- which.max(fitted_params[["lp__"]])
+map_params <- map(fitted_params, ~ .[map_idx])
 ## Simulate with draws from posterior
 ##nsamples <- length(fitted_params[["alpha1"]])
 ##idx <- sample(nsamples, size = ceiling(nsamples / 2), replace = FALSE)
-shape1 <- median(fitted_params[["alpha1"]])
-shape2 <- median(fitted_params[["beta1"]])
-pinv <- median(fitted_params[["pinvalid"]])
+shape1 <- map_params[["alpha1"]]
+shape2 <- map_params[["beta1"]]
+pinv <- map_params[["pinvalid"]]
 
-xvalid <- simulate_si(
-  mean_inc, sd_inc, shape1, shape2, max_shed, nsim
+xposterior <- simulate_si(
+  mean_inc, sd_inc, shape1, shape2, max_shed, nsim = nsim
 )
 
-xinvalid <- max(xvalid$si) *
-  rbeta(nsim, shape1 = alpha_invalid, shape2 = beta_invalid)
 
-toss <- runif(nsim)
-x <- c(
-  xinvalid[toss < pinv], xvalid$si[toss > pinv]
-)
-
-p <- ggplot() +
-  geom_density(aes(simulated_si, fill = "blue"), alpha = 0.3) +
-  geom_density(aes(x, fill = "red"), alpha = 0.3) +
+p1 <- ggplot() +
+  geom_density(aes(valid_si$t_1, fill = "blue"), alpha = 0.3) +
+  geom_density(aes(xposterior$t_1, fill = "red"), alpha = 0.3) +
   geom_vline(xintercept = mean_inf, linetype = "dashed") +
   scale_fill_identity(
     guide = "legend",
     labels = c("Simulated", "Posterior"),
     breaks = c("blue", "red")
   ) +
+  xlab("Infectious profile") +
+  ylab("Probability Density") +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+
+
+ggsave("figures/posterior_infectious_profile_1a_mix.png", p1)
+
+p2 <- ggplot() +
+  geom_density(aes(simulated_si, fill = "blue"), alpha = 0.3) +
+  geom_density(aes(xposterior$si, fill = "red"), alpha = 0.3) +
+  geom_vline(xintercept = mean_inf, linetype = "dashed") +
+  scale_fill_identity(
+    guide = "legend",
+    labels = c("Simulated", "Posterior"),
+    breaks = c("blue", "red")
+  ) +
+  xlab("Serial Interval") +
+  ylab("Probability Density") +
   theme_minimal() +
   theme(legend.title = element_blank())
 
 
 
-ggsave("figures/posterior_serial_interval_1a_mix.png", psi)
+ggsave("figures/posterior_serial_interval_1a_mix.png", p2)
