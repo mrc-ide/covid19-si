@@ -45,7 +45,6 @@ data{
   real <lower = 0> alpha_invalid;
   real <lower = 0> beta_invalid;
   real <lower = 0> max_si;
-  real <lower = 0> min_si;
   real <lower = 0> width;
 
 }

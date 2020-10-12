@@ -23,3 +23,7 @@ params_inf <- hermione::beta_muvar2shape1shape2(
 mean_inc <- 6.5 ## days
 sd_inc <- 2.6 ## days
 params_inc <- epitrix::gamma_mucv2shapescale(mean_inc, sd_inc/ mean_inc)
+
+mean_iso <- 4
+sd_iso <- 2
+params_iso <- epitrix::gamma_mucv2shapescale(mean_iso, sd_iso / mean_iso)

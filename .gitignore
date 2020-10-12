@@ -1,6 +1,5 @@
 
 stan-models/.Rhistory
-
 .Rhistory
-
+*.rds
 figures/
