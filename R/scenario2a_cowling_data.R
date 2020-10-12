@@ -39,12 +39,13 @@ x <- max_shed *
   )
 
 p2 <- ggplot() +
-  geom_density(aes(x, fill = "blue"), alpha = 0.3) +
+  geom_density(aes(x, fill = "forestgreen"), alpha = 0.3) +
   scale_fill_identity(
     guide = "legend",
     labels = c("Posterior"),
     breaks = c("red")
   ) +
+  xlim(0,40)+
   theme_minimal()
 
 
@@ -53,26 +54,26 @@ ggsave("figures/infectious_profile_params_2a.png", p2)
 ## simulate si from the most likely incubation period distibution
 shape1 <- fitted_max["alpha1"]
 shape2 <- fitted_max["beta1"]
-si_post <- simulate_si(mean_inc, sd_inc, shape1, shape2, max_shed, 2, 2, nsim = 100000)
+si_post_max2a <- simulate_si(mean_inc, sd_inc, shape1, shape2, max_shed, 2, 2, nsim = 100000)
 
 p2si <- ggplot() +
   geom_density(
-    data = data_pos_test, aes(si, fill = "blue"),
+    data = data_pos, aes(si, fill = "blue"),
     alpha = 0.3
   ) +
   
   geom_density(
-    data = si_post, aes(si, fill = "red"),
+    data = si_post_max2a, aes(si, fill = "red"),
     alpha = 0.3
   ) +
   # geom_density(aes(x, fill = "black"),
   #   alpha = 0.3
   # ) +
   geom_vline(
-    xintercept = mean(data_pos_test$si), col = "blue", linetype = "dashed"
+    xintercept = mean(data_pos$si), col = "blue", linetype = "dashed"
   ) +
   geom_vline(
-    xintercept = mean(si_post$si), col = "red", linetype = "dashed"
+    xintercept = mean(si_post_max2a$si), col = "red", linetype = "dashed"
   ) +
   scale_fill_identity(
     guide = "legend",
@@ -81,6 +82,8 @@ p2si <- ggplot() +
   ) +
   theme_minimal() +
   xlab("Serial Interval") +
+  xlim(0,40)+
+  ylim(0,0.15)+
   theme(legend.title = element_blank())
 
 ggsave("figures/SI_2a.png", p2si)
@@ -88,47 +91,67 @@ ggsave("figures/SI_2a.png", p2si)
 
 # using the whole posteriors to get the 95% CrI
 
-x <- beta_shape1shape22muvar(
-  fitted_params[["alpha1"]], fitted_params[["beta1"]]
-)
+##################################
+# we now need to get the 95% CrI #
+##################################
 
-x[["mu"]] <- max_shed * x[["mu"]]
-x[["sigma2"]] <- max_shed^2 * x[["sigma2"]]
-x[["sd"]] <- sqrt(x[["sigma2"]])
+# 1. sample alpha and beta from the posterior to get the infectious profile
 
-p1 <- ggplot(NULL, aes(x[["mu"]])) +
-  geom_density(alpha = 0.3) +
-  geom_vline(xintercept = mean_inf, linetype = "dashed")
-
-p2 <- ggplot(NULL, aes(x[["sd"]])) +
-  geom_density(alpha = 0.3) +
-  geom_vline(xintercept = sd_inf, linetype = "dashed")
-
-p <- cowplot::plot_grid(p1, p2, ncol = 1)
-
-ggsave("infectious_profile_params.png", p)
-
-nsamples <- length(fitted_params[[1]])
+nsamples <- length(fitted_params_2a[[1]])
 idx <- sample(nsamples, size = ceiling(nsamples/2), replace = FALSE)
-shape1 <- fitted_params[[1]][idx]
-shape2 <- fitted_params[[2]][idx]
+shape1 <- fitted_params_2a[[1]][idx]
+shape2 <- fitted_params_2a[[2]][idx]
 
-si_post <- simulate_si(mean_inc, sd_inc, shape1, shape2, max_shed, 2, 2)
+# 2. for each infectious profile, simulate an SI distribution
+si_post_2a <- matrix(nrow = 1000, ncol = length(idx))
+for(i in 1:length(idx)){
+  si_post_2a[,i] <- (simulate_si(mean_inc, sd_inc, shape1[i], shape2[i], max_shed, 2, 2, nsim = 1000))$si
+}
 
-psi <- ggplot() +
-  geom_density(
-    data = simulated_2, aes(si),
-    alpha = 0.3, fill = "blue"
-  ) +
-  
-  geom_density(
-    data = si_post, aes(si),
-    alpha = 0.3, fill = "red"
-  ) +
-  geom_vline(
-    xintercept = mean(simulated_2$si), col = "red", linetype = "dashed"
-  ) +
-  theme_minimal() +
-  xlab("Serial Interval")
+# 3. for each simulated SI distribution, extract the median, mean and sd
+si_medians_2a <- colMedians(si_post_2a)
+si_means_2a <- colMeans(si_post_2a)
+si_sd_2a <- colSds(si_post_2a)
 
-ggsave("posterior_serial_interval.png", psi)
+# 4. plot the distribution of each stat and find the 2.5th and 97.5th quantiles
+si_mean_95_2a <- quantile(si_means_2a, c(0.025, 0.975))
+ggplot()+
+  geom_density(aes(si_means_2a), fill = "red", alpha = 0.3)+
+  theme_bw()+
+  xlab("mean SI (days)")+
+  geom_vline(xintercept = si_mean_95_2a[1], col = "red", lty = 2)+
+  geom_vline(xintercept = si_mean_95_2a[2], col = "red", lty = 2)+
+  geom_vline(xintercept = mean(si_post_max2a$si))+
+  xlim(4, 20)
+
+si_median_95_2a <- quantile(si_medians_2a, c(0.025, 0.975))
+ggplot()+
+  geom_density(aes(si_medians_2a), fill = "red", alpha = 0.3)+
+  theme_bw()+
+  xlab("median SI (days)")+
+  geom_vline(xintercept = si_median_95_2a[1], col = "red", lty = 2)+
+  geom_vline(xintercept = si_median_95_2a[2], col = "red", lty = 2)+
+  geom_vline(xintercept = median(si_post_max2a$si))+
+  xlim(4, 20)
+
+si_sd_95_2a <- quantile(si_sd_2a, c(0.025, 0.975))
+ggplot()+
+  geom_density(aes(si_sd_2a), fill = "red", alpha = 0.3)+
+  theme_bw()+
+  xlab("sd SI (days)")+
+  geom_vline(xintercept = si_sd_95_2a[1], col = "red", lty = 2)+
+  geom_vline(xintercept = si_sd_95_2a[2], col = "red", lty = 2)+
+  geom_vline(xintercept = sd(si_post_max2a$si))+
+  xlim(4, 20)
+
+
+# 7. plot the simulates SIs as density plots
+
+si_post_2a_df <- data.frame(si_post_2a)
+si_post_2a_long <- melt(si_post_2a_df)
+
+p4 <- ggplot(si_post_2a_long, aes(group = variable))+
+  geom_density(aes(value), fill = "red", color = NA, alpha = 0.01)+
+  theme_bw()+
+  geom_density(aes(si), data = si_post_max2a, colour = "white", inherit.aes = FALSE)
+
