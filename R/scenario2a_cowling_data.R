@@ -7,29 +7,26 @@ data_pos <- data%>%
   mutate(si = as.numeric(si))%>%
   mutate(nu = as.numeric(onset_first_iso))
 
-data_pos_test <- data_pos%>%
-  filter(nu<21)
 
-
-fits_2a_whole <- stan(
+fits_2a <- stan(
   file = here::here("stan-models/scenario2a.stan"),
   data = list(
-    N = nrow(data_pos_test),
-    si = data_pos_test$si,
-    nu = data_pos_test$nu,
+    N = nrow(data_pos),
+    si = data_pos$si,
+    nu = data_pos$nu,
     max_shed = 21,
     alpha2 = params_inc[["shape"]],
     beta2 = 1 / params_inc[["scale"]]
   ),
-  chains = 1,
-  iter = 1000,
+  chains = 3,
+  iter = 5000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
-test_fit <- ggmcmc(ggs(fits_2a_whole), here::here("figures/2a_whole.pdf"))
-fitted_params_2a_whole <- rstan::extract(fits_2a_whole)
+test_fit <- ggmcmc(ggs(fits_2a), here::here("figures/2a_working.pdf"))
+fitted_params_2a <- rstan::extract(fits_2a)
 
-max_index <- which(fitted_params_2a_whole$lp__==max(fitted_params_2a_whole$lp__)) 
+max_index <- which(fitted_params_2a$lp__==max(fitted_params_2a$lp__)) 
 
 fitted_max <- c(alpha1 = fitted_params_2a$alpha1[max_index], beta1 = fitted_params_2a$beta1[max_index])
 
@@ -41,7 +38,7 @@ x <- max_shed *
     shape2 = fitted_max[["beta1"]]
   )
 
-p1 <- ggplot() +
+p2 <- ggplot() +
   geom_density(aes(x, fill = "blue"), alpha = 0.3) +
   scale_fill_identity(
     guide = "legend",
@@ -51,14 +48,14 @@ p1 <- ggplot() +
   theme_minimal()
 
 
-ggsave("figures/infectious_profile_params_2a_whole.png", p1)
+ggsave("figures/infectious_profile_params_2a.png", p2)
 
 ## simulate si from the most likely incubation period distibution
 shape1 <- fitted_max["alpha1"]
 shape2 <- fitted_max["beta1"]
 si_post <- simulate_si(mean_inc, sd_inc, shape1, shape2, max_shed, 2, 2, nsim = 100000)
 
-psi <- ggplot() +
+p2si <- ggplot() +
   geom_density(
     data = data_pos_test, aes(si, fill = "blue"),
     alpha = 0.3
@@ -86,10 +83,10 @@ psi <- ggplot() +
   xlab("Serial Interval") +
   theme(legend.title = element_blank())
 
+ggsave("figures/SI_2a.png", p2si)
 
 
-
-# using the whole posteriors
+# using the whole posteriors to get the 95% CrI
 
 x <- beta_shape1shape22muvar(
   fitted_params[["alpha1"]], fitted_params[["beta1"]]
