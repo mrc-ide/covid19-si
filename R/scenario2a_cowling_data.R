@@ -11,12 +11,12 @@ data_pos_test <- data_pos%>%
   filter(nu<21)
 
 
-fits_2a <- stan(
+fits_2a_whole <- stan(
   file = here::here("stan-models/scenario2a.stan"),
   data = list(
-    N = nrow(data_pos),
-    si = data_pos$si,
-    nu = data_pos$nu,
+    N = nrow(data_pos_test),
+    si = data_pos_test$si,
+    nu = data_pos_test$nu,
     max_shed = 21,
     alpha2 = params_inc[["shape"]],
     beta2 = 1 / params_inc[["scale"]]
@@ -26,8 +26,70 @@ fits_2a <- stan(
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
+test_fit <- ggmcmc(ggs(fits_2a_whole), here::here("figures/2a_whole.pdf"))
+fitted_params_2a_whole <- rstan::extract(fits_2a_whole)
 
-fitted_params <- rstan::extract(fits_2a)
+max_index <- which(fitted_params_2a_whole$lp__==max(fitted_params_2a_whole$lp__)) 
+
+fitted_max <- c(alpha1 = fitted_params_2a$alpha1[max_index], beta1 = fitted_params_2a$beta1[max_index])
+
+
+x <- max_shed *
+  rbeta(
+    n = 100000,
+    shape1 = fitted_max[["alpha1"]],
+    shape2 = fitted_max[["beta1"]]
+  )
+
+p1 <- ggplot() +
+  geom_density(aes(x, fill = "blue"), alpha = 0.3) +
+  scale_fill_identity(
+    guide = "legend",
+    labels = c("Posterior"),
+    breaks = c("red")
+  ) +
+  theme_minimal()
+
+
+ggsave("figures/infectious_profile_params_2a_whole.png", p1)
+
+## simulate si from the most likely incubation period distibution
+shape1 <- fitted_max["alpha1"]
+shape2 <- fitted_max["beta1"]
+si_post <- simulate_si(mean_inc, sd_inc, shape1, shape2, max_shed, 2, 2, nsim = 100000)
+
+psi <- ggplot() +
+  geom_density(
+    data = data_pos_test, aes(si, fill = "blue"),
+    alpha = 0.3
+  ) +
+  
+  geom_density(
+    data = si_post, aes(si, fill = "red"),
+    alpha = 0.3
+  ) +
+  # geom_density(aes(x, fill = "black"),
+  #   alpha = 0.3
+  # ) +
+  geom_vline(
+    xintercept = mean(data_pos_test$si), col = "blue", linetype = "dashed"
+  ) +
+  geom_vline(
+    xintercept = mean(si_post$si), col = "red", linetype = "dashed"
+  ) +
+  scale_fill_identity(
+    guide = "legend",
+    labels = c("Data", "Posterior"),
+    breaks = c("blue", "red")
+  ) +
+  theme_minimal() +
+  xlab("Serial Interval") +
+  theme(legend.title = element_blank())
+
+
+
+
+# using the whole posteriors
 
 x <- beta_shape1shape22muvar(
   fitted_params[["alpha1"]], fitted_params[["beta1"]]
