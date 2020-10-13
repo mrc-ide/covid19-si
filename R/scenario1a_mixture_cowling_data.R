@@ -1,5 +1,5 @@
-# set.seed(42)
-# nsim <- 1000
+set.seed(42)
+nsim <- 1000
 alpha_invalid <- 1
 beta_invalid <- 1
 # pinvalid <- 0.3
@@ -88,19 +88,12 @@ shape2 <- map_params[["beta1"]]
 pinv <- map_params[["pinvalid"]]
 
 xposterior <- simulate_si(
-  mean_inc, sd_inc, shape1, shape2, max_shed, nsim = nsim
+  mean_inc_og, sd_inc_og, shape1, shape2, max_shed, nsim = nsim
 )
 
 
 p1 <- ggplot() +
-  geom_density(aes(valid_si$t_1, fill = "blue"), alpha = 0.3) +
   geom_density(aes(xposterior$t_1, fill = "red"), alpha = 0.3) +
-  geom_vline(xintercept = mean_inf, linetype = "dashed") +
-  scale_fill_identity(
-    guide = "legend",
-    labels = c("Simulated", "Posterior"),
-    breaks = c("blue", "red")
-  ) +
   xlab("Infectious profile") +
   ylab("Probability Density") +
   theme_minimal() +
@@ -110,12 +103,11 @@ p1 <- ggplot() +
 ggsave("figures/posterior_infectious_profile_1a_mix.png", p1)
 
 p2 <- ggplot() +
-  geom_density(aes(simulated_si, fill = "blue"), alpha = 0.3) +
+  geom_density(aes(data_pos$si, fill = "blue"), alpha = 0.3) +
   geom_density(aes(xposterior$si, fill = "red"), alpha = 0.3) +
-  geom_vline(xintercept = mean_inf, linetype = "dashed") +
   scale_fill_identity(
     guide = "legend",
-    labels = c("Simulated", "Posterior"),
+    labels = c("Data", "Posterior"),
     breaks = c("blue", "red")
   ) +
   xlab("Serial Interval") +
