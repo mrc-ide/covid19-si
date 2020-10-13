@@ -1,10 +1,11 @@
 functions{
   real scenario1a_lpdf(real x,
-                      real max_shed,
-                      real alpha1,      
-                      real beta1,   
-                      real alpha2,    
-                      real beta2) {   
+                       real max_shed,
+                       real alpha1,      
+                       real beta1,   
+                       real alpha2,    
+                       real beta2,
+                       real width) {   
 
     // out = 0;
     // for i in 0:x
@@ -15,11 +16,9 @@ functions{
     real inf_density;
     real inc_density;
     real ulim;
-    real width;
     // width should be smaller than the smallest SI otherwise
     // x - width will be -ve and gamma_lpdf will be 0, messing up
     // everything.
-    width = 0.01;
     if(x > max_shed) ulim = max_shed;
     else ulim = x;
     // s is the time of infection
@@ -37,23 +36,6 @@ functions{
     return out;
 }
 }
-transformed data{
-  real <lower = 0, upper = 1> pinvalid_;
-  real <lower = 1, upper = 100> alpha1_; // infectious profile parameter
-  real <lower = 1, upper = 100> beta1_;  // infectious profile parameter
-  real toss;
-  real y;
-  pinvalid_ ~ uniform_rng(0, 1);
-  alpha1_ ~ uniform_rng(1, 100);
-  beta_ ~ uniform_rng(1, 100);
-  toss ~ uniform_rng(0, 1);
-  if (toss < pinvalid_) {
-    y ~ beta_rng(alpha_invalid, beta_invalid);
-  } else {
-    y ~ beta_rng(alpha1_, beta1_);
-  }
-  
-}
 data{
   int N; // number of data points
   real si[N];  
@@ -63,13 +45,14 @@ data{
   real <lower = 0> alpha_invalid;
   real <lower = 0> beta_invalid;
   real <lower = 0> max_si;
-  real <lower = 0> min_si;
+  real <lower = 0> width;
+
 }
 parameters{
-  //simplex[2] theta;
+  // simplex[2] theta;
   real <lower = 0, upper = 1> pinvalid;
-  real <lower = 1, upper = 100> alpha1; // infectious profile parameter
-  real <lower = 1, upper = 100> beta1;  // infectious profile parameter
+  real <lower = 1, upper = 50> alpha1; // infectious profile parameter
+  real <lower = 1, upper = 50> beta1;  // infectious profile parameter    
 }
 model{
   //vector[2] log_theta = log(theta);
@@ -77,21 +60,13 @@ model{
   
   for (n in 1:N) {
     //vector[2] lps = log_theta;
+    //target += log(pinvalid) +
+
+    //lps[1] += beta_lpdf(si[n]/ max_si| alpha_invalid, beta_invalid);
     target += log(pinvalid) +
-      beta_lpdf(si[n]/ max_si| alpha_invalid, beta_invalid);
-    //target += log(pinvalid) + uniform_lpdf(si[n]|min_si, max_si);
-    target += log(1 - pinvalid) +
-      scenario1a_lpdf(si[n] | max_shed, alpha1, beta1, alpha2, beta2);
+      beta_lpdf(si[n]/ max_si| alpha_invalid, beta_invalid) +
+      log(1 - pinvalid) +
+      scenario1a_lpdf(si[n] | max_shed, alpha1, beta1, alpha2, beta2, width);
+    //target += log_sum_exp(lps);
   }
 }
-generated quantities {
-  real y_ = y;
-  vector[1] pars_;
-  int ranks_[1] = {pinvalid > pinvalid_};
-  vector[N] log_lik;
-  pars_[1] = pinvalid_;
-  //for (n in 1:y) log_lik[n] = bernoulli_lpmf(1 | pi);
-  //for (n in (y + 1):N) log_lik[n] = bernoulli_lpmf(0 | pi);
-}
-
-

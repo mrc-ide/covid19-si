@@ -5,6 +5,7 @@ library(ggmcmc)
 library(ggplot2)
 library(epitrix)
 library(purrr)
+library(sbcrs)
 source("R/utils.R")
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
@@ -23,6 +24,7 @@ mean_inc <- 6.5 ## days
 sd_inc <- 2.6 ## days
 params_inc <- epitrix::gamma_mucv2shapescale(mean_inc, sd_inc/ mean_inc)
 
+
 ## original incubation period from IBM
 mean_inc_og <- 5.1 #days
 sd_inc_og <- 3.94 #days
@@ -34,4 +36,9 @@ params_inc_og <- epitrix::gamma_mucv2shapescale(
 # mean_inc <- 1
 # sd_inc <- 0.5
 # params_inc <- epitrix::gamma_mucv2shapescale(mean_inc, sd_inc/ mean_inc)
+
+
+mean_iso <- 4
+sd_iso <- 2
+params_iso <- epitrix::gamma_mucv2shapescale(mean_iso, sd_iso / mean_iso)
 

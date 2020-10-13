@@ -1,5 +1,6 @@
 
 stan-models/.Rhistory
-
 .Rhistory
 .Rproj.user
+*.rds
+figures/

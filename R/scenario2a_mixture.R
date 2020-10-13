@@ -1,19 +1,39 @@
 set.seed(42)
-nsim <- 1000
+nsim <- 2000
 alpha_invalid <- 1
 beta_invalid <- 1
 pinvalid <- 0.3
 
 valid_si <- simulate_si(
-  mean_inc, sd_inc, params_inf$shape1, params_inf$shape2, max_shed, nsim = nsim
+  mean_inc, sd_inc, params_inf$shape1, params_inf$shape2,
+  max_shed, nsim = nsim
 )
+valid_si$nu <- rgamma(
+  nsim, shape = params_iso$shape, scale = params_iso$scale
+)
+
+valid_si <- valid_si[valid_si$t_1 < valid_si$nu, ]
+
+nsim <- nrow(valid_si)
 
 invalid_si <- max(valid_si$si) *
   rbeta(nsim, shape1 = alpha_invalid, shape2 = beta_invalid)
 
+## invalid_inc <- rgamma(
+##   nsim, shape = params_inc$shape, scale = params_inc$scale
+## )
+
+## invalid_inf <- invalid_si - invalid_inc
+
+invalid_iso <- rgamma(
+  nsim, shape = params_iso$shape, scale = params_iso$scale
+)
+
+invalid_si = data.frame(si = invalid_si, nu = invalid_iso)
+
 p1 <- ggplot() +
   geom_density(aes(valid_si$si, fill = "blue"), alpha = 0.3) +
-  geom_density(aes(invalid_si, fill = "red"), alpha = 0.3) +
+  geom_density(aes(invalid_si$si, fill = "red"), alpha = 0.3) +
   theme_minimal() +
   scale_fill_identity(
     guide = "legend",
@@ -25,37 +45,37 @@ p1 <- ggplot() +
   theme(legend.title = element_blank())
 
 
-
-
 toss <- runif(nsim)
-
-simulated_si <- c(
-  invalid_si[toss <= pinvalid], valid_si$si[toss > pinvalid]
+simulated_si <- rbind(
+  invalid_si[toss <= pinvalid, ],
+  valid_si[toss > pinvalid, c("si", "nu")]
 )
 
+
+
 p2 <- ggplot() +
-  geom_density(aes(simulated_si), fill = "purple", alpha = 0.3) +
+  geom_density(aes(simulated_si$si), fill = "purple", alpha = 0.3) +
   theme_minimal() +
   xlim(0, NA) +
   xlab("Serial Interval")
 
 p <- cowplot::plot_grid(p1, p2, ncol = 1, align = "hv")
 
-ggsave("figures/simulated_data_1a_mix.png", p)
+ggsave("figures/simulated_data_2a_mix.png", p)
 
 fit_mixture <- stan(
-  file = here::here("stan-models/scenario1a_mixture.stan"),
+  file = here::here("stan-models/scenario2a_mixture.stan"),
   data = list(
-    N = length(simulated_si),
-    si = simulated_si,
+    N = nrow(simulated_si),
+    si = simulated_si$si,
+    nu = simulated_si$nu,
     max_shed = max_shed,
     alpha2 = params_inc[["shape"]],
     beta2 = 1 / params_inc[["scale"]],
     alpha_invalid = alpha_invalid,
     beta_invalid = beta_invalid,
-    max_si = max(simulated_si) + 0.001,
-    min_si = min(simulated_si),
-    width = min(simulated_si) / 2
+    width = min(simulated_si$si) / 2,
+    max_si = max(simulated_si$si) + 0.001
   ),
   chains = 2,
   iter = 5000,
@@ -65,14 +85,14 @@ fit_mixture <- stan(
 
 
 fitted_params <- rstan::extract(fit_mixture)
-map_idx <- which.max(fitted_params[["lp__"]])
-map_params <- map(fitted_params, ~ .[map_idx])
+
 ## Simulate with draws from posterior
 ##nsamples <- length(fitted_params[["alpha1"]])
 ##idx <- sample(nsamples, size = ceiling(nsamples / 2), replace = FALSE)
-shape1 <- map_params[["alpha1"]]
-shape2 <- map_params[["beta1"]]
-pinv <- map_params[["pinvalid"]]
+idx <- which.max(fitted_params[["lp__"]])
+shape1 <- fitted_params[["alpha1"]][idx]
+shape2 <- fitted_params[["beta1"]][idx]
+
 
 xposterior <- simulate_si(
   mean_inc, sd_inc, shape1, shape2, max_shed, nsim = nsim
@@ -94,10 +114,10 @@ p1 <- ggplot() +
   theme(legend.title = element_blank())
 
 
-ggsave("figures/posterior_infectious_profile_1a_mix.png", p1)
+ggsave("figures/posterior_infectious_profile_2a_mix.png", p1)
 
 p2 <- ggplot() +
-  geom_density(aes(simulated_si, fill = "blue"), alpha = 0.3) +
+  geom_density(aes(simulated_si$si, fill = "blue"), alpha = 0.3) +
   geom_density(aes(xposterior$si, fill = "red"), alpha = 0.3) +
   geom_vline(xintercept = mean_inf, linetype = "dashed") +
   scale_fill_identity(
@@ -112,4 +132,4 @@ p2 <- ggplot() +
 
 
 
-ggsave("figures/posterior_serial_interval_1a_mix.png", p2)
+ggsave("figures/posterior_serial_interval_2a_mix.png", p2)
