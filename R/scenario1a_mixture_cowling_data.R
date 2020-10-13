@@ -2,46 +2,6 @@ set.seed(42)
 nsim <- 1000
 alpha_invalid <- 1
 beta_invalid <- 1
-# pinvalid <- 0.3
-# 
-# valid_si <- simulate_si(
-#   mean_inc, sd_inc, params_inf$shape1, params_inf$shape2, max_shed, nsim = nsim
-# )
-# 
-# invalid_si <- max(valid_si$si) *
-#   rbeta(nsim, shape1 = alpha_invalid, shape2 = beta_invalid)
-# 
-# p1 <- ggplot() +
-#   geom_density(aes(valid_si$si, fill = "blue"), alpha = 0.3) +
-#   geom_density(aes(invalid_si, fill = "red"), alpha = 0.3) +
-#   theme_minimal() +
-#   scale_fill_identity(
-#     guide = "legend",
-#     breaks = c("blue", "red"),
-#     labels = c("Valid", "Invalid")
-#   ) +
-#   xlim(0, NA) +
-#   xlab("Serial Interval") +
-#   theme(legend.title = element_blank())
-# 
-# 
-# 
-# 
-# toss <- runif(nsim)
-# 
-# simulated_si <- c(
-#   invalid_si[toss <= pinvalid], valid_si$si[toss > pinvalid]
-# )
-# 
-# p2 <- ggplot() +
-#   geom_density(aes(simulated_si), fill = "purple", alpha = 0.3) +
-#   theme_minimal() +
-#   xlim(0, NA) +
-#   xlab("Serial Interval")
-# 
-# p <- cowplot::plot_grid(p1, p2, ncol = 1, align = "hv")
-# 
-# ggsave("figures/simulated_data_1a_mix.png", p)
 
 # run scenario 1 mixture model on the cowling data
 
