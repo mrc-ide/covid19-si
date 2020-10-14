@@ -20,8 +20,8 @@ fits_3a <- stan(
     si = data_offset$si,
     max_shed = 21,
     offset = offset,
-    alpha2 = params_inc[["shape"]],
-    beta2 = 1 / params_inc[["scale"]]
+    alpha2 = params_inc_og[["shape"]],
+    beta2 = 1 / params_inc_og[["scale"]]
   ),
   chains = 1,
   iter = 1000,
