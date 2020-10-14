@@ -18,11 +18,12 @@ functions{
     real ulim;
     if(x > max_shed) ulim = max_shed;
     else ulim = x;
-    // s is the time of infection
-    // in order to account for pre-symptomatic infection we offset the infectious profile
+    // s is the time of infection of the 2ndry case relative to onset in the infector
+    // in order to account for pre-symptomatic infection we need s to be negative
+    // our beta/gamma distirbutions don't support this so we need to introduce an offset
     // the range of s in this model is -offset to max_shed
     // initially rather than 0.1 s = -offset + 0.1
-    // so 0.1 here is a simplification of -offset + 0.1 - offset
+    // so 0.1 in the line below is a simplification of -offset + 0.1 - offset
     inf_density = beta_lpdf(0.1/(max_shed + offset)|alpha1, beta1) + log(0.1) - log(max_shed + offset);
     inc_density = gamma_lpdf((x - (-offset + 0.1))|alpha2, beta2) + log(0.1);
     out =  exp(inf_density + inc_density);
