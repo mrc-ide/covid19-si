@@ -2,9 +2,11 @@
 
 # set offset (the number of days prior to symptoms that transmission begins)
 offset <- 3
-# load the data
 
+# load the data
 data <- readRDS("data/cowling_data_clean.rds")
+
+# sub-set to only incude those SIs that are possible under our assumed offset
 data_offset <- data%>%
   filter(si>-offset)%>%
   filter(onset_first_iso>-offset)%>%
@@ -12,7 +14,6 @@ data_offset <- data%>%
   dplyr::rename(nu = onset_first_iso)
 
 # fit the model
-
 fits_3a <- stan(
   file = here::here("stan-models/scenario3a.stan"),
   data = list(
