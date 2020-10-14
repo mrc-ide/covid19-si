@@ -1,4 +1,10 @@
 functions{
+  real invalid_lpdf(real x, real max_si, real alpha_invalid, real beta_invalid) {
+    real out;
+    out = beta_lpdf(x/ max_si| alpha_invalid, beta_invalid);
+    return(out);
+  }
+  
   real scenario1a_lpdf(real x,
                        real max_shed,
                        real alpha1,      
@@ -51,22 +57,17 @@ data{
 parameters{
   // simplex[2] theta;
   real <lower = 0, upper = 1> pinvalid;
-  real <lower = 1, upper = 50> alpha1; // infectious profile parameter
-  real <lower = 1, upper = 50> beta1;  // infectious profile parameter    
+  real <lower = alpha_invalid, upper = 50> alpha1; // infectious profile parameter
+  real <lower = 0, upper = 50> beta1;  // infectious profile parameter
 }
 model{
-  //vector[2] log_theta = log(theta);
-  //real max_si = max(si) + 0.001; // so that the max si is not mapped to 1
-  
+  pinvalid ~ beta(3.5, 7);
   for (n in 1:N) {
-    //vector[2] lps = log_theta;
-    //target += log(pinvalid) +
+      target += log_mix(pinvalid,
+                        beta_lpdf(si[n] / max_si | alpha_invalid, beta_invalid),
+                        scenario1a_lpdf(si[n] | max_shed, alpha1,
+                                        beta1, alpha2, beta2, width)
+                        );    
 
-    //lps[1] += beta_lpdf(si[n]/ max_si| alpha_invalid, beta_invalid);
-    target += log(pinvalid) +
-      beta_lpdf(si[n]/ max_si| alpha_invalid, beta_invalid) +
-      log(1 - pinvalid) +
-      scenario1a_lpdf(si[n] | max_shed, alpha1, beta1, alpha2, beta2, width);
-    //target += log_sum_exp(lps);
   }
 }

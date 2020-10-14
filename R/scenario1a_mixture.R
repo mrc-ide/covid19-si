@@ -1,19 +1,23 @@
 set.seed(42)
 nsim <- 1000
-alpha_invalid <- 1
-beta_invalid <- 1
-pinvalid <- 0.3
+alpha_invalid <- 1.5
+beta_invalid <- 6.5
+pinvalid <- 0.03
 
 valid_si <- simulate_si(
-  mean_inc, sd_inc, params_inf$shape1, params_inf$shape2, max_shed, nsim = nsim
+  mean_inc, sd_inc, 6.5, 1.5, max_shed, nsim = nsim
 )
+
+valid_si$si <- round(valid_si$si)
 
 invalid_si <- max(valid_si$si) *
   rbeta(nsim, shape1 = alpha_invalid, shape2 = beta_invalid)
 
+invalid_si <- round(invalid_si)
+
 p1 <- ggplot() +
-  geom_density(aes(valid_si$si, fill = "blue"), alpha = 0.3) +
-  geom_density(aes(invalid_si, fill = "red"), alpha = 0.3) +
+  geom_histogram(aes(valid_si$si, fill = "blue"), alpha = 0.3) +
+  geom_histogram(aes(invalid_si, fill = "red"), alpha = 0.3) +
   theme_minimal() +
   scale_fill_identity(
     guide = "legend",
@@ -33,15 +37,19 @@ simulated_si <- c(
   invalid_si[toss <= pinvalid], valid_si$si[toss > pinvalid]
 )
 
+
 p2 <- ggplot() +
-  geom_density(aes(simulated_si), fill = "purple", alpha = 0.3) +
+  geom_histogram(aes(simulated_si), fill = "purple", alpha = 0.3) +
+ ## geom_histogram(aes(simulated_si_post), alpha = 0.3) +
   theme_minimal() +
   xlim(0, NA) +
   xlab("Serial Interval")
 
+
 p <- cowplot::plot_grid(p1, p2, ncol = 1, align = "hv")
 
 ggsave("figures/simulated_data_1a_mix.png", p)
+simulated_si <- simulated_si[simulated_si > 0]
 
 fit_mixture <- stan(
   file = here::here("stan-models/scenario1a_mixture.stan"),
@@ -54,7 +62,6 @@ fit_mixture <- stan(
     alpha_invalid = alpha_invalid,
     beta_invalid = beta_invalid,
     max_si = max(simulated_si) + 0.001,
-    min_si = min(simulated_si),
     width = min(simulated_si) / 2
   ),
   chains = 2,
@@ -77,6 +84,18 @@ pinv <- map_params[["pinvalid"]]
 xposterior <- simulate_si(
   mean_inc, sd_inc, shape1, shape2, max_shed, nsim = nsim
 )
+xposterior$si <- round(xposterior$si)
+
+invalid_si <- max(xposterior$si) *
+  rbeta(nsim, shape1 = alpha_invalid, shape2 = beta_invalid)
+
+invalid_si <- round(invalid_si)
+
+toss <- runif(nsim)
+
+simulated_si_post <- c(
+  invalid_si[toss <= pinv], xposterior$si[toss > pinv]
+)
 
 
 p1 <- ggplot() +
@@ -97,8 +116,8 @@ p1 <- ggplot() +
 ggsave("figures/posterior_infectious_profile_1a_mix.png", p1)
 
 p2 <- ggplot() +
-  geom_density(aes(simulated_si, fill = "blue"), alpha = 0.3) +
-  geom_density(aes(xposterior$si, fill = "red"), alpha = 0.3) +
+  geom_histogram(aes(simulated_si, fill = "blue"), alpha = 0.3) +
+  geom_histogram(aes(simulated_si_post$si, fill = "red"), alpha = 0.3) +
   geom_vline(xintercept = mean_inf, linetype = "dashed") +
   scale_fill_identity(
     guide = "legend",
@@ -113,3 +132,18 @@ p2 <- ggplot() +
 
 
 ggsave("figures/posterior_serial_interval_1a_mix.png", p2)
+
+
+fitted_params <- rstan::extract(fit_mixture, permuted = FALSE)
+alpha1_c1 <- fitted_params[ , 1, 2]
+alpha1_c2 <- fitted_params[ , 2, 3]
+beta1_c1 <- fitted_params[ , 1, 3]
+beta1_c2 <- fitted_params[ , 2, 3]
+
+ggplot() +
+  geom_point(aes(alpha1_c1, beta1_c1)) +
+  geom_point(aes(alpha1_c2, beta1_c2), col = "red") +
+  theme_minimal() +
+  xlab("alpha1") +
+  ylab("beta1")
+
