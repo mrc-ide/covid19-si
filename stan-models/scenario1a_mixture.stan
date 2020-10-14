@@ -28,13 +28,13 @@ functions{
     if(x > max_shed) ulim = max_shed;
     else ulim = x;
     // s is the time of infection
-    inf_density = beta_lpdf(width/max_shed|alpha1, beta1) + log(width) - log(max_shed);
-    inc_density = gamma_lpdf(x - width|alpha2, beta2) + log(width);
+    inf_density = beta_lpdf(width/max_shed|alpha1, beta1);
+    inc_density = gamma_lpdf(x - width|alpha2, beta2);
     out =  exp(inf_density + inc_density);
     s = 2 * width;
     while(s < ulim) {
-      inf_density = beta_lpdf(s/max_shed|alpha1, beta1) + log(width) - log(max_shed);
-      inc_density = gamma_lpdf(x - s|alpha2, beta2)+ log(width);
+      inf_density = beta_lpdf(s/max_shed|alpha1, beta1);
+      inc_density = gamma_lpdf(x - s|alpha2, beta2);
       out = out + exp(inf_density + inc_density);
       s = s + width;
     }
@@ -57,11 +57,11 @@ data{
 parameters{
   // simplex[2] theta;
   real <lower = 0, upper = 1> pinvalid;
-  real <lower = alpha_invalid, upper = 50> alpha1; // infectious profile parameter
-  real <lower = 0, upper = 50> beta1;  // infectious profile parameter
+  real <lower = alpha_invalid, upper = 100> alpha1; // infectious profile parameter
+  real <lower = 0, upper = 100> beta1;  // infectious profile parameter
 }
 model{
-  pinvalid ~ beta(3.5, 7);
+  pinvalid ~ beta(1.5, 100);
   for (n in 1:N) {
       target += log_mix(pinvalid,
                         beta_lpdf(si[n] / max_si | alpha_invalid, beta_invalid),
