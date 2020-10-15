@@ -1,7 +1,12 @@
 functions{
   real invalid_lpdf(real x, real max_si, real min_si, real alpha_invalid, real beta_invalid) {
     real out;
-    out = beta_lpdf((x + fabs(min_si))/ (max_si - min_si)| alpha_invalid, beta_invalid);
+    real y;
+    y = (x + fabs(min_si))/ (max_si - min_si);
+    out = beta_lpdf(y| alpha_invalid, beta_invalid);
+    print("si = ", x);
+    print("(x + fabs(min_si))/ (max_si - min_si) = ", y);
+    print("invalid_lpdf = ", out);
     return(out);
   }
   
@@ -65,7 +70,7 @@ model{
   pinvalid ~ beta(1.5, 5);
   for (n in 1:N) {
       target += log_mix(pinvalid,
-                        beta_lpdf(((si[n] + fabs(min_si)) / (max_si - min_si)) | alpha_invalid, beta_invalid),
+                        invalid_lpdf(si[n] | max_si, min_si, alpha_invalid, beta_invalid),
                         scenario1a_lpdf(si[n] | max_shed, alpha1,
                                         beta1, alpha2, beta2, width)
                                         );    

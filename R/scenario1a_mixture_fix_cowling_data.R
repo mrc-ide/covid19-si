@@ -1,7 +1,7 @@
 set.seed(42)
 nsim <- 1000
-alpha_invalid <- 1
-beta_invalid <- 1
+alpha_invalid <- 0.5
+beta_invalid <- 0.5
 
 data <- readRDS("data/cowling_data_clean.rds")
 
@@ -17,6 +17,7 @@ data_pos <- data%>%
   mutate(nu = as.numeric(onset_first_iso))
 
 ## fitting the mixture model to positive data
+
 fit_mixture <- stan(
   file = here::here("stan-models/scenario1a_mixture.stan"),
   data = list(
@@ -48,7 +49,7 @@ fit_mixture <- stan(
     alpha_invalid = alpha_invalid,
     beta_invalid = beta_invalid,
     max_si = max(data$si) + 0.001,
-    min_si = min(data$si),
+    min_si = min(data$si) - 0.001,
     width = min(data_pos$si) / 2
   ),
   chains = 1,
@@ -57,7 +58,9 @@ fit_mixture <- stan(
   ## control = list(adapt_delta = 0.99)
 )
 
-test_fit <- ggmcmc(ggs(fit_mixture), here::here("figures/1a_mix_data.pdf"))
+test_fit <- ggmcmc(
+  ggs(fit_mixture), here::here("figures/1a_mix_data.pdf")
+)
 
 fitted_params <- rstan::extract(fit_mixture)
 map_idx <- which.max(fitted_params[["lp__"]])
@@ -91,7 +94,7 @@ p1 <- ggplot() +
   xlab("Infectious profile") +
   ylab("Probability Density") +
   theme_minimal() +
-  theme(legend.title = element_blank())
+  theme(legend.position = "none")
 
 
 ggsave("figures/posterior_infectious_profile_1a_mix.png", p1)

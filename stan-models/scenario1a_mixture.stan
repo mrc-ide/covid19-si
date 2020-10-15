@@ -61,7 +61,7 @@ parameters{
   real <lower = 0, upper = 100> beta1;  // infectious profile parameter
 }
 model{
-  pinvalid ~ beta(1.5, 5);
+  //pinvalid ~ beta(1.5, 3);
   for (n in 1:N) {
       target += log_mix(pinvalid,
                         beta_lpdf(si[n] / max_si | alpha_invalid, beta_invalid),
