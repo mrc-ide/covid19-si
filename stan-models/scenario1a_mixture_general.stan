@@ -4,9 +4,6 @@ functions{
     real y;
     y = (x + fabs(min_si))/ (max_si - min_si);
     out = beta_lpdf(y| alpha_invalid, beta_invalid);
-    print("si = ", x);
-    print("(x + fabs(min_si))/ (max_si - min_si) = ", y);
-    print("invalid_lpdf = ", out);
     return(out);
   }
   
@@ -44,6 +41,8 @@ functions{
       s = s + width;
     }
     out = log(out);
+    print("si = ", x);
+    print("out = ", out);
     return out;
 }
 }
@@ -67,13 +66,15 @@ parameters{
   real <lower = 0, upper = 100> beta1;  // infectious profile parameter
 }
 model{
+  real valid;
+  real invalid;
   pinvalid ~ beta(1.5, 5);
   for (n in 1:N) {
-      target += log_mix(pinvalid,
-                        invalid_lpdf(si[n] | max_si, min_si, alpha_invalid, beta_invalid),
-                        scenario1a_lpdf(si[n] | max_shed, alpha1,
-                                        beta1, alpha2, beta2, width)
-                                        );    
-
+    print("alpha1 = ", alpha1);
+    print("beta1 = ", beta1);    
+    valid = scenario1a_lpdf(si[n] | max_shed, alpha1, beta1, alpha2, beta2, width);
+    print("valid pdf = ", valid);
+    invalid = invalid_lpdf(si[n] | max_si, min_si, alpha_invalid, beta_invalid);
+    target += log_mix(pinvalid, invalid, valid);    
   }
 }
