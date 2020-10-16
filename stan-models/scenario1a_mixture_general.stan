@@ -41,8 +41,8 @@ functions{
       s = s + width;
     }
     out = log(out);
-    print("si = ", x);
-    print("out = ", out);
+    //print("si = ", x);
+    //print("out = ", out);
     return out;
 }
 }
@@ -70,11 +70,15 @@ model{
   real invalid;
   pinvalid ~ beta(1.5, 5);
   for (n in 1:N) {
-    print("alpha1 = ", alpha1);
-    print("beta1 = ", beta1);    
-    valid = scenario1a_lpdf(si[n] | max_shed, alpha1, beta1, alpha2, beta2, width);
-    print("valid pdf = ", valid);
+    //print("alpha1 = ", alpha1);
+    //print("beta1 = ", beta1);    
+    //print("valid pdf = ", valid);
     invalid = invalid_lpdf(si[n] | max_si, min_si, alpha_invalid, beta_invalid);
-    target += log_mix(pinvalid, invalid, valid);    
+    if (si[n] > 0) {
+      valid = scenario1a_lpdf(si[n] | max_shed, alpha1, beta1, alpha2, beta2, width);
+      target += log_mix(pinvalid, invalid, valid);    
+    } else {
+      target += log(pinvalid) + invalid;
+    }
   }
 }
