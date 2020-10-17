@@ -100,7 +100,7 @@ p1 <- ggplot() +
 ggsave("figures/posterior_infectious_profile_1a_mix.png", p1)
 
 p2 <- ggplot() +
-  geom_density(aes(data_pos$si, fill = "blue"), alpha = 0.3) +
+  geom_density(aes(data$si, fill = "blue"), alpha = 0.3) +
   geom_density(aes(simulated_si_post, fill = "red"), alpha = 0.3) +
   geom_vline(xintercept = mean(data_pos$si), linetype = "dashed") +
   scale_fill_identity(

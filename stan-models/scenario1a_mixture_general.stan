@@ -78,7 +78,7 @@ model{
       valid = scenario1a_lpdf(si[n] | max_shed, alpha1, beta1, alpha2, beta2, width);
       target += log_mix(pinvalid, invalid, valid);    
     } else {
-      target += log(pinvalid) + invalid;
+      target += invalid;
     }
   }
 }
