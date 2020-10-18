@@ -13,6 +13,8 @@ data_offset <- data%>%
   mutate(si = as.numeric(si))%>%
   dplyr::rename(nu = onset_first_iso)
 
+data_test <- data_offset%>%
+  filter(si<0)
 # fit the model
 fits_3a <- stan(
   file = here::here("stan-models/scenario3a.stan"),
@@ -25,7 +27,7 @@ fits_3a <- stan(
     beta2 = 1 / params_inc_og[["scale"]]
   ),
   chains = 1,
-  iter = 1000,
+  iter = 10,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
