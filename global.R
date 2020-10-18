@@ -29,7 +29,7 @@ params_inc <- epitrix::gamma_mucv2shapescale(mean_inc, sd_inc/ mean_inc)
 mean_inc_og <- 5.1 #days
 sd_inc_og <- 3.94 #days
 params_inc_og <- epitrix::gamma_mucv2shapescale(
-  mu = mean_inc, cv = (sd_inc/mean_inc))
+  mu = mean_inc_og, cv = (sd_inc_og/mean_inc_og))
 
 ## very short incubation period for testing
 
