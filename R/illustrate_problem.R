@@ -1,8 +1,8 @@
 rstan::expose_stan_functions(here::here("stan-models/likelihoods.stan"))
 set.seed(42)
 nsim <- 100
-alpha_invalid <- 1.5
-beta_invalid <- 6.5
+alpha_invalid <- 1
+beta_invalid <- 1
 pinvalid <- 0.03
 
 valid_si <- simulate_si(
@@ -21,9 +21,9 @@ simulated_si <- c(
 )
 
 grid <- expand.grid(
-  pinvalid = seq(0.1, 1, 0.1),
-  alpha1 = seq(0.1, 50, 1),
-  beta1 = seq(0.1, 50, 1)
+  pinvalid = seq(0.1, 0.9, 0.1),
+  alpha1 = seq(0.1, 100, 1),
+  beta1 = seq(0.1, 100, 1)
 )
 
 ## prior <- dunif(grid$pinvalid, log = TRUE) +
@@ -53,12 +53,7 @@ grid$posterior <- pmap_dbl(
   }
 )
 
-ggplot(grid, aes(alpha1, beta1, z = posterior)) +
-  geom_contour_filled() +
-  facet_wrap(~pinvalid)
 
 
-ggplot(
-  grid,
-  aes(alpha1, posterior, group = interaction(beta1, pinvalid))) +
-  geom_line()
+ggplot(grid, aes(posterior)) +
+  geom_density()
