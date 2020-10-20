@@ -21,14 +21,14 @@ simulated_si <- c(
 )
 
 grid <- expand.grid(
-  pinvalid = pinvalid,
-  alpha1 = seq(0.1, 200, 1),
-  beta1 = seq(0.1, 200, 1)
+  pinvalid = seq(0.1, 1, 0.1),
+  alpha1 = seq(0.1, 50, 1),
+  beta1 = seq(0.1, 50, 1)
 )
 
-prior <- dunif(grid$pinvalid, log = TRUE) +
-  dunif(grid$alpha1, alpha_invalid, 10, log = TRUE) +
-  dunif(grid$beta1, 0, 10, log = TRUE)
+## prior <- dunif(grid$pinvalid, log = TRUE) +
+##   dunif(grid$alpha1, alpha_invalid, 10, log = TRUE) +
+##   dunif(grid$beta1, 0, 10, log = TRUE)
 
 alpha2 <- params_inc[["shape"]]
 beta2 <- 1 / params_inc[["scale"]]
@@ -46,7 +46,7 @@ grid$posterior <- pmap_dbl(
         ll_invalid <- dbeta(
           x/max_si, alpha_invalid, beta_invalid, log = TRUE
         )
-        ll_valid + ll_invalid
+        log(pinvalid) + ll_valid + log(1 - pinvalid) + ll_invalid
       }
     )
     sum(ll)
@@ -56,3 +56,9 @@ grid$posterior <- pmap_dbl(
 ggplot(grid, aes(alpha1, beta1, z = posterior)) +
   geom_contour_filled() +
   facet_wrap(~pinvalid)
+
+
+ggplot(
+  grid,
+  aes(alpha1, posterior, group = interaction(beta1, pinvalid))) +
+  geom_line()
