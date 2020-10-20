@@ -62,7 +62,7 @@ ggsave("figures/infectious_profile_params_1a.png", p1)
 
 ## Simulate with draws from posterior
 si_post <- simulate_si(
-  mean_inc, sd_inc, map_params[["alpha1"]], map_params[["shape2"]],
+  mean_inc, sd_inc, shape1 = map_params[["alpha1"]], shape2 = map_params[["beta1"]],
   max_shed, nsim = 500
 )
 
