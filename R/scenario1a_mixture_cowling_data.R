@@ -8,10 +8,10 @@ beta_invalid <- 1
 # load the data
 
 data <- readRDS("data/cowling_data_clean.rds")
-data_pos <- data%>%
-  filter(si>0)%>%
-  filter(onset_first_iso>0)%>%
-  mutate(si = as.numeric(si))%>%
+data_pos <- data %>%
+  filter(si > 0) %>%
+  filter(onset_first_iso > 0) %>%
+  mutate(si = as.numeric(si)) %>%
   dplyr::rename(nu = onset_first_iso)
 
 
@@ -60,7 +60,7 @@ p1 <- ggplot() +
   theme(legend.title = element_blank())
 
 
-ggsave("figures/posterior_infectious_profile_1a_mix.png", p1)
+ggsave("figures/posterior_infectious_profile_1a_mix_cowling.png", p1)
 
 p2 <- ggplot() +
   geom_density(aes(data_pos$si, fill = "blue"), alpha = 0.3) +
@@ -77,4 +77,4 @@ p2 <- ggplot() +
 
 
 
-ggsave("figures/posterior_serial_interval_1a_mix.png", p2)
+ggsave("figures/posterior_serial_interval_1a_mix_cowling.png", p2)

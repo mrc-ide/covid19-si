@@ -1,7 +1,7 @@
 set.seed(42)
 nsim <- 1000
-alpha_invalid <- 0.5
-beta_invalid <- 0.5
+alpha_invalid <- 1
+beta_invalid <- 1
 
 data <- readRDS("data/cowling_data_clean.rds")
 
@@ -75,7 +75,7 @@ pinv <- map_params[["pinvalid"]]
 xposterior <- simulate_si(
   mean_inc_og, sd_inc_og, shape1, shape2, max_shed, nsim = nsim
 )
-xposterior$si <- round(xposterior$si)
+##xposterior$si <- round(xposterior$si)
 
 invalid_si <- max(xposterior$si) *
   rbeta(nsim, shape1 = alpha_invalid, shape2 = beta_invalid)
@@ -115,7 +115,7 @@ p2 <- ggplot() +
 
 
 
-ggsave("figures/posterior_serial_interval_1a_mix.png", p2)
+ggsave("figures/posterior_serial_interval_1a_mix_cowling_all.png", p2)
 
 
 fitted_params <- rstan::extract(fit_mixture, permuted = FALSE, inc_warmup = TRUE)
