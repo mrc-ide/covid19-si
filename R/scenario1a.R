@@ -26,12 +26,10 @@ fits_1a <- stan(
 
 ## Check convergence etc, using ggmcmc
 ## test_fit <- ggmcmc(ggs(fit_1a), here::here("figures/1a.pdf"))
-
 ## extract fits to turn alpha and beta into mu and cv
-
-
 fitted_params <- rstan::extract(fits_1a)
-
+map_idx <- which.max(fitted_params[["lp__"]])
+map_params <- map(fitted_params, ~ .[map_idx])
 ## x <- hermione::beta_shape1shape22muvar(
 ##   fitted_params[["alpha1"]], fitted_params[["beta1"]]
 ## )
@@ -42,9 +40,9 @@ fitted_params <- rstan::extract(fits_1a)
 
 x <- max_shed *
   rbeta(
-    n = length(fitted_params[["alpha1"]]),
-    shape1 = fitted_params[["alpha1"]],
-    shape2 = fitted_params[["beta1"]]
+    n = 500,
+    shape1 = map_params[["alpha1"]],
+    shape2 = map_params[["beta1"]]
   )
 
 p1 <- ggplot() +
@@ -63,12 +61,10 @@ ggsave("figures/infectious_profile_params_1a.png", p1)
 
 
 ## Simulate with draws from posterior
-nsamples <- length(fitted_params[[1]])
-idx <- sample(nsamples, size = ceiling(nsamples/2), replace = FALSE)
-shape1 <- fitted_params[[1]][idx]
-shape2 <- fitted_params[[2]][idx]
-
-si_post <- simulate_si(mean_inc, sd_inc, shape1, shape2, max_shed, 2, 2)
+si_post <- simulate_si(
+  mean_inc, sd_inc, shape1 = map_params[["alpha1"]], shape2 = map_params[["beta1"]],
+  max_shed, nsim = 500
+)
 
 psi <- ggplot() +
   geom_density(

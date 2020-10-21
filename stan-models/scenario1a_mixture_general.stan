@@ -8,6 +8,7 @@ data{
   real <lower = 0> alpha_invalid;
   real <lower = 0> beta_invalid;
   real <lower = 0> max_si;
+  real <lower = -100> min_si;
   real <lower = 0> width;
 
 }
@@ -18,13 +19,19 @@ parameters{
   real <lower = 0, upper = 100> beta1;  // infectious profile parameter
 }
 model{
-  //pinvalid ~ beta(1.5, 3);
+  real valid;
+  real invalid;
+  pinvalid ~ beta(1.5, 5);
   for (n in 1:N) {
-      target += log_mix(pinvalid,
-                        beta_lpdf(si[n] / max_si | alpha_invalid, beta_invalid),
-                        scenario1a_lpdf(si[n] | max_shed, alpha1,
-                                        beta1, alpha2, beta2, width)
-                        );    
-
+    //print("alpha1 = ", alpha1);
+    //print("beta1 = ", beta1);    
+    //print("valid pdf = ", valid);
+    invalid = invalid_lpdf(si[n] | max_si, min_si, alpha_invalid, beta_invalid);
+    if (si[n] > 0) {
+      valid = scenario1a_lpdf(si[n] | max_shed, alpha1, beta1, alpha2, beta2, width);
+      target += log_mix(pinvalid, invalid, valid);    
+    } else {
+      target += invalid;
+    }
   }
 }
