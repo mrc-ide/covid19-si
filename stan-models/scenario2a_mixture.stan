@@ -9,7 +9,7 @@ data{
   real <lower = 0> max_si;  
   real <lower = 0> alpha_invalid;
   real <lower = 0> beta_invalid;
-  real width;
+  real <lower = 0> width;
 }
 parameters{
   //simplex[2] theta;
@@ -19,8 +19,9 @@ parameters{
 }
 model{
   for (n in 1:N) {
+    // Here we let min_si be 0
     target += log_mix(pinvalid,
-                      beta_lpdf(si[n]/max_si | alpha_invalid, beta_invalid),
+                      invalid_lpdf(si[n] | max_si, 0, alpha_invalid, beta_invalid),
                       scenario2a_lpdf(si[n] | nu[n], max_shed, alpha1,
                                               beta1, alpha2, beta2,
                                               width)

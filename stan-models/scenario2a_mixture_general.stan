@@ -22,7 +22,6 @@ parameters{
 model{
   real valid;
   real invalid;
-  pinvalid ~ beta(1.5, 5);
   for (n in 1:N) {
     //print("alpha1 = ", alpha1);
     //print("beta1 = ", beta1);    
@@ -32,6 +31,7 @@ model{
       valid = scenario2a_lpdf(si[n] | nu[n], max_shed, alpha1, beta1, alpha2, beta2, width);
       target += log_mix(pinvalid, invalid, valid);    
     } else {
+      //print("target incremented by ", invalid);
       target += invalid;
     }
   }
