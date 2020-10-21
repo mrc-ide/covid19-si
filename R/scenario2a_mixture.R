@@ -1,5 +1,5 @@
 set.seed(42)
-nsim <- 2000
+nsim <- 500
 alpha_invalid <- 1
 beta_invalid <- 1
 pinvalid <- 0.1
@@ -77,8 +77,8 @@ fit_mixture <- stan(
     width = min(simulated_si$si) / 2,
     max_si = max(simulated_si$si) + 0.001
   ),
-  chains = 5,
-  iter = 5000,
+  chains = 2,
+  iter = 10000,
   verbose = TRUE
   ## control = list(adapt_delta = 0.99)
 )
@@ -101,32 +101,16 @@ xposterior <- simulate_si(
 
 toss <- runif(nsim)
 
-si_posterior <- rbind(
-  invalid_si[toss <= pinv, ],
+si_posterior <- c(
+  invalid_si[toss <= pinv, "si"],
   xposterior[toss > pinv, "si"]
 )
 
 
-p1 <- ggplot() +
-  geom_density(aes(valid_si$t_1, fill = "blue"), alpha = 0.3) +
-  geom_density(aes(xposterior$t_1, fill = "red"), alpha = 0.3) +
-  geom_vline(xintercept = mean_inf, linetype = "dashed") +
-  scale_fill_identity(
-    guide = "legend",
-    labels = c("Simulated", "Posterior"),
-    breaks = c("blue", "red")
-  ) +
-  xlab("Infectious profile") +
-  ylab("Probability Density") +
-  theme_minimal() +
-  theme(legend.title = element_blank())
-
-
-ggsave("figures/posterior_infectious_profile_2a_mix.png", p1)
 
 p2 <- ggplot() +
   geom_density(aes(simulated_si$si, fill = "blue"), alpha = 0.3) +
-  geom_density(aes(si_posterior$si, fill = "red"), alpha = 0.3) +
+  geom_density(aes(si_posterior, fill = "red"), alpha = 0.3) +
   geom_vline(xintercept = mean_inf, linetype = "dashed") +
   scale_fill_identity(
     guide = "legend",
@@ -141,32 +125,3 @@ p2 <- ggplot() +
 
 
 ggsave("figures/posterior_serial_interval_2a_mix.png", p2)
-
-
-fitted_params <- rstan::extract(fit_mixture, permuted = FALSE, inc_warmup = TRUE)
-pinv_chains <- fitted_params[, , "pinvalid"]
-alpha_chains <- fitted_params[, , "alpha1"]
-beta_chains <- fitted_params[, , "beta1"]
-
-
-ggplot() +
-  geom_point(aes(alpha_chains[, 1], beta_chains[, 1]), col = "red") +
-  geom_point(aes(alpha_chains[, 2], beta_chains[, 2]), col = "blue") +
-  geom_point(aes(alpha_chains[, 3], beta_chains[, 3]), col = "green") +
-  geom_point(aes(alpha_chains[, 4], beta_chains[, 4]), col = "yellow") +
-  geom_point(aes(alpha_chains[, 5], beta_chains[, 5])) +
-  theme_minimal() +
-  xlab("alpha1") +
-  ylab("beta1")
-
-
-ggplot() +
-  geom_point(aes(pinv_chains[, 1], beta_chains[, 1]), col = "red") +
-  geom_point(aes(pinv_chains[, 2], beta_chains[, 2]), col = "blue") +
-  geom_point(aes(pinv_chains[, 3], beta_chains[, 3]), col = "green") +
-  geom_point(aes(pinv_chains[, 4], beta_chains[, 4]), col = "yellow") +
-  geom_point(aes(pinv_chains[, 5], beta_chains[, 5])) +
-  theme_minimal() +
-  xlab("pinv") +
-  ylab("beta1")
-

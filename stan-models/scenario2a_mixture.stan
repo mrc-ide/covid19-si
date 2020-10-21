@@ -1,47 +1,4 @@
-functions{
-   real scenario2a_lpdf(real x,
-                        real nu, 
-                        real max_shed,
-                        real alpha1,      
-                        real beta1,   
-                        real alpha2,    
-                        real beta2,
-                        real width) {   
-
-    // out = 0;
-    // for i in 0:x
-    // out = out + exp(log(f(i)) + log(g(x - i)))
-    // return log(out)
-    real s;
-    real out;
-    real inf_density;
-    real inc_density;
-    real ulim;
-    // time of infection can be no larger than the
-    // max shedding time
-    if(x > max_shed) ulim = max_shed;
-    else ulim = x;
-    // and no larger than isolation
-    if(ulim > nu) ulim = nu;
-
-    // s is the time of infection
-    inf_density = beta_lpdf(width/max_shed|alpha1, beta1);
-    inc_density = gamma_lpdf(x - width|alpha2, beta2);
-    out =  exp(inf_density + inc_density);
-    s = 2 * width;
-    while(s < ulim) {
-      inf_density = beta_lpdf(s/max_shed|alpha1, beta1);
-      inc_density = gamma_lpdf(x - s|alpha2, beta2);
-      out = out + exp(inf_density + inc_density);
-      s = s + width;      
-    }
-    out = log(out);
-    // Now do -log(F(nu))
-    if(max_shed < nu) out = out - beta_lcdf(nu/max_shed|alpha1, beta1);
-
-    return out;
- }
-}
+#include likelihoods.stan
 data{
   int N; // number of data points
   real si[N];
@@ -56,20 +13,17 @@ data{
 }
 parameters{
   //simplex[2] theta;
-  real <lower = 0, upper = 0.5> pinvalid;
+  real <lower = 0, upper = 1> pinvalid;
   real <lower = alpha_invalid, upper = 100> alpha1; // infectious profile parameter
   real <lower = 0, upper = 100> beta1;  // infectious profile parameter
 }
 model{
-  //vector[2] log_theta = log(theta);  
   for (n in 1:N) {
-    //vector[2] lps = log_theta;
-    //lps[1] = log(pinvalid) + beta_lpdf(si[n]/max_si | alpha_invalid, beta_invalid);
-    //lps[2] = log(1 - pinvalid) +
-    //  scenario2a_lpdf(si[n] | nu[n], max_shed, alpha1, beta1, alpha2, beta2, width);
     target += log_mix(pinvalid,
                       beta_lpdf(si[n]/max_si | alpha_invalid, beta_invalid),
-                      scenario2a_lpdf(si[n] | nu[n], max_shed, alpha1, beta1, alpha2, beta2, width)
+                      scenario2a_lpdf(si[n] | nu[n], max_shed, alpha1,
+                                              beta1, alpha2, beta2,
+                                              width)
                       );
   }
 }
