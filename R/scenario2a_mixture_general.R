@@ -31,23 +31,23 @@ fit_mixture <- stan(
   ## control = list(adapt_delta = 0.99)
 )
 
-fitted_params <- rstan::extract(fit_mixture_pos)
+fitted_params <- rstan::extract(fit_mixture)
 idx <- which.max(fitted_params[["lp__"]])
 shape1 <- fitted_params[["alpha1"]][idx]
 shape2 <- fitted_params[["beta1"]][idx]
 pinv <- fitted_params[["pinvalid"]][idx]
 
 
-nsim <- nrow(data_pos)
+nsim <- nrow(data_all)
 xposterior <- simulate_si(
   mean_inc, sd_inc, shape1, shape2, max_shed, NULL, NULL, nsim
 )
 
 
-invalid_si <- (max(xposterior$si) - min(data_pos$si)) *
+invalid_si <- (max(data_all$si) - min(data_all$si)) *
   rbeta(nsim, shape1 = alpha_invalid, shape2 = beta_invalid)
 
-invalid_si <- invalid_si + min(data_pos$si)
+invalid_si <- invalid_si + min(data_all$si)
 toss <- runif(nsim)
 
 si_posterior <- c(
@@ -57,8 +57,8 @@ si_posterior <- c(
 
 
 p2 <- ggplot() +
-  geom_density(aes(data_pos$si, fill = "blue"), alpha = 0.3) +
-  geom_density(aes(si_posterior, fill = "red"), alpha = 0.3) +
+  geom_histogram(aes(data_all$si, fill = "blue"), alpha = 0.3) +
+  geom_histogram(aes(si_posterior, fill = "red"), alpha = 0.3) +
   scale_fill_identity(
     guide = "legend",
     labels = c("Simulated", "Posterior"),
@@ -71,4 +71,4 @@ p2 <- ggplot() +
 
 
 
-ggsave("figures/posterior_serial_interval_2a_mix_cowling_positive.png", p2)
+ggsave("figures/posterior_serial_interval_2a_mix_cowling_all.png", p2)

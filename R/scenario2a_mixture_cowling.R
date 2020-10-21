@@ -45,10 +45,9 @@ xposterior <- simulate_si(
 )
 
 
-invalid_si <- (max(xposterior$si) - min(data_pos$si)) *
+invalid_si <- max(data_pos$si) *
   rbeta(nsim, shape1 = alpha_invalid, shape2 = beta_invalid)
 
-invalid_si <- invalid_si + min(data_pos$si)
 toss <- runif(nsim)
 
 si_posterior <- c(
@@ -58,15 +57,18 @@ si_posterior <- c(
 
 
 p2 <- ggplot() +
-  geom_density(aes(data_pos$si, fill = "blue"), alpha = 0.3) +
-  geom_density(aes(si_posterior, fill = "red"), alpha = 0.3) +
+  geom_histogram(
+    aes(data_pos$si, fill = "blue"), alpha = 0.3, binwidth = 1
+    ) +
+  geom_histogram(
+    aes(si_posterior, fill = "red"), alpha = 0.3, binwidth = 1
+  ) +
   scale_fill_identity(
     guide = "legend",
     labels = c("Simulated", "Posterior"),
     breaks = c("blue", "red")
   ) +
   xlab("Serial Interval") +
-  ylab("Probability Density") +
   theme_minimal() +
   theme(legend.title = element_blank())
 
