@@ -73,7 +73,8 @@ fits_2a_recall <- stan(
     max_shed = max_shed,
     alpha2 = params_inc[["shape"]],
     beta2 = 1 / params_inc[["scale"]],
-    width = min(sampled$si) / 2
+    width = min(sampled$si) / 2,
+    max_si = max(sampled$si)
   ),
   chains = 3,
   iter = 1000,
