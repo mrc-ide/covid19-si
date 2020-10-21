@@ -117,8 +117,6 @@ functions{
       inf_density = beta_lpdf(s/max_shed|alpha1, beta1);
       inc_density = gamma_lpdf(x - s|alpha2, beta2);
       out = out + exp(inf_density + inc_density);
-      // Recall bias: e^{-recall |s - nu|}
-      out = out - recall * fabs(x - nu);
       s = s + width;      
     }
     out = log(out);
@@ -128,7 +126,7 @@ functions{
     // and therefore all of an individual's infectivity has been
     // captured.
     // Finally add contribution of recall bias
-    //out = out - exponential_lpdf(fabs(x - nu)|recall);
+    out = out - recall * fabs(x - nu);
     return out;
  }
 

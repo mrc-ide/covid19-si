@@ -14,10 +14,12 @@ simulated_2 <- simulate_si(
 simulated_2 <- simulated_2[simulated_2$t_1 < simulated_2$nu, ]
 ##simulated_2$p_si <- exp(-recall_true * abs(simulated_2$si - simulated_2$nu))
 simulated_2$p_si <- exp(
-  abs(simulated_2$t_1 - simulated_2$nu) * -recall_true
+  abs(simulated_2$si - simulated_2$nu) * -recall_true
 )
 ## Sample with probability p_si
-idx <- sample(nrow(simulated_2), nsim, replace = TRUE, prob = simulated_2$p_si)
+idx <- sample(
+  nrow(simulated_2), nsim, replace = TRUE, prob = simulated_2$p_si
+)
 
 sampled <- simulated_2[idx, ]
 
