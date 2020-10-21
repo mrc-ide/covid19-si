@@ -95,7 +95,7 @@ xposterior <- simulate_si(
 xposterior <- xposterior[xposterior$t_1 < xposterior$nu, ]
 
 xposterior$p_si <- exp(
-  abs(xposterior$t_1 - xposterior$nu) * -recall
+  abs(xposterior$si - xposterior$nu) * -recall
 )
 
 idx <- sample(
@@ -103,7 +103,7 @@ idx <- sample(
   prob = xposterior$p_si
 )
 
-xposterior <- xposterior [idx, ]
+xposterior <- xposterior[idx, ]
 
 p2 <- ggplot() +
   geom_density(aes(sampled$si, fill = "blue"), alpha = 0.3) +
@@ -117,3 +117,5 @@ p2 <- ggplot() +
   ylab("Probability Density") +
   theme_minimal() +
   theme(legend.title = element_blank())
+
+ggsave("figures/posterior_si_2a_with_recall.png", p2)
