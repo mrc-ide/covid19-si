@@ -66,7 +66,7 @@ pinv <- fitted_params[["pinvalid"]][idx]
 
 nsim <- nrow(data_all)
 xposterior <- simulate_si(
-  mean_inc, sd_inc, shape1, shape2, max_shed, nsim
+  mean_inc, sd_inc, shape1, shape2, max_shed, NULL, NULL, nsim
 )
 
 
