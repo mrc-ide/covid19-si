@@ -134,7 +134,13 @@ functions{
   real invalid_lpdf(real x, real max_si, real min_si, real alpha_invalid, real beta_invalid) {
     real out;
     real y;
-    y = (x + fabs(min_si))/ (max_si - min_si);
+    //y = (x + fabs(min_si))/ (max_si - min_si);
+    // Mapping (min_si, max_si) to (0, 1)
+    real a;
+    real b;
+    a = -min_si / (max_si - min_si);
+    b = 1 / (max_si - min_si);
+    y = a + b * x;
     out = beta_lpdf(y| alpha_invalid, beta_invalid);
     return(out);
   }

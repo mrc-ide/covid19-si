@@ -3,34 +3,33 @@ beta_invalid <- 0.5
 
 data <- readRDS("data/cowling_data_clean.rds")
 
-data_pos <- data %>%
-  filter(si > 0) %>%
+data_all <- data %>%
   filter(onset_first_iso > 0) %>%
   mutate(si = as.numeric(si)) %>%
   dplyr::rename(nu = onset_first_iso)
 
+width <- min(data_all$si[data_all$si > 0]) / 2
 
-fit_mixture_pos <- stan(
-  file = here::here("stan-models/scenario2a_mixture.stan"),
+fit_mixture <- stan(
+  file = here::here("stan-models/scenario2a_mixture_general.stan"),
   data = list(
-    N = length(data_pos$si),
-    si = data_pos$si,
-    nu = data_pos$nu,
+    N = length(data_all$si),
+    si = data_all$si,
+    nu = data_all$nu,
     max_shed = max_shed,
     alpha2 = params_inc_og[["shape"]],
     beta2 = 1 / params_inc_og[["scale"]],
     alpha_invalid = alpha_invalid,
     beta_invalid = beta_invalid,
-    max_si = max(data_pos$si) + 0.001,
-    min_si = min(data_pos$si),
-    width = min(data_pos$si) / 2
+    max_si = max(data_all$si) + 0.001,
+    min_si = min(data_all$si) - 0.001,
+    width = width
   ),
   chains = 2,
-  iter = 5000,
+  iter = 2000,
   verbose = TRUE
   ## control = list(adapt_delta = 0.99)
 )
-
 
 fitted_params <- rstan::extract(fit_mixture_pos)
 idx <- which.max(fitted_params[["lp__"]])
