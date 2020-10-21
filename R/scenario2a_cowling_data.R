@@ -25,7 +25,7 @@ fits_2a <- stan(
 test_fit <- ggmcmc(ggs(fits_2a), here::here("figures/2a_working.pdf"))
 fitted_params_2a <- rstan::extract(fits_2a)
 
-max_index <- which.ax(fitted_params_2a$lp_)
+max_index <- which.max(fitted_params_2a$lp_)
 
 fitted_max <- c(alpha1 = fitted_params_2a$alpha1[max_index],
                 beta1 = fitted_params_2a$beta1[max_index])
@@ -54,7 +54,8 @@ ggsave("figures/infectious_profile_params_2a.png", p2)
 ## simulate si from the most likely incubation period distibution
 shape1 <- fitted_max["alpha1"]
 shape2 <- fitted_max["beta1"]
-si_post_max2a <- simulate_si(mean_inc, sd_inc, shape1, shape2, max_shed, 2, 2, nsim = 100000)
+si_post_max2a <- simulate_si(mean_inc, sd_inc, shape1, shape2,
+                             max_shed, 2, 2, nsim = 100000)
 
 p2si <- ggplot() +
   geom_density(
