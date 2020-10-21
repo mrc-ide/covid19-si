@@ -55,16 +55,21 @@ data{
   real width;
 }
 parameters{
-  simplex[2] theta;   
-  real <lower = 1, upper = 50> alpha1; // infectious profile parameter
-  real <lower = 1, upper = 50> beta1;  // infectious profile parameter
+  //simplex[2] theta;
+  real <lower = 0, upper = 0.5> pinvalid;
+  real <lower = alpha_invalid, upper = 100> alpha1; // infectious profile parameter
+  real <lower = 0, upper = 100> beta1;  // infectious profile parameter
 }
 model{
-  vector[2] log_theta = log(theta);  
+  //vector[2] log_theta = log(theta);  
   for (n in 1:N) {
-    vector[2] lps = log_theta;
-    lps[1] = lps[1] + beta_lpdf(si[n]/max_si | alpha_invalid, beta_invalid);
-    lps[2] = lps[2] + scenario2a_lpdf(si[n] | nu[n], max_shed, alpha1, beta1, alpha2, beta2, width);
-    target += log_sum_exp(lps);
+    //vector[2] lps = log_theta;
+    //lps[1] = log(pinvalid) + beta_lpdf(si[n]/max_si | alpha_invalid, beta_invalid);
+    //lps[2] = log(1 - pinvalid) +
+    //  scenario2a_lpdf(si[n] | nu[n], max_shed, alpha1, beta1, alpha2, beta2, width);
+    target += log_mix(pinvalid,
+                      beta_lpdf(si[n]/max_si | alpha_invalid, beta_invalid),
+                      scenario2a_lpdf(si[n] | nu[n], max_shed, alpha1, beta1, alpha2, beta2, width)
+                      );
   }
 }
