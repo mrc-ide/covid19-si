@@ -32,10 +32,10 @@ functions{
       inf_density = beta_lpdf((s + offset)/(max_shed + offset)|alpha1, beta1) + log(0.1) - log(max_shed + offset);
       inc_density = gamma_lpdf(x - s|alpha2, beta2) + log(0.1); //the incubation period is still the SI (x) - s
       out = out + exp(inf_density + inc_density);
+      print("s= ", s);
       s = s + 0.1;
     }
     out = log(out);
-    print(inc_density, inf_density, x)
 
     return out;
   }
