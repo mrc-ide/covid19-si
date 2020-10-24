@@ -45,12 +45,13 @@ sample_from_model <- function(seed, data, params, modeled_data, iters) {
   data$max_si <- max(modeled_data$si) + 0.001
   data$min_si <- min(modeled_data$si) - 0.001
   data_for_stan <- c(data, modeled_data)
-  iters <- 2000
   rstan::sampling(mixture_model, data = data_for_stan, seed = seed,
                   chains = 2, iter = 2 * iters, warmup = iters,
                   open_progress = FALSE, show_messages = FALSE,
                   refresh = 1000)
+
 }
+
 
 mixture_model <- stan_model(
   file = here::here("stan-models/scenario1a_mixture_general.stan")
@@ -62,8 +63,8 @@ mixture_sbc <- SBC$new(data = gen_data,
                        sampling = sample_from_model
                        )
 
-##doParallel::registerDoParallel(cores = parallel::detectCores())
-cal <- mixture_sbc$calibrate(N = 10, L = 15, keep_stan_fit = TRUE)
+doParallel::registerDoParallel(cores = parallel::detectCores())
+cal <- mixture_sbc$calibrate(N = 100, L = 15, keep_stan_fit = FALSE)
 cal$summary()
 cal$plot()
 
