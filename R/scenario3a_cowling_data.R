@@ -32,19 +32,19 @@ fits_3a <- stan(
 
 
 ## Check convergence etc, using ggmcmc
-test_fit <- ggmcmc(ggs(fits_3a), here::here("figures/3a.pdf"))
+test_fit_3a <- ggmcmc(ggs(fits_3a), here::here("figures/3a.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
 
 
-fitted_params <- rstan::extract(fits_3a)
+fitted_params_3a <- rstan::extract(fits_3a)
+saveRDS(fitted_params_3a, file = "fitted_params_3a.rds")
+max_index <- which(fitted_params_3a$lp__==max(fitted_params_3a$lp__)) 
 
-max_index <- which(fitted_params$lp__==max(fitted_params$lp__)) 
-
-fitted_max <- c(alpha1 = fitted_params$alpha1[max_index], beta1 = fitted_params$beta1[max_index])
+fitted_max <- c(alpha1 = fitted_params_3a$alpha1[max_index], beta1 = fitted_params_3a$beta1[max_index])
 
 ## x <- hermione::beta_shape1shape22muvar(
-##   fitted_params[["alpha1"]], fitted_params[["beta1"]]
+##   fitted_params_3a[["alpha1"]], fitted_params_3a[["beta1"]]
 ## )
 
 ## x[["mu"]] <- max_shed * x[["mu"]]
@@ -109,3 +109,60 @@ psi <- ggplot() +
   theme_minimal() +
   xlab("Serial Interval") +
   theme(legend.title = element_blank())
+ggsave("figures/SI_3a.png", psi)
+
+##################################
+# we now need to get the 95% CrI #
+##################################
+
+si_post_max3a <- si_post
+
+# 1. sample alpha and beta from the posterior to get the infectious profile
+
+nsamples <- length(fitted_params_3a[[1]])
+idx <- sample(nsamples, size = ceiling(nsamples/2), replace = FALSE)
+shape1 <- fitted_params_3a[[1]][idx]
+shape2 <- fitted_params_3a[[2]][idx]
+
+# 2. for each infectious profile, simulate an SI distribution (of 1000 SIs)
+si_post_3a <- matrix(nrow = 1000, ncol = length(idx))
+for(i in 1:length(idx)){
+  si_post_3a[,i] <- (simulate_si(mean_inc_og, sd_inc_og, shape1[i], shape2[i], max_shed, 2, 2, nsim = 1000))$si - offset
+}
+
+# 3. for each simulated SI distribution, extract the median, mean and sd
+library(matrixStats)
+si_medians_3a <- colMedians(si_post_3a)
+si_means_3a <- colMeans(si_post_3a)
+si_sd_3a <- colSds(si_post_3a)
+
+# 4. plot the distribution of each stat and find the 2.5th and 97.5th quantiles
+si_mean_95_3a <- quantile(si_means_3a, c(0.025, 0.975))
+ggplot()+
+  geom_density(aes(si_means_3a), fill = "red", alpha = 0.3)+
+  theme_bw()+
+  xlab("mean SI (days)")+
+  geom_vline(xintercept = si_mean_95_3a[1], col = "red", lty = 2)+
+  geom_vline(xintercept = si_mean_95_3a[2], col = "red", lty = 2)+
+  geom_vline(xintercept = mean(si_post_max3a))+
+  xlim(4, 20)
+
+si_median_95_3a <- quantile(si_medians_3a, c(0.025, 0.975))
+ggplot()+
+  geom_density(aes(si_medians_3a), fill = "red", alpha = 0.3)+
+  theme_bw()+
+  xlab("median SI (days)")+
+  geom_vline(xintercept = si_median_95_3a[1], col = "red", lty = 2)+
+  geom_vline(xintercept = si_median_95_3a[2], col = "red", lty = 2)+
+  geom_vline(xintercept = median(si_post_max3a))+
+  xlim(4, 20)
+
+si_sd_95_3a <- quantile(si_sd_3a, c(0.025, 0.975))
+ggplot()+
+  geom_density(aes(si_sd_3a), fill = "red", alpha = 0.3)+
+  theme_bw()+
+  xlab("sd SI (days)")+
+  geom_vline(xintercept = si_sd_95_3a[1], col = "red", lty = 2)+
+  geom_vline(xintercept = si_sd_95_3a[2], col = "red", lty = 2)+
+  geom_vline(xintercept = sd(si_post_max3a))+
+  xlim(4, 20)

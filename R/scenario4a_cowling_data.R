@@ -111,6 +111,7 @@ psi <- ggplot() +
   xlab("Serial Interval") +
   theme(legend.title = element_blank())
 
+ggsave("figures/SI_4a.png", psi)
 
 ##################################
 # we now need to get the 95% CrI #
