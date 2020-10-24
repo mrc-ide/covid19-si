@@ -14,11 +14,12 @@ data_offset <- data%>%
   dplyr::rename(nu = onset_first_iso)
 
 # fit the model
-fits_3a <- stan(
-  file = here::here("stan-models/scenario3a.stan"),
+fits_4a <- stan(
+  file = here::here("stan-models/scenario4a.stan"),
   data = list(
     N = nrow(data_offset),
     si = data_offset$si,
+    nu = data_offset$nu,
     max_shed = 21,
     offset = offset,
     alpha2 = params_inc_og[["shape"]],
@@ -32,19 +33,19 @@ fits_3a <- stan(
 
 
 ## Check convergence etc, using ggmcmc
-test_fit_3a <- ggmcmc(ggs(fits_3a), here::here("figures/3a.pdf"))
+test_fit <- ggmcmc(ggs(fits_4a), here::here("figures/4a.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
 
 
-fitted_params_3a <- rstan::extract(fits_3a)
-saveRDS(fitted_params_3a, file = "fitted_params_3a.rds")
-max_index <- which(fitted_params_3a$lp__==max(fitted_params_3a$lp__)) 
+fitted_params <- rstan::extract(fits_4a)
 
-fitted_max <- c(alpha1 = fitted_params_3a$alpha1[max_index], beta1 = fitted_params_3a$beta1[max_index])
+max_index <- which(fitted_params$lp__==max(fitted_params$lp__)) 
+
+fitted_max <- c(alpha1 = fitted_params$alpha1[max_index], beta1 = fitted_params$beta1[max_index])
 
 ## x <- hermione::beta_shape1shape22muvar(
-##   fitted_params_3a[["alpha1"]], fitted_params_3a[["beta1"]]
+##   fitted_params[["alpha1"]], fitted_params[["beta1"]]
 ## )
 
 ## x[["mu"]] <- max_shed * x[["mu"]]
@@ -52,11 +53,11 @@ fitted_max <- c(alpha1 = fitted_params_3a$alpha1[max_index], beta1 = fitted_para
 ## x[["sd"]] <- sqrt(x[["sigma2"]])
 
 x <- (max_shed *
-  rbeta(
-    n = 100000,
-    shape1 = fitted_max[["alpha1"]],
-    shape2 = fitted_max[["beta1"]]
-  ))-offset
+        rbeta(
+          n = 100000,
+          shape1 = fitted_max[["alpha1"]],
+          shape2 = fitted_max[["beta1"]]
+        ))-offset
 
 p1 <- ggplot() +
   geom_density(aes(x, fill = "blue"), alpha = 0.3) +
@@ -90,7 +91,7 @@ psi <- ggplot() +
   ) +
   
   geom_density(aes(si_post, fill = "red"),
-    alpha = 0.3
+               alpha = 0.3
   ) +
   # geom_density(aes(x, fill = "black"),
   #   alpha = 0.3
@@ -109,60 +110,62 @@ psi <- ggplot() +
   theme_minimal() +
   xlab("Serial Interval") +
   theme(legend.title = element_blank())
-ggsave("figures/SI_3a.png", psi)
+
+ggsave("figures/SI_4a.png", psi)
 
 ##################################
 # we now need to get the 95% CrI #
 ##################################
 
-si_post_max3a <- si_post
-
+fitted_params_4a <- fitted_params
+si_post_max4a <- si_post
+saveRDS(fitted_params_4a, file = "fitted_params_4a.rds")
 # 1. sample alpha and beta from the posterior to get the infectious profile
 
-nsamples <- length(fitted_params_3a[[1]])
+nsamples <- length(fitted_params_4a[[1]])
 idx <- sample(nsamples, size = ceiling(nsamples/2), replace = FALSE)
-shape1 <- fitted_params_3a[[1]][idx]
-shape2 <- fitted_params_3a[[2]][idx]
+shape1 <- fitted_params_4a[[1]][idx]
+shape2 <- fitted_params_4a[[2]][idx]
 
 # 2. for each infectious profile, simulate an SI distribution (of 1000 SIs)
-si_post_3a <- matrix(nrow = 1000, ncol = length(idx))
+si_post_4a <- matrix(nrow = 1000, ncol = length(idx))
 for(i in 1:length(idx)){
-  si_post_3a[,i] <- (simulate_si(mean_inc_og, sd_inc_og, shape1[i], shape2[i], max_shed, 2, 2, nsim = 1000))$si - offset
+  si_post_4a[,i] <- (simulate_si(mean_inc_og, sd_inc_og, shape1[i], shape2[i], max_shed, 2, 2, nsim = 1000))$si - offset
 }
 
 # 3. for each simulated SI distribution, extract the median, mean and sd
 library(matrixStats)
-si_medians_3a <- colMedians(si_post_3a)
-si_means_3a <- colMeans(si_post_3a)
-si_sd_3a <- colSds(si_post_3a)
+si_medians_4a <- colMedians(si_post_4a)
+si_means_4a <- colMeans(si_post_4a)
+si_sd_4a <- colSds(si_post_4a)
 
 # 4. plot the distribution of each stat and find the 2.5th and 97.5th quantiles
-si_mean_95_3a <- quantile(si_means_3a, c(0.025, 0.975))
+si_mean_95_4a <- quantile(si_means_4a, c(0.025, 0.975))
 ggplot()+
-  geom_density(aes(si_means_3a), fill = "red", alpha = 0.3)+
+  geom_density(aes(si_means_4a), fill = "red", alpha = 0.3)+
   theme_bw()+
   xlab("mean SI (days)")+
-  geom_vline(xintercept = si_mean_95_3a[1], col = "red", lty = 2)+
-  geom_vline(xintercept = si_mean_95_3a[2], col = "red", lty = 2)+
-  geom_vline(xintercept = mean(si_post_max3a))+
+  geom_vline(xintercept = si_mean_95_4a[1], col = "red", lty = 2)+
+  geom_vline(xintercept = si_mean_95_4a[2], col = "red", lty = 2)+
+  geom_vline(xintercept = mean(si_post_max4a))+
   xlim(4, 20)
 
-si_median_95_3a <- quantile(si_medians_3a, c(0.025, 0.975))
+si_median_95_4a <- quantile(si_medians_4a, c(0.025, 0.975))
 ggplot()+
-  geom_density(aes(si_medians_3a), fill = "red", alpha = 0.3)+
+  geom_density(aes(si_medians_4a), fill = "red", alpha = 0.3)+
   theme_bw()+
   xlab("median SI (days)")+
-  geom_vline(xintercept = si_median_95_3a[1], col = "red", lty = 2)+
-  geom_vline(xintercept = si_median_95_3a[2], col = "red", lty = 2)+
-  geom_vline(xintercept = median(si_post_max3a))+
+  geom_vline(xintercept = si_median_95_4a[1], col = "red", lty = 2)+
+  geom_vline(xintercept = si_median_95_4a[2], col = "red", lty = 2)+
+  geom_vline(xintercept = median(si_post_max4a))+
   xlim(4, 20)
 
-si_sd_95_3a <- quantile(si_sd_3a, c(0.025, 0.975))
+si_sd_95_4a <- quantile(si_sd_4a, c(0.025, 0.975))
 ggplot()+
-  geom_density(aes(si_sd_3a), fill = "red", alpha = 0.3)+
+  geom_density(aes(si_sd_4a), fill = "red", alpha = 0.3)+
   theme_bw()+
   xlab("sd SI (days)")+
-  geom_vline(xintercept = si_sd_95_3a[1], col = "red", lty = 2)+
-  geom_vline(xintercept = si_sd_95_3a[2], col = "red", lty = 2)+
-  geom_vline(xintercept = sd(si_post_max3a))+
+  geom_vline(xintercept = si_sd_95_4a[1], col = "red", lty = 2)+
+  geom_vline(xintercept = si_sd_95_4a[2], col = "red", lty = 2)+
+  geom_vline(xintercept = sd(si_post_max4a))+
   xlim(4, 20)
