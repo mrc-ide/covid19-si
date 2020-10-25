@@ -59,6 +59,7 @@ p2 <- ggplot() +
   theme_minimal() +
   theme(legend.title = element_blank())
 
+out <- quantile_as_df(posterior_si)
 
 
 ggsave("figures/posterior_serial_interval_1a_mix_cowling.png", p2)
