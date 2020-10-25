@@ -97,7 +97,7 @@ params_compare <- pmap(
   param_grid,
   function(params_inf, params_inc, params_pinv) {
     infile <- paste(
-      params_inf, params_inc, params_pinv, sep = "_"
+      "2a_mix", params_inf, params_inc, params_pinv, sep = "_"
     )
     params_inf <- params[[params_inf]]
     params_inc <- params[[params_inc]]
@@ -124,17 +124,17 @@ compare <- pmap(
   param_grid,
   function(params_inf, params_inc, params_pinv) {
     infile <- paste(
-      params_inf, params_inc, params_pinv, sep = "_"
+      "2a_mix", params_inf, params_inc, params_pinv, sep = "_"
     )
     simulated <- readRDS(
       glue::glue("stanfits/simulated_{infile}.rds")
     )
     posterior <- readRDS(
-      glue::glue("stanfits/posterior_si_{infile}.rds")
+      glue::glue("stanfits/2a_mix_posterior_si_{infile}.rds")
     )
-    simulated_summary <- quantile_as_df(simulated)
+    simulated_summary <- quantile_as_df(simulated$si)
     simulated_summary$category <- "Simulated"
-    posterior_summary <- quantile_as_df(posterior[[3]])
+    posterior_summary <- quantile_as_df(posterior[[3]]$si)
     posterior_summary$category <- "Posterior"
     rbind(simulated_summary, posterior_summary)
 })
@@ -160,7 +160,7 @@ p <- ggplot(compare) +
   xlab("Simulation") +
   ylab("Serial Interval (Median and 95% CrI)")
 
-ggsave("figures/scenario1a_mix_multiple_sim.png", p)
+ggsave("figures/scenario2a_mix_multiple_sim.png", p)
 
 
 params_compare <- dplyr::bind_rows(params_compare, .id = "sim")
@@ -195,4 +195,4 @@ p <- ggplot(params_compare) +
   xlab("Simulation") +
   ylab("Estimated parameter values (Median and 95% CrI)")
 
-ggsave("figures/scenario1a_mix_multiple_sim_params.png", p)
+ggsave("figures/scenario2a_mix_multiple_sim_params.png", p)
