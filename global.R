@@ -8,6 +8,7 @@ library(purrr)
 library(sbcrs)
 source("R/utils.R")
 source("R/scenario_1a_mix_utils.R")
+source("R/scenario_2a_mix_utils.R")
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
