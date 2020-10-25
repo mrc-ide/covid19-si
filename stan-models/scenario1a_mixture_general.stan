@@ -21,7 +21,6 @@ parameters{
 model{
   real valid;
   real invalid;
-  pinvalid ~ beta(1.5, 5);
   for (n in 1:N) {
     //print("alpha1 = ", alpha1);
     //print("beta1 = ", beta1);    

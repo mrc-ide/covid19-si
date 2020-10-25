@@ -2,8 +2,8 @@ gen_data <- function(seed) {
   set.seed(seed + 16)
   list(
     N = 30, max_shed = 21, alpha2 = params_inc$shape,
-    beta2 = 1 / params_inc$scale, alpha_invalid = 1.5,
-    beta_invalid = 6.5, max_si = 40, min_si = 0, width = 0.1
+    beta2 = 1 / params_inc$scale, alpha_invalid = 0.5,
+    beta_invalid = 0.5, max_si = 40, min_si = -2, width = 0.1
   )
 }
 
@@ -11,14 +11,13 @@ gen_params <- function(seed, data) {
   set.seed(seed + 5e6)
   ##
   pinvalid <- runif(1, min = 0, max = 1)
-  theta <- c(pinvalid, 1 - pinvalid)
-  alpha1 <- runif(1, min = 1, max = 50)
-  beta1 <- runif(1, min = 1, max = 50)
+  ##theta <- c(pinvalid, 1 - pinvalid)
+  alpha1 <- runif(1, min = data$alpha_invalid, max = 100)
+  beta1 <- runif(1, min = 0, max = 100)
   message("pinvalid = ", pinvalid)
-  message("theta = ", theta)
   message("alpha1 = ", alpha1)
   message("beta1 = ", beta1)
-  list(theta = theta, alpha1 = alpha1, beta1 = beta1)
+  list(pinvalid = pinvalid, alpha1 = alpha1, beta1 = beta1)
 }
 
 gen_modeled_data <- function(seed, data, params) {
@@ -31,27 +30,31 @@ gen_modeled_data <- function(seed, data, params) {
   )
   valid_si <- t_1 + t_2
 
-  invalid_si <- data$max_si *
+  invalid_si <- (data$max_si - data$min_si) *
     rbeta(data$N, data$alpha_invalid, data$beta_invalid)
   toss <- runif(data$N)
   si <- c(
-    invalid_si[toss < params$theta[1]],
-    valid_si[toss >= params$theta[1]]
+    invalid_si[toss <= params$pinvalid],
+    valid_si[toss > params$pinvalid]
   )
-  saveRDS(si, "si.rds")
   list(si = si)
 }
 
 sample_from_model <- function(seed, data, params, modeled_data, iters) {
+  data$width <- min(modeled_data$si[modeled_data$si > 0]) / 2
+  data$max_si <- max(modeled_data$si) + 0.001
+  data$min_si <- min(modeled_data$si) - 0.001
   data_for_stan <- c(data, modeled_data)
   rstan::sampling(mixture_model, data = data_for_stan, seed = seed,
-                  chains = 1, iter = 2 * iters, warmup = iters,
+                  chains = 2, iter = 2 * iters, warmup = iters,
                   open_progress = FALSE, show_messages = FALSE,
                   refresh = 1000)
+
 }
 
+
 mixture_model <- stan_model(
-  file = here::here("stan-models/scenario1a_mixture.stan")
+  file = here::here("stan-models/scenario1a_mixture_general.stan")
 )
 set.seed(42)
 mixture_sbc <- SBC$new(data = gen_data,
@@ -60,8 +63,8 @@ mixture_sbc <- SBC$new(data = gen_data,
                        sampling = sample_from_model
                        )
 
-##doParallel::registerDoParallel(cores = parallel::detectCores())
-cal <- mixture_sbc$calibrate(N = 300, L = 15, keep_stan_fit = FALSE)
+doParallel::registerDoParallel(cores = parallel::detectCores())
+cal <- mixture_sbc$calibrate(N = 100, L = 15, keep_stan_fit = FALSE)
 cal$summary()
 cal$plot()
 

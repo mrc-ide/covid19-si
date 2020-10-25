@@ -1,3 +1,15 @@
+quantile_as_df <- function(vec, probs = c(0.025, 0.25, 0.5, 0.75, 0.975)) {
+
+  out <- data.frame(val = quantile(vec, probs), check.names = FALSE)
+  out <- tibble::rownames_to_column(out, "var")
+  out <- rbind(
+    out,
+    data.frame(var = "mu", val = mean(vec)),
+    data.frame(var = "sd", val = sd(vec))
+  )
+  out
+}
+
 simulate_si <- function(mean_ip,
                         sd_ip,
                         shape1_inf,
@@ -68,14 +80,14 @@ vscenario2_ll <- Vectorize(scenario2_ll)
 
 
 beta_muvar2shape1shape2 <- function(mu, sigma2) {
-  
+
   shape1 <- (mu^2 * (1 - mu) / sigma2) - mu
   shape2 <- shape1 * (1 - mu) / mu
   list(shape1 = shape1, shape2 = shape2)
 }
 
 beta_shape1shape22muvar <- function(shape1, shape2) {
-  
+
   mu <- shape1 / (shape1 + shape2)
   sigma2 <- (shape1 * shape2) / ((shape1 + shape2)^2 * (shape1 + shape2 + 1))
   list(mu = mu, sigma2 = sigma2)

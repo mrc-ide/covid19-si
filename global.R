@@ -7,6 +7,7 @@ library(epitrix)
 library(purrr)
 library(sbcrs)
 source("R/utils.R")
+source("R/scenario_1a_mix_utils.R")
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
@@ -41,4 +42,28 @@ params_inc_og <- epitrix::gamma_mucv2shapescale(
 mean_iso <- 4
 sd_iso <- 2
 params_iso <- epitrix::gamma_mucv2shapescale(mean_iso, sd_iso / mean_iso)
+
+params <- list(
+  inf_par1 = list(mean_inf = 7.14, sd_inf = 2.94),
+  inf_par2 = list(mean_inf = 4.2, sd_inf = 2.73),
+  inf_par3 = list(mean_inf = 3.15, sd_inf = 2.31),
+  inc_par1 = list(mean_inc = 6.5, sd_inc = 2.6),
+  inc_par2 = list(mean_inc = 5.1, sd_inc = 3.94),
+  pinvalid1 = 0.01,
+  pinvalid2 = 0.03,
+  pinvalid3 = 0.05,
+  recall1 = 0.01,
+  recall2 = 0.1,
+  recall3 = 0.1
+)
+
+## Set up params grid
+## param_grid <- expand.grid(
+##   params_inf = c("inf_par1", "inf_par2", "inf_par3"),
+##   params_inc = c("inc_par1", "inc_par2"),
+##   params_pinv = c("pinvalid1", "pinvalid2", "pinvalid3"),
+##   recall = c("recall1", "recall2", "recall3"),
+##   stringsAsFactors = FALSE
+## )
+
 
