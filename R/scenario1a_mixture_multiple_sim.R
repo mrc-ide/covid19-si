@@ -91,6 +91,18 @@ out <- pmap(
   }
 )
 
+pinvalid_compare <- pmap(
+  param_grid,
+  function(params_inf, params_inc, params_pinv) {
+    infile <- paste(
+      params_inf, params_inc, params_pinv, sep = "_"
+    )
+    fit <- readRDS(glue::glue("stanfits/{infile}.rds"))
+    fit_params <-  rstan::extract(fit)
+    out <- map_dfr(fit_params, quantile_as_df, .id = "param")
+    saveRDS(out, glue::glue("stanfits/fitted_params_{infile}.rds"))
+   }
+)
 
 compare <- pmap(
   param_grid,
