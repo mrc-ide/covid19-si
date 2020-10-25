@@ -56,7 +56,7 @@ out <- pmap(
         width = width
       ),
       chains = 5,
-      iter = 2000,
+      iter = 5000,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
     )
@@ -91,16 +91,30 @@ out <- pmap(
   }
 )
 
-pinvalid_compare <- pmap(
+params_compare <- pmap(
   param_grid,
   function(params_inf, params_inc, params_pinv) {
     infile <- paste(
       params_inf, params_inc, params_pinv, sep = "_"
     )
+    params_inf <- params[[params_inf]]
+    params_inc <- params[[params_inc]]
+    pinvalid <- params[[params_pinv]]
+    params_inf <- beta_muvar2shape1shape2(
+      params_inf$mean_inf/max_shed, params_inf$sd_inf^2 / max_shed^2
+    )
+    true_values <- data.frame(
+      param = c("pinvalid", "alpha1", "beta1"),
+      var = "true",
+      val = c(pinvalid, params_inf$shape1, params_inf$shape2)
+    )
     fit <- readRDS(glue::glue("stanfits/{infile}.rds"))
     fit_params <-  rstan::extract(fit)
     out <- map_dfr(fit_params, quantile_as_df, .id = "param")
+    out <- rbind(out, true_values)
+    out <- tidyr::spread(out, var, val)
     saveRDS(out, glue::glue("stanfits/fitted_params_{infile}.rds"))
+    out
    }
 )
 
@@ -145,3 +159,38 @@ p <- ggplot(compare) +
   ylab("Serial Interval (Median and 95% CrI)")
 
 ggsave("figures/scenario1a_mix_multiple_sim.png", p)
+
+
+params_compare <- dplyr::bind_rows(params_compare, .id = "sim")
+params_compare <- params_compare[params_compare$param != "lp__", ]
+params_compare$sim <- factor(params_compare$sim, levels = 1:18, ordered = TRUE)
+
+p <- ggplot(params_compare) +
+  geom_point(
+    aes(sim, `50%`, col = "red"),
+    size = 2,
+    position = position_dodge(width = 0.3)
+  ) +
+  geom_point(
+    aes(sim, `true`, col = "black"),
+    size = 2,
+    position = position_dodge(width = 0.3)
+  ) +
+
+  geom_linerange(
+    aes(sim, ymin = `2.5%`, ymax = `97.5%`, col = "red"),
+    size = 1.1,
+    position = position_dodge(width = 0.3)
+  ) +
+  facet_wrap(~param, ncol = 1, scales = "free_y") +
+  scale_color_identity(
+    breaks = c("red", "black"),
+    labels = c("Estimated", "True values"),
+    guide = "legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "top", legend.title = element_blank()) +
+  xlab("Simulation") +
+  ylab("Estimated parameter values (Median and 95% CrI)")
+
+ggsave("figures/scenario1a_mix_multiple_sim_params.png", p)
