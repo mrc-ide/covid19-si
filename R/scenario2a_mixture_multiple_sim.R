@@ -7,11 +7,12 @@ param_grid <- expand.grid(
 )
 
 
+
 out <- pmap(
   param_grid,
   function(params_inf, params_inc, params_pinv) {
     outfile <- paste(
-      params_inf, params_inc, params_pinv, sep = "_"
+      "2a_mix", params_inf, params_inc, params_pinv, sep = "_"
     )
 
     params_inf <- params[[params_inf]]
@@ -20,28 +21,32 @@ out <- pmap(
     params_inf <- beta_muvar2shape1shape2(
       params_inf$mean_inf/max_shed, params_inf$sd_inf^2 / max_shed^2
     )
-    simulated_si <- simulate_1a_mix(
-      params_inc$mean_inc, params_inc$sd_inc, params_inf, pinvalid, nsim
+    simulated_si <- simulate_2a_mix(
+      params_inc$mean_inc, params_inc$sd_inc, params_inf, mean_iso,
+      sd_iso, pinvalid, nsim
     )
 
-    p <- plot_1a_mix(
+    p <- plot_2a_mix(
       simulated_si[[1]], simulated_si[[2]], simulated_si[[3]]
     )
     ggsave(glue::glue("figures/{outfile}.png"), p)
 
     simulated_si <- simulated_si[[3]]
 
-    saveRDS(simulated_si, glue::glue("stanfits/simulated_{outfile}.rds"))
+    saveRDS(
+      simulated_si, glue::glue("stanfits/simulated_{outfile}.rds")
+    )
 
     width <- min(simulated_si[simulated_si > 0]) / 2
     params2_inc <- gamma_mucv2shapescale(
       params_inc$mean_inc, params_inc$sd_inc/ params_inc$mean_inc
     )
     fit_mixture <- stan(
-      file = here::here("stan-models/scenario1a_mixture_general.stan"),
+      file = here::here("stan-models/scenario2a_mixture_general.stan"),
       data = list(
-        N = length(simulated_si),
-        si = simulated_si,
+        N = length(simulated_si$si),
+        si = simulated_si$si,
+        nu = simulated_si$nu,
         max_shed = max_shed,
         alpha2 = params2_inc[["shape"]],
         beta2 = 1 / params2_inc[["scale"]],
@@ -59,19 +64,20 @@ out <- pmap(
     saveRDS(fit_mixture, glue::glue("stanfits/{outfile}.rds"))
 
     best_params <- map_estimates(fit_mixture)
-    posterior_si <- simulate_1a_mix(
+    posterior_si <- simulate_2a_mix(
       params_inc$mean_inc, params_inc$sd_inc,
       list(shape1 = best_params[["alpha1"]],
            shape2 = best_params[["beta1"]]),
+      mean_iso, sd_iso,
       best_params[["pinvalid"]], 10000
     )
     saveRDS(
-      posterior_si, glue::glue("stanfits/posterior_si_{outfile}.rds")
+      posterior_si, glue::glue("stanfits/2a_mix_posterior_si_{outfile}.rds")
     )
 
     p2 <- ggplot() +
-      geom_density(aes(simulated_si, fill = "blue"), alpha = 0.3) +
-      geom_density(aes(posterior_si[[3]], fill = "red"), alpha = 0.3) +
+      geom_density(aes(simulated_si$si, fill = "blue"), alpha = 0.3) +
+      geom_density(aes(posterior_si[[3]]$si, fill = "red"), alpha = 0.3) +
       scale_fill_identity(
         guide = "legend",
         labels = c("Simulated", "Posterior"),
@@ -82,7 +88,7 @@ out <- pmap(
       theme_minimal() +
       theme(legend.title = element_blank())
 
-    ggsave(glue::glue("figures/posterior_{outfile}.png"), p2)
+    ggsave(glue::glue("figures/2a_mix_posterior_{outfile}.png"), p2)
 
   }
 )
