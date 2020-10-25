@@ -8,10 +8,15 @@ library(purrr)
 library(sbcrs)
 source("R/utils.R")
 source("R/scenario_1a_mix_utils.R")
+source("R/scenario_2a_mix_utils.R")
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
 max_shed <- 21
+nsim <- 500
+alpha_invalid <- 0.5
+beta_invalid <- 0.5
+min_si <- -2 ## For simulations
 
 ## https://doi.org/10.1016/S1473-3099(20)30287-5
 mean_inf <- 6.3 ## days
