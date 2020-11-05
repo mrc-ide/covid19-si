@@ -145,9 +145,8 @@ functions{
     return(out);
   }
   
-}
 
-functions{
+
   real scenario3a_lpdf(real x,
                        real max_shed,
                        real offset,

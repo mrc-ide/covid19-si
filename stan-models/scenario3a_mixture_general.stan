@@ -10,7 +10,6 @@ data{
   real <lower = 0> beta_invalid;
   real <lower = 0> max_si;
   real <lower = -100> min_si;
-  real <lower = 0> width;
 
 }
 parameters{
@@ -27,7 +26,7 @@ model{
     //print("beta1 = ", beta1);    
     //print("valid pdf = ", valid);
     invalid = invalid_lpdf(si[n] | max_si, min_si, alpha_invalid, beta_invalid);
-    if (si[n] > 0) {
+    if (si[n] > -offset) {
       valid = scenario3a_lpdf(si[n] | max_shed, offset, alpha1, beta1, alpha2, beta2);
       target += log_mix(pinvalid, invalid, valid);    
     } else {
