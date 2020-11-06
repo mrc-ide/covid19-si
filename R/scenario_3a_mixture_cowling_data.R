@@ -1,7 +1,7 @@
 # run scenario 3 + mixture model on the cowling data
 
 # offset
-offset <- 0
+offset <- 3
 
 # select number of simulations from posterior, and parameters for invalid dist.
 nsim <- 10000
@@ -38,12 +38,12 @@ fits_3a_mix <- stan(
     width = 0.1
   ),
   chains = 1,
-  iter = 1000,
+  iter = 100,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
 
-test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mix0.pdf"))
+test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mix0width.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
 

@@ -212,7 +212,7 @@ functions{
     if(x > max_shed) ulim = max_shed;
     else ulim = x;
     // s is the time of infection
-    inf_density = beta_lpdf(width/max_shed + offset|alpha1, beta1)+ log(width/(max_shed + offset));
+    inf_density = beta_lpdf(width/(max_shed + offset)|alpha1, beta1)+ log(width/(max_shed + offset));
     inc_density = gamma_lpdf(x - (offset - width)|alpha2, beta2) + log(width);
     out =  exp(inf_density + inc_density);
     s = -offset + (2 * width);
