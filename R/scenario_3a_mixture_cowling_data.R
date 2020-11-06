@@ -1,7 +1,7 @@
 # run scenario 3 + mixture model on the cowling data
 
 # offset
-offset <- 3
+offset <- 0
 
 # select number of simulations from posterior, and parameters for invalid dist.
 nsim <- 10000
@@ -10,38 +10,39 @@ beta_invalid <- 0.5
 
 # load the data
 data <- readRDS("data/cowling_data_clean.rds")
-data <- data%>%
+
+data_c <- data%>%
     mutate(si = as.numeric(si))%>%
   dplyr::rename(nu = onset_first_iso)
 
 # sub-set to only incude those SIs that are possible under our assumed offset
-data_offset <- data%>%
+data_offset <- data_c%>%
   filter(si>-offset)%>%
-  filter(nu>-offset)%>%
+  filter(nu>-offset)
 
 
 # fit the model
 fits_3a_mix <- stan(
-  file = here::here("stan-models/scenario3a_mixture_general.stan"),
+  file = here::here("stan-models/scenario3a_mixture_2.stan"),
   data = list(
-    N = nrow(data),
-    si = data$si,
+    N = nrow(data_c),
+    si = data_c$si,
     max_shed = 21,
     offset = offset,
     alpha2 = params_inc_og[["shape"]],
     beta2 = 1 / params_inc_og[["scale"]],
     alpha_invalid = alpha_invalid,
     beta_invalid = beta_invalid,
-    max_si = max(data$si) + 0.001,
-    min_si = min(data$si) - 0.001
+    max_si = max(data_c$si) + 0.001,
+    min_si = min(data_c$si) - 0.001
   ),
   chains = 1,
-  iter = 3000,
+  iter = 1000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
 
-test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mix.pdf"))
+test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mix0.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
 
