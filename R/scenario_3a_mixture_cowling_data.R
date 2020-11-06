@@ -34,7 +34,8 @@ fits_3a_mix <- stan(
     alpha_invalid = alpha_invalid,
     beta_invalid = beta_invalid,
     max_si = max(data_c$si) + 0.001,
-    min_si = min(data_c$si) - 0.001
+    min_si = min(data_c$si) - 0.001,
+    width = 0.1
   ),
   chains = 1,
   iter = 1000,
