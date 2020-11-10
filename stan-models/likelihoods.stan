@@ -144,5 +144,34 @@ functions{
     out = beta_lpdf(y| alpha_invalid, beta_invalid);
     return(out);
   }
+
+  real scenario4a_lpdf(real x, real nu, real max_shed, real offset1, 
+                       real alpha1, real beta1, real alpha2, real beta2,
+                       real width) {
+
+    real s;
+    real out;
+    real inf_density;
+    real inc_density;
+    real ulim;
+    if(x > max_shed) ulim = max_shed;
+    else ulim = x;
+    out = 0;
+    s = width;
+    // shift offset right the whole infectious profile is shifhted
+    // right
+    max_shed = max_shed + offset1;
+    while (s < ulim) {
+      inf_density = beta_lpdf((s + offset1)/max_shed |alpha1, beta1);
+      inc_density = gamma_lpdf(x - s|alpha2, beta2); 
+      out = out + exp(inf_density + inc_density);
+      s = s + width;
+    }
+    out = log(out);
+    if(nu < max_shed) {
+      out = out - beta_lcdf((nu + offset1)/ max_shed|alpha1, beta1);
+    }
+    return out;
+  }
   
 }
