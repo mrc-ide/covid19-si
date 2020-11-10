@@ -43,7 +43,7 @@ fits_3a_mix <- stan(
   ##control = list(adapt_delta = 0.99)
 )
 
-test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mixwidth.pdf"))
+test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mixnowidthog.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
 

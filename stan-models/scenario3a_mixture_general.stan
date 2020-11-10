@@ -28,7 +28,7 @@ model{
     //print("valid pdf = ", valid);
     invalid = invalid_lpdf(si[n] | max_si, min_si, alpha_invalid, beta_invalid);
     if (si[n] > -offset) {
-      valid = scenario3a_width_lpdf(si[n] | max_shed, offset, alpha1, beta1, alpha2, beta2, width);
+      valid = scenario3a_nowidth_lpdf(si[n] | max_shed, offset, alpha1, beta1, alpha2, beta2, width);
       target += log_mix(pinvalid, invalid, valid);    
     } else {
       target += invalid;
