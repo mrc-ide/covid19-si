@@ -16,9 +16,9 @@ data_c <- data%>%
   dplyr::rename(nu = onset_first_iso)
 
 # sub-set to only incude those SIs that are possible under our assumed offset
-data_offset <- data_c%>%
-  filter(si>-offset)%>%
-  filter(nu>-offset)
+data_offset <- data_c %>%
+  filter(si > -offset) %>%
+  filter(nu > -offset)
 
 
 # fit the model
@@ -28,7 +28,7 @@ fits_3a_mix <- stan(
     N = nrow(data_c),
     si = data_c$si,
     max_shed = 21,
-    offset = offset,
+    offset1 = offset,
     alpha2 = params_inc_og[["shape"]],
     beta2 = 1 / params_inc_og[["scale"]],
     alpha_invalid = alpha_invalid,
@@ -37,8 +37,8 @@ fits_3a_mix <- stan(
     min_si = min(data_c$si) - 0.001,
     width = 0.1
   ),
-  chains = 1,
-  iter = 1000,
+  chains = 3,
+  iter = 5000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
@@ -50,7 +50,7 @@ test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mixnowidthog.
 
 fitted_params_3a_mix <- rstan::extract(fits_3a_mix)
 saveRDS(fitted_params_3a_mix, file = "fitted_params_3a_mix.rds")
-max_index <- which(fitted_params_3a_mix$lp__==max(fitted_params_3a_mix$lp__)) 
+max_index <- which(fitted_params_3a_mix$lp__==max(fitted_params_3a_mix$lp__))
 
 fitted_max <- c(alpha1 = fitted_params_3a_mix$alpha1[max_index], beta1 = fitted_params_3a_mix$beta1[max_index])
 
@@ -99,7 +99,7 @@ psi <- ggplot() +
     alpha = 0.3,
     binwidth = 1
   ) +
-  
+
   geom_density(aes(si_post, fill = "red"),
                alpha = 0.3
   ) +
