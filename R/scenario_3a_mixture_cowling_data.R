@@ -23,7 +23,7 @@ data_offset <- data_c%>%
 
 # fit the model
 fits_3a_mix <- stan(
-  file = here::here("stan-models/scenario3a_mixture_2.stan"),
+  file = here::here("stan-models/scenario3a_mixture_general.stan"),
   data = list(
     N = nrow(data_c),
     si = data_c$si,
@@ -38,12 +38,12 @@ fits_3a_mix <- stan(
     width = 0.1
   ),
   chains = 1,
-  iter = 100,
+  iter = 1000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
 
-test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mix0width.pdf"))
+test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mixwidth.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
 
