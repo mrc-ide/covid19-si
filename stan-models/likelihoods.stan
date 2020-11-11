@@ -144,7 +144,7 @@ functions{
     out = beta_lpdf(y| alpha_invalid, beta_invalid);
     return(out);
   }
-
+  // Make sure to pass offset1 as a *negative* number
   real scenario4a_lpdf(real x, real nu, real max_shed, real offset1, 
                        real alpha1, real beta1, real alpha2, real beta2,
                        real width) {
@@ -154,22 +154,29 @@ functions{
     real inf_density;
     real inc_density;
     real ulim;
-    if(x > max_shed) ulim = max_shed;
+    real max_shed_shifted;
+    if (x > max_shed) ulim = max_shed;
     else ulim = x;
     out = 0;
-    s = width;
-    // shift offset right the whole infectious profile is shifhted
+    // shift offset right the whole infectious profile is shifted
     // right
-    max_shed = max_shed + offset1;
+    max_shed_shifted = max_shed - offset1;
+
+    // Mapping s which varies from -offset to ulim to
+    // interval (0, 1). We want to integrate from offset to ulim
+    s = offset1 + width;
+    // Now map it into (0, 1)
+    //s = (s - offset1) / max_shed_shifted;
+    
     while (s < ulim) {
-      inf_density = beta_lpdf((s + offset1)/max_shed |alpha1, beta1);
+      inf_density = beta_lpdf((s - offset1)/max_shed_shifted |alpha1, beta1);
       inc_density = gamma_lpdf(x - s|alpha2, beta2); 
       out = out + exp(inf_density + inc_density);
       s = s + width;
     }
     out = log(out);
     if(nu < max_shed) {
-      out = out - beta_lcdf((nu + offset1)/ max_shed|alpha1, beta1);
+      out = out - beta_lcdf((nu - offset1)/ max_shed_shifted|alpha1, beta1);
     }
     return out;
   }
