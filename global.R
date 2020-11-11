@@ -17,6 +17,8 @@ nsim <- 500
 alpha_invalid <- 0.5
 beta_invalid <- 0.5
 min_si <- -2 ## For simulations
+offset <- -2 # this is not the smallest possible SI, but the maximum
+## time before symptom onset when secondary infection can happeb.
 
 ## https://doi.org/10.1016/S1473-3099(20)30287-5
 mean_inf <- 6.3 ## days

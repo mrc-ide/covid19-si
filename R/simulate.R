@@ -8,8 +8,8 @@ param_grid <- expand.grid(
 
 ## Pick a large number here since after filtering, you will
 ## be left with a much smaller data set.
-
-nsim <- 10000
+nsim <- 5000
+## This will later be mapped into the interval min_si, max_si
 invalid_si <- rbeta(
   nsim, shape1 = alpha_invalid, shape2 = beta_invalid
 )
@@ -33,9 +33,12 @@ valid_unfiltered <- pmap(
     params_inf <- beta_muvar2shape1shape2(
       params_inf$mean_inf/max_shed, params_inf$sd_inf^2 / max_shed^2
     )
-    valid <- simulate_si(
-      params_inc$mean_inc, params_inc$sd_inc, params_inf$shape1,
-      params_inf$shape2, max_shed, mean_iso, sd_iso, nsim
+    params_inc <- epitrix::gamma_mucv2shapescale(
+      mu = params_inc[[1]], cv = params_inc[[2]] / params_inc[[1]]
+    )
+
+    valid <- better_simulate_si(
+      params_inc, params_inf, params_iso, offset, max_shed, nsim
     )
     valid
   }
