@@ -93,3 +93,13 @@ beta_shape1shape22muvar <- function(shape1, shape2) {
   list(mu = mu, sigma2 = sigma2)
 }
 
+## Linear map of one interval into another
+## maps (x_1, y_1) into (x_2, y_2)
+## Returns a function
+map_into_interval <- function(x_1, y_1, x_2, y_2) {
+
+  slope <- (x_2 - y_2) / (x_1 - y_1)
+  intercept <- x_2 - x_1 * slope
+  f <- function(x) slope * x + intercept
+  f
+}
