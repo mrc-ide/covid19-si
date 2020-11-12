@@ -157,6 +157,7 @@ functions{
     real max_shed_shifted;
     if (x > max_shed) ulim = max_shed;
     else ulim = x;
+    if(ulim > nu) ulim = nu;
     out = 0;
     // shift offset right the whole infectious profile is shifted
     // right
