@@ -119,6 +119,10 @@ psi <- ggplot() +
   theme(legend.title = element_blank())
 ggsave("figures/SI_3a_mix.png", psi)
 
+## representing p invalid on the figure
+
+
+
 ##################################
 # we now need to get the 95% CrI #
 ##################################
