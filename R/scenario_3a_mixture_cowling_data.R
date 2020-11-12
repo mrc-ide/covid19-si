@@ -55,14 +55,6 @@ max_index <- which(fitted_params_3a_mix$lp__==max(fitted_params_3a_mix$lp__))
 fitted_max <- c(alpha1 = fitted_params_3a_mix$alpha1[max_index], 
                 beta1 = fitted_params_3a_mix$beta1[max_index], 
                 p_invalid = fitted_params_3a_mix$pinvalid[max_index])
-
-## x <- hermione::beta_shape1shape22muvar(
-##   fitted_params_3a_mix[["alpha1"]], fitted_params_3a_mix[["beta1"]]
-## )
-
-## x[["mu"]] <- max_shed * x[["mu"]]
-## x[["sigma2"]] <- max_shed^2 * x[["sigma2"]]
-## x[["sd"]] <- sqrt(x[["sigma2"]])
 shape1_max <- fitted_max["alpha1"]
 shape2_max <- fitted_max["beta1"]
 
@@ -100,9 +92,6 @@ psi <- ggplot() +
   geom_density(aes(si_post, fill = "red"),
                alpha = 0.3
   ) +
-  # geom_density(aes(x, fill = "black"),
-  #   alpha = 0.3
-  # ) +
   geom_vline(
     xintercept = mean(data_c$si), col = "blue", linetype = "dashed"
   ) +
@@ -111,7 +100,7 @@ psi <- ggplot() +
   ) +
   scale_fill_identity(
     guide = "legend",
-    labels = c("Data", "Posterior (valid SIs"),
+    labels = c("Data", "Posterior (valid SIs)"),
     breaks = c("blue", "red")
   ) +
   theme_minimal() +
@@ -119,8 +108,37 @@ psi <- ggplot() +
   theme(legend.title = element_blank())
 ggsave("figures/SI_3a_mix.png", psi)
 
-## representing p invalid on the figure
+## including invalid SIs in the figure
 
+si_post_p <- (simulate_3a_mix(mean_inc_og, sd_inc_og, shape1_max, shape2_max, max_shed,
+                            pinvalid = p_invalid_max, nsim = 100000, offset = offset,
+                            alpha_invalid, beta_invalid, min_si = min(data_c$si), max_si = max(data_c$si)))
+si_post <- si_post_p$simulated_si$si
+psi <- ggplot() +
+  geom_histogram(
+    data = data_c, aes(si, y = ..density.., fill = "blue"),
+    alpha = 0.3,
+    binwidth = 1
+  ) +
+  
+  geom_density(aes(si_post, fill = "red"),
+               alpha = 0.3
+  ) +
+  geom_vline(
+    xintercept = mean(data_c$si), col = "blue", linetype = "dashed"
+  ) +
+  geom_vline(
+    xintercept = mean(si_post), col = "red", linetype = "dashed"
+  ) +
+  scale_fill_identity(
+    guide = "legend",
+    labels = c("Data", "Posterior (valid & invalid SIs)"),
+    breaks = c("blue", "red")
+  ) +
+  theme_minimal() +
+  xlab("Serial Interval") +
+  theme(legend.title = element_blank())
+ggsave("figures/SI_3a_mix_invalid.png", psi)
 
 
 ##################################

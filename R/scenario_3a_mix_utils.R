@@ -1,5 +1,6 @@
-simulate_3a_mix <- function(mean_inc, sd_inc, shape1, shape2, pinvalid, nsim, offset,
-                            alpha_invalid, beta_invalid, min_si, max_si) {
+simulate_3a_mix <- function(mean_inc, sd_inc, shape1, shape2, max_shed,
+                            pinvalid, nsim, offset, alpha_invalid, 
+                            beta_invalid, min_si, max_si) {
   valid_si <- (simulate_si(
     mean_inc, sd_inc, shape1, shape2,
     max_shed, NULL, NULL, nsim = nsim
