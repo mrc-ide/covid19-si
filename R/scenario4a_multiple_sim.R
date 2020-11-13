@@ -1,0 +1,290 @@
+## Set up params grid
+param_grid <- expand.grid(
+  params_inf = c("inf_par1", "inf_par2", "inf_par3"),
+  params_inc = c("inc_par1", "inc_par2"),
+  params_iso = c("iso_par1", "iso_par2", "iso_par3"),
+  params_offset = c("offset1", "offset2", "offset3"),
+  stringsAsFactors = FALSE
+)
+
+nsim <- 200
+
+params_inf_all <- pmap(
+  param_grid,
+  function(params_inf, params_inc, params_iso, params_offset) {
+    out <- params[[params_inf]]
+    beta_muvar2shape1shape2(
+      out$mean_inf/max_shed, out$sd_inf^2 / max_shed^2
+    )
+  }
+)
+
+params_inc_all <- pmap(
+  param_grid,
+  function(params_inf, params_inc, params_iso, params_offset) {
+    out <- params[[params_inc]]
+    epitrix::gamma_mucv2shapescale(
+      mu = out[[1]], cv = out[[2]] / out[[1]]
+    )
+  }
+)
+
+params_iso_all <- pmap(
+  param_grid,
+  function(params_inf, params_inc, params_iso, params_offset) {
+    out <- params[[params_iso]]
+    epitrix::gamma_mucv2shapescale(
+      mu = out[[1]], cv = out[[2]] / out[[1]]
+    )
+  }
+)
+
+params_offsets_all <- pmap(
+  param_grid,
+  function(params_inf, params_inc, params_iso, params_offset) {
+    params[[params_offset]]
+  }
+)
+
+
+simulated_data <- pmap(
+  list(
+    params_inf = params_inf_all,
+    params_inc = params_inc_all,
+    params_iso = params_iso_all,
+    params_offset = params_offsets_all
+  ),
+  function(params_inf, params_inc, params_iso, params_offset) {
+    sim_data <- better_simulate_si(
+      params_inc, params_inf, params_iso, params_offset, max_shed, nsim
+    )
+    sim_data <- sim_data[abs(sim_data$si) > 0.1, ]
+    sim_data
+  }
+)
+
+prefix <- "4a_sim_"
+
+iwalk(
+  simulated_data,
+  function(df, index) {
+    p <- ggplot(df, aes(si)) +
+      geom_histogram(alpha = 0.4, col = NA, binwidth = 1) +
+      theme_minimal() +
+      xlab("Serial Interval")
+
+    ggsave(glue::glue("figures/{prefix}{index}.pdf"), p)
+  }
+)
+
+fits <- pmap(
+  list(
+    params_inc = params_inc_all,
+    params_offset = params_offsets_all,
+    sim_data = simulated_data
+  ),
+  function(params_inc, params_offset, sim_data) {
+
+    width <- 0.1
+    fit_4a <- stan(
+      file = here::here("stan-models/scenario4a.stan"),
+      data = list(
+        N = length(sim_data$si),
+        si = sim_data$si,
+        nu = sim_data$nu,
+        max_shed = max_shed,
+        alpha2 = params_inc[["shape"]],
+        beta2 = 1 / params_inc[["scale"]],
+        offset1 = params_offset,
+        width = width
+      ),
+      chains = 3,
+      iter = 2000,
+      verbose = TRUE
+      ## control = list(adapt_delta = 0.99)
+    )
+    fit_4a
+  }
+)
+
+
+iwalk(
+  fits,
+  function(fit, i) saveRDS(fit, glue::glue("stanfits/{prefix}{i}.rds"))
+)
+
+posterior_sim <- pmap(
+  list(
+    fit = fits,
+    params_inc = params_inc_all,
+    params_iso = params_iso_all,
+    params_offset = params_offsets_all
+  ),
+  function(fit, params_inc, params_iso, params_offset) {
+    best_params <- map_estimates(fit)
+    better_simulate_si(
+      params_inc,
+      list(shape1 = best_params[["alpha1"]], shape2 = best_params[["beta1"]]),
+      params_iso, params_offset, max_shed, nsim = 10000
+    )
+  }
+)
+
+posterior_plots <- pmap(
+  list(
+    posterior_si = posterior_sim,
+    sim_data = simulated_data
+  ),
+  function(posterior_si, sim_data) {
+    p <- ggplot() +
+      geom_density(
+        aes(sim_data$si, fill = "blue"), alpha = 0.3, col = NA
+      ) +
+      geom_density(
+        aes(posterior_si$si, fill = "red"), alpha = 0.3, col = NA
+      ) +
+      scale_fill_identity(
+        guide = "legend",
+        labels = c("Simulated", "Posterior"),
+        breaks = c("blue", "red")
+      ) +
+      xlab("Serial Interval") +
+      ylab("Probability Density") +
+      theme_minimal() +
+      theme(legend.title = element_blank())
+    p
+
+  }
+)
+
+iwalk(
+  posterior_plots,
+  function(p, index) {
+    ggsave("figures/posterior_si_{prefix}{index.png}", p)
+  }
+)
+
+posterior_t1_plots <- pmap(
+  list(
+    posterior_si = posterior_sim,
+    sim_data = simulated_data
+  ),
+  function(posterior_si, sim_data) {
+    p <- ggplot() +
+      geom_density(
+        aes(sim_data$t_1, fill = "blue"), alpha = 0.3, col = NA
+      ) +
+      geom_density(
+        aes(posterior_si$t_1, fill = "red"), alpha = 0.3, col = NA
+      ) +
+      scale_fill_identity(
+        guide = "legend",
+        labels = c("Simulated", "Posterior"),
+        breaks = c("blue", "red")
+      ) +
+      xlab("Infectious Profile") +
+      ylab("Probability Density") +
+      theme_minimal() +
+      theme(legend.title = element_blank())
+    p
+
+  }
+)
+
+iwalk(
+  posterior_plots,
+  function(p, index) {
+    ggsave("figures/posterior_si_{prefix}{index.png}", p)
+  }
+)
+
+
+params_compare <- pmap_dfr(
+  list(
+    fit = fits,
+    params_inf = param_grid$params_inf,
+    params_offset = params_offsets_all
+  ),
+  function(fit, params_inf, params_offset) {
+    out <- params[[params_inf]]
+    true_values <- data.frame(
+      param = c("mu", "sd"),
+      var = "true",
+      val = c(out$mean_inf, out$sd_inf)
+    )
+    best_params <- map_estimates(fit)
+    out <- rbeta(10000, best_params$alpha1, best_params$beta1)
+    f <- map_into_interval(0, 1, params_offset, max_shed)
+    out <- f(out)
+    out <- data.frame(
+      param = c("mu", "sd"),
+      var = "posterior",
+      val = c(mean(out), sd(out))
+    )
+    out <- rbind(out, true_values)
+    tidyr::pivot_wider(out, names_from = "param", values_from = "val")
+  },
+  .id = "sim"
+)
+
+si_compare <- pmap_dfr(
+  list(
+    posterior_si = posterior_sim,
+    sim_data = simulated_data
+  ),
+  function(posterior_si, sim_data) {
+    simulated_summary <- quantile_as_df(sim_data$si)
+    simulated_summary$category <- "Simulated"
+    posterior_summary <- quantile_as_df(posterior_si$si)
+    posterior_summary$category <- "Posterior"
+    rbind(simulated_summary, posterior_summary)
+  },
+  .id = "sim"
+)
+
+
+
+si_compare <- tidyr::spread(si_compare, var, val)
+si_compare$sim <- factor(si_compare$sim)
+
+p <- ggplot(si_compare) +
+  geom_point(
+    aes(sim, `50%`, col = category),
+    size = 2,
+    position = position_dodge(width = 0.3)
+  ) +
+  geom_linerange(
+    aes(sim, ymin = `2.5%`, ymax = `97.5%`, col = category),
+    size = 1.1,
+    position = position_dodge(width = 0.3)
+  ) +
+  theme_minimal() +
+  theme(legend.position = "top", legend.title = element_blank()) +
+  xlab("Simulation") +
+  ylab("Serial Interval (Median and 95% CrI)")
+
+ggsave("figures/scenario2a_mix_multiple_sim.png", p)
+
+
+
+
+params_compare$sim <- factor(params_compare$sim)
+
+p <- ggplot(params_compare) +
+  geom_point(
+    aes(sim, mu, col = var),
+    size = 2,
+    position = position_dodge(width = 0.3)
+  ) +
+  geom_linerange(
+    aes(sim, ymin = mu - sd, ymax = mu + sd, col = var),
+    size = 1.1,
+    position = position_dodge(width = 0.3)
+  ) +
+
+  theme_minimal() +
+  theme(legend.position = "top", legend.title = element_blank()) +
+  xlab("Simulation") +
+  ylab("Infectious profile")
+
+ggsave("figures/scenario2a_mix_multiple_sim_params.png", p)
