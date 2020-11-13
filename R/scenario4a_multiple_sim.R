@@ -98,8 +98,8 @@ fits <- pmap(
         offset1 = params_offset,
         width = width
       ),
-      chains = 3,
-      iter = 2000,
+      chains = 2,
+      iter = 4000,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
     )
@@ -160,7 +160,8 @@ posterior_plots <- pmap(
 iwalk(
   posterior_plots,
   function(p, index) {
-    ggsave("figures/posterior_si_{prefix}{index.png}", p)
+    ggsave(
+    glue::glue("figures/posterior_si_{prefix}{index}.png"), p)
   }
 )
 
@@ -192,9 +193,10 @@ posterior_t1_plots <- pmap(
 )
 
 iwalk(
-  posterior_plots,
+  posterior_t1_plots,
   function(p, index) {
-    ggsave("figures/posterior_si_{prefix}{index.png}", p)
+    ggsave(
+    glue::glue("figures/posterior_t1_{prefix}{index}.png"), p)
   }
 )
 
@@ -274,14 +276,16 @@ p <- ggplot(params_compare) +
   geom_point(
     aes(sim, mu, col = var),
     size = 2,
-    position = position_dodge(width = 0.3)
+    position = position_dodge(width = 0.4)
   ) +
   geom_linerange(
     aes(sim, ymin = mu - sd, ymax = mu + sd, col = var),
     size = 1.1,
-    position = position_dodge(width = 0.3)
+    position = position_dodge(width = 0.4)
   ) +
-
+  scale_x_discrete(
+    breaks = as.character(1:nrow(param_grid))
+  ) +
   theme_minimal() +
   theme(legend.position = "top", legend.title = element_blank()) +
   xlab("Simulation") +
