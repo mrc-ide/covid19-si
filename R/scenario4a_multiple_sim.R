@@ -7,7 +7,7 @@ param_grid <- expand.grid(
   stringsAsFactors = FALSE
 )
 
-nsim <- 200
+nsim <- 500
 
 params_inf_all <- pmap(
   param_grid,
@@ -46,7 +46,7 @@ params_offsets_all <- pmap(
   }
 )
 
-
+nsim_post_filter <- 200
 simulated_data <- pmap(
   list(
     params_inf = params_inf_all,
@@ -58,8 +58,11 @@ simulated_data <- pmap(
     sim_data <- better_simulate_si(
       params_inc, params_inf, params_iso, params_offset, max_shed, nsim
     )
+    sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]
     sim_data <- sim_data[abs(sim_data$si) > 0.1, ]
-    sim_data
+    ## Make sure we have at least 200 rows.
+    idx <- sample(nrow(sim_data), nsim_post_filter, replace = TRUE)
+    sim_data[idx, ]
   }
 )
 
@@ -76,6 +79,58 @@ iwalk(
     ggsave(glue::glue("figures/{prefix}{index}.pdf"), p)
   }
 )
+
+## fit_1a <- stan(
+##   file = here::here("stan-models/scenario1a.stan"),
+##   data = list(
+##     N = nrow(simulated_data[[1]]),
+##     si = simulated_data[[1]]$si,
+##     max_shed = max_shed,
+##     alpha2 = params_inc_all[[1]][["shape"]],
+##     beta2 = 1 / params_inc_all[[1]][["scale"]],
+##     width = 0.1
+##   ),
+##   chains = 3,
+##   iter = 5000,
+##   verbose = TRUE
+##   ##control = list(adapt_delta = 0.99)
+## )
+
+## fit_2a <- stan(
+##   file = here::here("stan-models/scenario2a.stan"),
+##   data = list(
+##     N = nrow(simulated_data[[1]]),
+##     si = simulated_data[[1]]$si,
+##     nu = simulated_data[[1]]$nu,
+##     max_shed = max_shed,
+##     alpha2 = params_inc_all[[1]][["shape"]],
+##     beta2 = 1 / params_inc_all[[1]][["scale"]],
+##     width = 0.1
+##   ),
+##   chains = 3,
+##   iter = 5000,
+##   verbose = TRUE
+##   ##control = list(adapt_delta = 0.99)
+## )
+
+## fit_3a <- stan(
+##   file = here::here("stan-models/scenario3a.stan"),
+##   data = list(
+##     N = nrow(simulated_data[[1]]),
+##     si = simulated_data[[1]]$si,
+##     ##nu = simulated_data[[1]]$nu,
+##     offset1 = -1,
+##     max_shed = max_shed,
+##     alpha2 = params_inc_all[[1]][["shape"]],
+##     beta2 = 1 / params_inc_all[[1]][["scale"]]
+##     ##width = 0.1
+##   ),
+##   chains = 3,
+##   iter = 5000,
+##   verbose = TRUE
+##   ##control = list(adapt_delta = 0.99)
+## )
+
 
 fits <- pmap(
   list(
@@ -113,6 +168,12 @@ iwalk(
   function(fit, i) saveRDS(fit, glue::glue("stanfits/{prefix}{i}.rds"))
 )
 
+## infiles <- map(
+##   1:nrow(param_grid), function(i) glue::glue("stanfits/{prefix}{i}.rds")
+## )
+
+## fits <- map(infiles, readRDS)
+
 posterior_sim <- pmap(
   list(
     fit = fits,
@@ -124,7 +185,8 @@ posterior_sim <- pmap(
     best_params <- map_estimates(fit)
     better_simulate_si(
       params_inc,
-      list(shape1 = best_params[["alpha1"]], shape2 = best_params[["beta1"]]),
+      list(shape1 = best_params[["alpha1"]],
+           shape2 = best_params[["beta1"]]),
       params_iso, params_offset, max_shed, nsim = 10000
     )
   }
@@ -247,7 +309,9 @@ si_compare <- pmap_dfr(
 
 
 si_compare <- tidyr::spread(si_compare, var, val)
-si_compare$sim <- factor(si_compare$sim)
+si_compare$sim <- factor(
+  si_compare$sim, levels = as.character(1:nrow(param_grid)), ordered = TRUE
+)
 
 p <- ggplot(si_compare) +
   geom_point(
@@ -259,6 +323,13 @@ p <- ggplot(si_compare) +
     aes(sim, ymin = `2.5%`, ymax = `97.5%`, col = category),
     size = 1.1,
     position = position_dodge(width = 0.3)
+  ) +
+  scale_x_discrete(
+    breaks = as.character(1:nrow(param_grid))
+  ) +
+  scale_color_manual(
+    values = c(Simulated = "blue", Posterior = "red"),
+    labels = c("True value", "Posterior Estimate")
   ) +
   theme_minimal() +
   theme(legend.position = "top", legend.title = element_blank()) +
@@ -285,6 +356,10 @@ p <- ggplot(params_compare) +
   ) +
   scale_x_discrete(
     breaks = as.character(1:nrow(param_grid))
+  ) +
+  scale_color_manual(
+    values = c(true = "blue", posterior = "red"),
+    labels = c("True value", "Posterior Estimate")
   ) +
   theme_minimal() +
   theme(legend.position = "top", legend.title = element_blank()) +
