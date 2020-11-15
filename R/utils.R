@@ -10,6 +10,33 @@ quantile_as_df <- function(vec, probs = c(0.025, 0.25, 0.5, 0.75, 0.975)) {
   out
 }
 
+## More aligned args, and also allows for pre-symptpmatic infection
+better_simulate_si <- function(params_inc, params_inf, params_iso,
+                               min_inf, max_inf, nsim = 50) {
+
+  t_1 <- stats::rbeta(
+    n = nsim, shape1 = params_inf$shape1, shape2 = params_inf$shape2
+    )
+  ## Map the possible infection times into interval
+  ## (min_inf, max_inf)
+  f <- map_into_interval(0, 1, min_inf, max_inf)
+  t_1 <- f(t_1)
+
+  t_2 <- stats::rgamma(
+    n = nsim, shape = params_inc$shape, rate = 1 / params_inc$scale
+  )
+
+  out <- data.frame(t_1 = t_1, t_2 = t_2, si = t_1 + t_2)
+
+  if (!is.null(mean_iso)) {
+
+    out$nu <- stats::rgamma(
+      n = nsim, shape = params_iso$shape, rate = 1 / params_iso$scale
+    )
+  }
+  out
+}
+
 simulate_si <- function(mean_ip,
                         sd_ip,
                         shape1_inf,
@@ -93,3 +120,13 @@ beta_shape1shape22muvar <- function(shape1, shape2) {
   list(mu = mu, sigma2 = sigma2)
 }
 
+## Linear map of one interval into another
+## maps (x_1, y_1) into (x_2, y_2)
+## Returns a function
+map_into_interval <- function(x_1, y_1, x_2, y_2) {
+
+  slope <- (x_2 - y_2) / (x_1 - y_1)
+  intercept <- x_2 - x_1 * slope
+  f <- function(x) slope * x + intercept
+  f
+}

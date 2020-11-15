@@ -1,15 +1,15 @@
 # run scenario 3 on the cowling data
 
 # offset
-offset <- 3
+offset <- -3
 
 # load the data
 data <- readRDS("data/cowling_data_clean.rds")
 
 # sub-set to only incude those SIs that are possible under our assumed offset
 data_offset <- data%>%
-  filter(si>-offset)%>%
-  filter(onset_first_iso>-offset)%>%
+  filter(si>offset)%>%
+  filter(onset_first_iso>offset)%>%
   mutate(si = as.numeric(si))%>%
   dplyr::rename(nu = onset_first_iso)
 
@@ -21,11 +21,11 @@ fits_4a <- stan(
     si = data_offset$si,
     nu = data_offset$nu,
     max_shed = 21,
-    offset = offset,
+    offset1 = offset,
     alpha2 = params_inc_og[["shape"]],
-    beta2 = 1 / params_inc_og[["scale"]]
-  ),
-  chains = 2,
+    beta2 = 1 / params_inc_og[["scale"]],
+  width = 0.1),
+  chains = 4,
   iter = 4000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
@@ -57,7 +57,7 @@ x <- (max_shed *
           n = 100000,
           shape1 = fitted_max[["alpha1"]],
           shape2 = fitted_max[["beta1"]]
-        ))-offset
+        ))+offset
 
 p1 <- ggplot() +
   geom_density(aes(x, fill = "blue"), alpha = 0.3) +

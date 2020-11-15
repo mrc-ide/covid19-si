@@ -17,6 +17,8 @@ nsim <- 500
 alpha_invalid <- 0.5
 beta_invalid <- 0.5
 min_si <- -2 ## For simulations
+offset <- -2 # this is not the smallest possible SI, but the maximum
+## time before symptom onset when secondary infection can happeb.
 
 ## https://doi.org/10.1016/S1473-3099(20)30287-5
 mean_inf <- 6.3 ## days
@@ -54,6 +56,12 @@ params <- list(
   inf_par3 = list(mean_inf = 3.15, sd_inf = 2.31),
   inc_par1 = list(mean_inc = 6.5, sd_inc = 2.6),
   inc_par2 = list(mean_inc = 5.1, sd_inc = 3.94),
+  iso_par1 = list(mean_iso = 2, sd_iso = 2),
+  iso_par2 = list(mean_iso = 4, sd_iso = 2),
+  iso_par3 = list(mean_iso = 4, sd_iso = 4),
+  offset1 = -1,
+  offset2 = -2,
+  offset3 = -3,
   pinvalid1 = 0.01,
   pinvalid2 = 0.03,
   pinvalid3 = 0.05,
