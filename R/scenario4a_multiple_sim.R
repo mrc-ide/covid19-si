@@ -7,7 +7,7 @@ param_grid <- expand.grid(
   stringsAsFactors = FALSE
 )
 
-nsim <- 500
+nsim <- 2000
 
 params_inf_all <- pmap(
   param_grid,
@@ -272,18 +272,18 @@ params_compare <- pmap_dfr(
   function(fit, params_inf, params_offset) {
     out <- params[[params_inf]]
     true_values <- data.frame(
-      param = c("mu", "sd"),
+      param = c("mu", "sd", "offset"),
       var = "true",
-      val = c(out$mean_inf, out$sd_inf)
+      val = c(out$mean_inf, out$sd_inf, params_offset)
     )
     best_params <- map_estimates(fit)
     out <- rbeta(10000, best_params$alpha1, best_params$beta1)
     f <- map_into_interval(0, 1, params_offset, max_shed)
     out <- f(out)
     out <- data.frame(
-      param = c("mu", "sd"),
+      param = c("mu", "sd", "offset"),
       var = "posterior",
-      val = c(mean(out), sd(out))
+      val = c(mean(out), sd(out), params_offset)
     )
     out <- rbind(out, true_values)
     tidyr::pivot_wider(out, names_from = "param", values_from = "val")
@@ -336,12 +336,14 @@ p <- ggplot(si_compare) +
   xlab("Simulation") +
   ylab("Serial Interval (Median and 95% CrI)")
 
-ggsave("figures/scenario2a_mix_multiple_sim.png", p)
+ggsave("figures/scenario4a_si_multiple_sim.png", p)
 
 
 
 
-params_compare$sim <- factor(params_compare$sim)
+params_compare$sim <- factor(
+  params_compare$sim, levels = as.character(1:nrow(param_grid)), ordered = TRUE
+)
 
 p <- ggplot(params_compare) +
   geom_point(
@@ -364,6 +366,7 @@ p <- ggplot(params_compare) +
   theme_minimal() +
   theme(legend.position = "top", legend.title = element_blank()) +
   xlab("Simulation") +
-  ylab("Infectious profile")
+  ylab("Infectious profile") +
+  facet_wrap(~offset, ncol = 2, scales = "free")
 
-ggsave("figures/scenario2a_mix_multiple_sim_params.png", p)
+ggsave("figures/scenario4a_t1_multiple_sim_params.png", p)
