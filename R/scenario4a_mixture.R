@@ -1,6 +1,6 @@
 param_grid <- expand.grid(
   params_inf = "inf_par1",
-  params_inc = "inc_par1",
+  params_inc = "inc_par3",
   params_iso = "iso_par1",
   params_pinv = "pinvalid3",
   params_offset = "offset1",
@@ -95,7 +95,8 @@ invalid_remapped <- map2(
     max_si <- max(valid$si)
     ## invalid SIs are draws from beta. Map them into
     ## min and max of valid SI
-    f <- map_into_interval(0, 1, min(valid$si), max(valid$si))
+    ##
+    f <- map_into_interval(0, 1, 0.5 * min(valid$si), 2 * max(valid$si))
     invalid$si <- f(invalid$si)
     invalid
   }
@@ -110,9 +111,11 @@ mixed <- pmap(
   function(valid, invalid, params_pinv) {
     pinvalid <- params[[params_pinv]]
     toss <- runif(nrow(valid))
+    valid$type <- "valid"
+    invalid$type <- "invalid"
     rbind(
-      valid[toss > pinvalid , c("si", "nu")],
-      invalid[toss <= pinvalid ,c("si", "nu")]
+      valid[toss > pinvalid , c("si", "nu", "type")],
+      invalid[toss <= pinvalid ,c("si", "nu", "type")]
     )
   }
 )
@@ -121,7 +124,7 @@ fits <- pmap(
   list(
     params_inc = params_inc_all,
     params_offset = params_offsets_all,
-    sim_data = simulated_data
+    sim_data = mixed
   ),
   function(params_inc, params_offset, sim_data) {
 
