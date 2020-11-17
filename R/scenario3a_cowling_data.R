@@ -24,8 +24,8 @@ fits_3a <- stan(
     alpha2 = params_inc_og[["shape"]],
     beta2 = 1 / params_inc_og[["scale"]],
     width = 0.1),
-  chains = 1,
-  iter = 1000,
+  chains = 4,
+  iter = 4000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
