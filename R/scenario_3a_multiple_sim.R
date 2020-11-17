@@ -147,11 +147,10 @@ fits <- pmap(
       data = list(
         N = length(sim_data$si),
         si = sim_data$si,
-        nu = sim_data$nu,
         max_shed = max_shed,
+        offset1 = params_offset,
         alpha2 = params_inc[["shape"]],
         beta2 = 1 / params_inc[["scale"]],
-        offset1 = params_offset,
         width = width
       ),
       chains = 1,
@@ -159,7 +158,7 @@ fits <- pmap(
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
     )
-    fit_4a
+    fit_3a
   }
 )
 
