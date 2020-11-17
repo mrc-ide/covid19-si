@@ -1,15 +1,15 @@
 # run scenario 3 on the cowling data
 
-# offset
-offset <- 3
+# offset - must be a negative number!
+offset <- -3
 
 # load the data
 data <- readRDS("data/cowling_data_clean.rds")
 
 # sub-set to only incude those SIs that are possible under our assumed offset
 data_offset <- data%>%
-  filter(si>-offset)%>%
-  filter(onset_first_iso>-offset)%>%
+  filter(si>offset)%>%
+  filter(onset_first_iso>offset)%>%
   mutate(si = as.numeric(si))%>%
   dplyr::rename(nu = onset_first_iso)
 
@@ -20,19 +20,19 @@ fits_3a <- stan(
     N = nrow(data_offset),
     si = data_offset$si,
     max_shed = 21,
-    offset = offset,
+    offset1 = offset,
     alpha2 = params_inc_og[["shape"]],
-    beta2 = 1 / params_inc_og[["scale"]]
-  ),
-  chains = 2,
-  iter = 4000,
+    beta2 = 1 / params_inc_og[["scale"]],
+    width = 0.1),
+  chains = 1,
+  iter = 1000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
 
 
 ## Check convergence etc, using ggmcmc
-test_fit_3a <- ggmcmc(ggs(fits_3a), here::here("figures/3a.pdf"))
+test_fit_3a <- ggmcmc(ggs(fits_3a), here::here("figures/3a_test.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
 
@@ -56,7 +56,7 @@ x <- (max_shed *
     n = 100000,
     shape1 = fitted_max[["alpha1"]],
     shape2 = fitted_max[["beta1"]]
-  ))-offset
+  ))+offset
 
 p1 <- ggplot() +
   geom_density(aes(x, fill = "blue"), alpha = 0.3) +
@@ -68,7 +68,7 @@ p1 <- ggplot() +
   theme_minimal()
 
 
-ggsave("figures/infectious_profile_params_1a.png", p1)
+ggsave("figures/infectious_profile_params_3a.png", p1)
 
 ## simulate si from the most likely incubation period distibution
 shape1 <- fitted_max["alpha1"]
