@@ -59,9 +59,9 @@ simulated_data <- pmap(
     sim_data <- better_simulate_si(
       params_inc, params_inf, params_iso, params_offset, max_shed, nsim
     )
-    sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]
+    #sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]  #do not filter by isolation for s3a
     sim_data <- sim_data[abs(sim_data$si) > 0.1, ]
-    ## Make sure we have at least 200 rows.
+    ## Make sure we have at least nsim_post_filter rows.
     idx <- sample(nrow(sim_data), nsim_post_filter, replace = TRUE)
     sim_data[idx, ]
   }
