@@ -2,7 +2,7 @@ param_grid <- expand.grid(
   params_inf = "inf_par1",
   params_inc = "inc_par1",
   params_iso = "iso_par1",
-  params_pinv = "pinvalid1",
+  params_pinv = "pinvalid3",
   params_offset = "offset1",
   stringsAsFactors = FALSE
 )
@@ -125,7 +125,7 @@ fits <- pmap(
   ),
   function(params_inc, params_offset, sim_data) {
 
-    width <- 0.1
+    width <- 0.05
     fit_4a <- stan(
       file = here::here("stan-models/scenario4a_mixture.stan"),
       data = list(
