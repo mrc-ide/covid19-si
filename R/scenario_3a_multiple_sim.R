@@ -142,8 +142,8 @@ fits <- pmap(
   function(params_inc, params_offset, sim_data) {
     
     width <- 0.1
-    fit_4a <- stan(
-      file = here::here("stan-models/scenario4a.stan"),
+    fit_3a <- stan(
+      file = here::here("stan-models/scenario3a.stan"),
       data = list(
         N = length(sim_data$si),
         si = sim_data$si,
