@@ -1,3 +1,4 @@
+set.seed(42)
 library(dplyr)
 library(rstan)
 library(hermione)

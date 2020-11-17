@@ -22,10 +22,8 @@ functions{
     if(x > max_shed) ulim = max_shed;
     else ulim = x;
     // s is the time of infection
-    inf_density = beta_lpdf(width/max_shed|alpha1, beta1);
-    inc_density = gamma_lpdf(x - width|alpha2, beta2);
-    out =  exp(inf_density + inc_density);
-    s = 2 * width;
+    out =  0;
+    s = width;
     while(s < ulim) {
       inf_density = beta_lpdf(s/max_shed|alpha1, beta1);
       inc_density = gamma_lpdf(x - s|alpha2, beta2);
@@ -155,14 +153,18 @@ functions{
     real inc_density;
     real ulim;
     real max_shed_shifted;
+    real nu_shifted;
+    
     if (x > max_shed) ulim = max_shed;
     else ulim = x;
     if(ulim > nu) ulim = nu;
     out = 0;
-    // shift offset right the whole infectious profile is shifted
-    // right
+    // the whole infectious profile is shifted
+    // right if offset < 0  and left if offset > 0
     max_shed_shifted = max_shed - offset1;
-
+    nu_shifted = nu - offset1;
+    //print("nu shifted = ", nu_shifted);
+    //print("max shed shifted = ", max_shed_shifted);
     // Mapping s which varies from -offset to ulim to
     // interval (0, 1). We want to integrate from offset to ulim
     s = offset1 + width;
@@ -177,10 +179,9 @@ functions{
     }
     out = log(out);
     if(nu < max_shed) {
-      out = out - beta_lcdf((nu - offset1)/ max_shed_shifted|alpha1, beta1);
+      out = out - beta_lcdf(nu_shifted / max_shed_shifted|alpha1, beta1);
     }
     return out;
   }
-  
 }
-}
+
