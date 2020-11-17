@@ -3,11 +3,12 @@ param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2", "inf_par3"),
   params_inc = c("inc_par1", "inc_par2"),
   params_iso = c("iso_par1", "iso_par2", "iso_par3"),
-  params_offset = c("offset1", "offset2", "offset3"),
+  ##params_offset = c("offset1", "offset2", "offset3"),
+  params_offset = c("offset1"),
   stringsAsFactors = FALSE
 )
 
-nsim <- 2000
+nsim <- 20000
 
 params_inf_all <- pmap(
   param_grid,
@@ -46,7 +47,7 @@ params_offsets_all <- pmap(
   }
 )
 
-nsim_post_filter <- 200
+nsim_post_filter <- 500
 simulated_data <- pmap(
   list(
     params_inf = params_inf_all,
@@ -153,7 +154,7 @@ fits <- pmap(
         offset1 = params_offset,
         width = width
       ),
-      chains = 2,
+      chains = 1,
       iter = 4000,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
@@ -182,6 +183,7 @@ posterior_sim <- pmap(
     params_offset = params_offsets_all
   ),
   function(fit, params_inc, params_iso, params_offset) {
+    if (nrow(as.data.frame(fit)) == 0) return(NULL)
     best_params <- map_estimates(fit)
     better_simulate_si(
       params_inc,
@@ -198,6 +200,7 @@ posterior_plots <- pmap(
     sim_data = simulated_data
   ),
   function(posterior_si, sim_data) {
+    if (is.null(posterior_si)) return(NULL)
     p <- ggplot() +
       geom_density(
         aes(sim_data$si, fill = "blue"), alpha = 0.3, col = NA
@@ -233,6 +236,7 @@ posterior_t1_plots <- pmap(
     sim_data = simulated_data
   ),
   function(posterior_si, sim_data) {
+    if (is.null(posterior_si)) return(NULL)
     p <- ggplot() +
       geom_density(
         aes(sim_data$t_1, fill = "blue"), alpha = 0.3, col = NA
@@ -273,10 +277,12 @@ params_compare <- pmap_dfr(
     out <- params[[params_inf]]
     true_values <- data.frame(
       param = c("mu", "sd", "offset"),
-      var = "true",
+      var = "simulated",
       val = c(out$mean_inf, out$sd_inf, params_offset)
     )
+    if (nrow(as.data.frame(fit)) == 0) return(NULL)
     best_params <- map_estimates(fit)
+
     out <- rbeta(10000, best_params$alpha1, best_params$beta1)
     f <- map_into_interval(0, 1, params_offset, max_shed)
     out <- f(out)
@@ -297,6 +303,8 @@ si_compare <- pmap_dfr(
     sim_data = simulated_data
   ),
   function(posterior_si, sim_data) {
+
+    if (is.null(posterior_si)) return(NULL)
     simulated_summary <- quantile_as_df(sim_data$si)
     simulated_summary$category <- "Simulated"
     posterior_summary <- quantile_as_df(posterior_si$si)
@@ -329,7 +337,7 @@ p <- ggplot(si_compare) +
   ) +
   scale_color_manual(
     values = c(Simulated = "blue", Posterior = "red"),
-    labels = c("True value", "Posterior Estimate")
+    labels = c("Simulated value", "Posterior Estimate")
   ) +
   theme_minimal() +
   theme(legend.position = "top", legend.title = element_blank()) +
@@ -345,28 +353,43 @@ params_compare$sim <- factor(
   params_compare$sim, levels = as.character(1:nrow(param_grid)), ordered = TRUE
 )
 
-p <- ggplot(params_compare) +
+params_compare$ymin <- params_compare$mu - params_compare$sd
+params_compare$ymax <- params_compare$mu + params_compare$sd
+
+x <- tidyr::pivot_wider(params_compare, names_from = "var",
+                        values_from = c("mu", "sd", "ymin", "ymax"))
+
+p <- ggplot(x) +
   geom_point(
-    aes(sim, mu, col = var),
+    aes(sim, mu_posterior),
     size = 2,
     position = position_dodge(width = 0.4)
   ) +
   geom_linerange(
-    aes(sim, ymin = mu - sd, ymax = mu + sd, col = var),
+    aes(sim, ymin = ymin_posterior, ymax = ymax_posterior),
     size = 1.1,
     position = position_dodge(width = 0.4)
+  ) +
+  geom_hline(
+    aes(yintercept = mu_simulated), linetype = "dashed"
+  ) +
+  geom_hline(
+    aes(yintercept = ymin_simulated), linetype = "dashed"
+  ) +
+  geom_hline(
+    aes(yintercept = ymax_simulated), linetype = "dashed"
   ) +
   scale_x_discrete(
     breaks = as.character(1:nrow(param_grid))
   ) +
-  scale_color_manual(
-    values = c(true = "blue", posterior = "red"),
-    labels = c("True value", "Posterior Estimate")
-  ) +
+  ## scale_color_manual(
+  ##   values = c(true = "blue", posterior = "red"),
+  ##   labels = c("True value", "Posterior Estimate")
+  ## ) +
   theme_minimal() +
   theme(legend.position = "top", legend.title = element_blank()) +
   xlab("Simulation") +
-  ylab("Infectious profile") +
-  facet_wrap(~offset, ncol = 2, scales = "free")
+  ylab("Infectious profile")
+  ##facet_wrap(~group, ncol = 2, scales = "free_x")
 
 ggsave("figures/scenario4a_t1_multiple_sim_params.png", p)
