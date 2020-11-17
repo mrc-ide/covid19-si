@@ -28,12 +28,11 @@ better_simulate_si <- function(params_inc, params_inf, params_iso,
 
   out <- data.frame(t_1 = t_1, t_2 = t_2, si = t_1 + t_2)
 
-  if (!is.null(mean_iso)) {
 
-    out$nu <- stats::rgamma(
+  out$nu <- stats::rgamma(
       n = nsim, shape = params_iso$shape, rate = 1 / params_iso$scale
     )
-  }
+
   out
 }
 
