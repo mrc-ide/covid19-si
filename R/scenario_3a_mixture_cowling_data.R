@@ -1,7 +1,7 @@
 # run scenario 3 + mixture model on the cowling data
 
 # offset
-offset <- 3
+offset <- -3
 
 # select number of simulations from posterior, and parameters for invalid dist.
 nsim <- 10000
