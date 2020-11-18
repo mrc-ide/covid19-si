@@ -63,7 +63,7 @@ x <- (max_shed *
           n = 100000,
           shape1 = shape1_max,
           shape2 = shape2_max
-        ))-offset
+        ))+offset
 
 p1 <- ggplot() +
   geom_density(aes(x, fill = "blue"), alpha = 0.3) +
@@ -80,7 +80,7 @@ ggsave("figures/infectious_profile_params_3a_mix.png", p1)
 ## simulate si from the most likely incubation period distibution
 
 
-si_post <- (simulate_si(mean_inc_og, sd_inc_og, shape1_max, shape2_max, max_shed, nsim = 100000))$si - offset
+si_post <- (simulate_si(mean_inc_og, sd_inc_og, shape1_max, shape2_max, max_shed, nsim = 100000))$si + offset
 
 psi <- ggplot() +
   geom_histogram(
@@ -111,7 +111,7 @@ ggsave("figures/SI_3a_mix.png", psi)
 ## including invalid SIs in the figure
 
 si_post_p <- (simulate_3a_mix(mean_inc_og, sd_inc_og, shape1_max, shape2_max, max_shed,
-                            pinvalid = p_invalid_max, nsim = 100000, offset = offset,
+                            pinvalid = p_invalid_max, nsim = 100000, offset = -offset,
                             alpha_invalid, beta_invalid, min_si = min(data_c$si), max_si = max(data_c$si)))
 si_post <- si_post_p$simulated_si$si
 psi <- ggplot() +
@@ -155,7 +155,7 @@ shape2 <- fitted_params_3a_mix$beta1[idx]
 # 2. for each infectious profile, simulate an SI distribution (of 10000 SIs)
 si_post_3a <- matrix(nrow = 1000, ncol = length(idx))
 for(i in 1:length(idx)){
-  si_post_3a[,i] <- (simulate_si(mean_inc_og, sd_inc_og, shape1[i], shape2[i], max_shed, nsim = 1000))$si - offset
+  si_post_3a[,i] <- (simulate_si(mean_inc_og, sd_inc_og, shape1[i], shape2[i], max_shed, nsim = 1000))$si + offset
 }
 
 # 3. for each simulated SI distribution, extract the median, mean and sd
