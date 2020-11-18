@@ -343,7 +343,7 @@ p <- ggplot(si_compare) +
   xlab("Simulation") +
   ylab("Serial Interval (Median and 95% CrI)")
 
-ggsave("figures/scenario4a_si_multiple_sim.png", p)
+ggsave("figures/scenario3a_si_multiple_sim.png", p)
 
 
 
@@ -360,12 +360,12 @@ x <- tidyr::pivot_wider(params_compare, names_from = "var",
 
 p <- ggplot(x) +
   geom_point(
-    aes(sim, mu_posterior),
+    aes(sim, mu_posterior-offset),
     size = 2,
     position = position_dodge(width = 0.4)
   ) +
   geom_linerange(
-    aes(sim, ymin = ymin_posterior, ymax = ymax_posterior),
+    aes(sim, ymin = ymin_posterior-offset, ymax = ymax_posterior-offset),
     size = 1.1,
     position = position_dodge(width = 0.4)
   ) +
@@ -391,4 +391,38 @@ p <- ggplot(x) +
   ylab("Infectious profile")
 ##facet_wrap(~group, ncol = 2, scales = "free_x")
 
-ggsave("figures/scenario4a_t1_multiple_sim_params.png", p)
+ggsave("figures/scenario3a_t1_multiple_sim_params.png", p)
+
+## alternative plot comparing the simulated and posterior infectious profile
+
+p <- ggplot(x) +
+  geom_point(
+    aes(sim, mu_posterior-offset),
+    size = 2,
+    position = position_dodge(width = 0.4)
+  ) +
+  geom_linerange(
+    aes(sim, ymin = ymin_posterior-offset, ymax = ymax_posterior-offset),
+    size = 1.1,
+    position = position_dodge(width = 0.4)
+  ) +
+  geom_point(
+    aes(y = mu_simulated, x = sim), col = "red"
+  ) +
+  geom_linerange(
+    aes(sim, ymin = ymin_simulated, ymax = ymax_simulated),
+    size = 1, linetype = "dashed", col = "red",
+    position = position_dodge(width = 0.4)
+  ) +
+  scale_x_discrete(
+    breaks = as.character(1:nrow(param_grid))
+  ) +
+  ## scale_color_manual(
+  ##   values = c(true = "blue", posterior = "red"),
+  ##   labels = c("True value", "Posterior Estimate")
+  ## ) +
+  theme_minimal() +
+  theme(legend.position = "top", legend.title = element_blank()) +
+  xlab("Simulation") +
+  ylab("Infectious profile")
+ggsave("figures/scenario3a_t1_multiple_sim_params.png", p)
