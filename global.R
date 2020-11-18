@@ -58,6 +58,8 @@ params <- list(
   inf_par3 = list(mean_inf = 3.15, sd_inf = 2.31),
   inc_par1 = list(mean_inc = 6.5, sd_inc = 2.6),
   inc_par2 = list(mean_inc = 5.1, sd_inc = 3.94),
+  ## very short incubation period to allow simulation of -ve SIs
+  inc_par3 = list(mean_inc = 2, sd_inc = 1),
   iso_par1 = list(mean_iso = 2, sd_iso = 2),
   iso_par2 = list(mean_iso = 4, sd_iso = 2),
   iso_par3 = list(mean_iso = 4, sd_iso = 4),
