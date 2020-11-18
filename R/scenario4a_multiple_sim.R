@@ -361,12 +361,12 @@ x <- tidyr::pivot_wider(params_compare, names_from = "var",
 
 p <- ggplot(x) +
   geom_point(
-    aes(sim, mu_posterior),
+    aes(sim, mu_posterior-offset),
     size = 2,
     position = position_dodge(width = 0.4)
   ) +
   geom_linerange(
-    aes(sim, ymin = ymin_posterior, ymax = ymax_posterior),
+    aes(sim, ymin = ymin_posterior-offset, ymax = ymax_posterior-offset),
     size = 1.1,
     position = position_dodge(width = 0.4)
   ) +
