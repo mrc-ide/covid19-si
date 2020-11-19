@@ -15,12 +15,12 @@ data <- readRDS("data/cowling_data_clean.rds")
 data_c <- data%>%
   mutate(si = as.numeric(si))%>%
   dplyr::rename(nu = onset_first_iso)%>%
-  dplyr::filter(!is.na(nu))
+  dplyr::filter(!is.na(nu)) # must be consistent with the data set for 4a
 
 # sub-set to only incude those SIs that are possible under our assumed offset
 data_offset <- data_c %>%
-  filter(si > -offset) %>%
-  filter(nu > -offset)
+  filter(si > offset) %>%
+  filter(nu > offset)
 
 
 # fit the model
@@ -45,7 +45,7 @@ fits_3a_mix <- stan(
   ##control = list(adapt_delta = 0.99)
 )
 
-test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mixNF.pdf"))
+test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mix.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
 
@@ -59,6 +59,7 @@ fitted_max <- c(alpha1 = fitted_params_3a_mix$alpha1[max_index],
                 p_invalid = fitted_params_3a_mix$pinvalid[max_index])
 shape1_max <- fitted_max["alpha1"]
 shape2_max <- fitted_max["beta1"]
+p_invalid_max <- fitted_max["p_invalid"]
 
 x <- (max_shed *
         rbeta(
@@ -107,7 +108,6 @@ psi <- ggplot() +
   ) +
   theme_minimal() +
   xlim(NA, 40)+
-  ylim(0,0.105)+
   xlab("Serial Interval") +
   theme(legend.title = element_blank())
 ggsave("figures/SI_3a_mix.png", psi, width = 7, height = 7, units = "in", dpi = 300, device = "png")
@@ -141,7 +141,6 @@ psi <- ggplot() +
   ) +
   theme_minimal() +
   xlim(NA, 40)+
-  ylim(0,0.105)+
   xlab("Serial Interval") +
   theme(legend.title = element_blank())
 ggsave("figures/SI_3a_mix_invalid.png", psi, width = 7, height = 7, units = "in", dpi = 300, device = "png")
@@ -199,8 +198,6 @@ ggplot()+
   geom_vline(xintercept = sd(si_post))
 
 ## getting the CrI for p_invalid
-
-p_invalid_max <- fitted_max["p_invalid"]
 
 p_invalid_post <- fitted_params_3a_mix$pinvalid
 
