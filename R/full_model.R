@@ -156,8 +156,8 @@ fits <- pmap(
         min_si = param_offset, ## assuming the smallest incubation period is 0
         alpha2 = param_inc[["shape"]],
         beta2 = 1 / param_inc[["scale"]],
-        alpha_invalid = alpha_invalid,
-        beta_invalid = beta_invalid,
+        ##alpha_invalid = alpha_invalid,
+        ##beta_invalid = beta_invalid,
         width = width
       ),
       chains = 3,
@@ -174,7 +174,9 @@ out1 <- pmap(
     full_model_lpdf(si, nu, max_shed, -1, 0.01,
                     3.552653, 6.896327, param_inc[["shape"]],
                     1 / param_inc[["scale"]], width,
-                    max(si) + 0.001, -1)
+                    max(sim_data$si) + 0.001, -1)
+    ## invalid_lpdf(si,  max(sim_data$si) + 0.001, param_offset,
+    ##              alpha_invalid, beta_invalid)
   }
 )
 
@@ -185,6 +187,22 @@ out2 <- pmap(
     full_model_lpdf(si, nu, max_shed, -1, 0.01,
                     7, 10, param_inc[["shape"]],
                     1 / param_inc[["scale"]], width,
-                    max(si) + 0.001, -1)
+                    max(sim_data$si) + 0.001, -1)
   }
 )
+
+out3 <- pmap(
+  sim_data[, c("si", "nu")],
+  function(si, nu) {
+    full_model_lpdf(si, nu, max_shed, -1, 0.01,
+                    70, 10, param_inc[["shape"]],
+                    1 / param_inc[["scale"]], width,
+                    max(sim_data$si) + 0.001, -1)
+  }
+)
+
+
+ggplot() +
+  geom_line(aes(sim_data$si, unlist(out1)), col = "red") +
+  geom_line(aes(sim_data$si, unlist(out2)), col = "blue") +
+  geom_line(aes(sim_data$si, unlist(out3)))
