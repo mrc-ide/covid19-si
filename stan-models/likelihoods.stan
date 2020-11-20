@@ -226,14 +226,12 @@ functions{
   // min_si to max_si
   // For each nu and for sampled recall, we have to normalise over
   // all possible SIs. Hence this loop.
-  real normalising_constant(real x, real nu, real max_si, real min_si,
-                            real recall, real width) {
-    real si_inner = min_si;
-    real denominator = 0;
-    while (si_inner <= max_si) {
-      denominator = denominator + exp(-recall * fabs(si_inner - nu));
-      si_inner = si_inner + width; 
-    }
+  real normalising_constant(real nu, real max_si, real min_si,
+                            real recall) {
+
+    real denominator;
+    denominator = (fabs(exp(-recall * (nu - min_si)) - 1) / recall) +
+      (fabs(exp(-recall * (max_si - nu)) + 1) / recall);
     denominator = log(denominator);
     return denominator;
   }
@@ -287,8 +285,7 @@ functions{
       out = out - beta_lcdf(nu_shifted / max_shed_shifted|alpha1, beta1);
     }
     out = out - recall * fabs(x - nu);
-    denominator = normalising_constant(x, nu, max_si, min_si,
-                                       recall, width);
+    denominator = normalising_constant(nu, max_si, min_si, recall);
     out = out - denominator;
     
     return out;
