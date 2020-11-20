@@ -4,9 +4,7 @@ simulate_3a_mix <- function(mean_inc, sd_inc, shape1, shape2, max_shed,
   valid_si <- (simulate_si(
     mean_inc, sd_inc, shape1, shape2,
     max_shed, NULL, NULL, nsim = nsim
-  )$si) - offset
-  
-  max_si <- max(valid_si)
+  )$si) + offset
   
   invalid_si <- (max_si - min_si)*
     rbeta(nsim, shape1 = alpha_invalid, shape2 = beta_invalid)
