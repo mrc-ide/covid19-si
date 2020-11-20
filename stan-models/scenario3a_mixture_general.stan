@@ -2,6 +2,7 @@
 data{
   int N; // number of data points
   real si[N];  
+  real nu[N]; // Time of isolation
   real max_shed;
   real offset1;
   real <lower = 0> alpha2; // incubation period parameter
@@ -27,8 +28,9 @@ model{
     //print("beta1 = ", beta1);    
     //print("valid pdf = ", valid);
     invalid = invalid_lpdf(si[n] | max_si, min_si, alpha_invalid, beta_invalid);
-    if (si[n] > offset1) {
-      valid = scenario3a_lpdf(si[n] | max_shed, offset1, alpha1, beta1, alpha2, beta2, width);
+    if ((si[n] > offset1) && (nu[n] > offset1)) {
+      valid = scenario3a_lpdf(si[n] | nu[n], max_shed, offset1, alpha1,
+                              beta1, alpha2, beta2, width);
       target += log_mix(pinvalid, invalid, valid);    
     } else {
       target += invalid;
