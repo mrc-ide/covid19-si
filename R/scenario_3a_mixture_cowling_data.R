@@ -5,8 +5,8 @@ offset <- -3
 
 # select number of simulations from posterior, and parameters for invalid dist.
 nsim <- 10000
-alpha_invalid <- 0.5
-beta_invalid <- 0.5
+alpha_invalid <- 1
+beta_invalid <- 1
 
 # load the data
 data <- readRDS("data/cowling_data_clean.rds")
@@ -29,6 +29,7 @@ fits_3a_mix <- stan(
   data = list(
     N = nrow(data_c),
     si = data_c$si,
+    nu = data_c$nu,
     max_shed = 21,
     offset1 = offset,
     alpha2 = params_inc_og[["shape"]],
@@ -40,12 +41,12 @@ fits_3a_mix <- stan(
     width = 0.1
   ),
   chains = 4,
-  iter = 5000,
+  iter = 4000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
 
-test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mix.pdf"))
+test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mix_uniform_filter.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
 
@@ -115,7 +116,7 @@ ggsave("figures/SI_3a_mix.png", psi, width = 7, height = 7, units = "in", dpi = 
 ## including invalid SIs in the figure
 
 si_post_p <- (simulate_3a_mix(mean_inc_og, sd_inc_og, shape1_max, shape2_max, max_shed,
-                            pinvalid = p_invalid_max, nsim = 100000, offset = -offset,
+                            pinvalid = p_invalid_max, nsim = 5000000, offset = offset,
                             alpha_invalid, beta_invalid, min_si = min(data_c$si), max_si = max(data_c$si)))
 si_post_iv <- si_post_p$simulated_si$si
 psi <- ggplot() +
@@ -125,19 +126,19 @@ psi <- ggplot() +
     binwidth = 1
   ) +
   
-  geom_density(aes(si_post_iv, fill = "red"),
+  geom_density(aes(si_post_iv, fill = "green"),
                alpha = 0.3
   ) +
   geom_vline(
     xintercept = mean(data_c$si), col = "blue", linetype = "dashed"
   ) +
   geom_vline(
-    xintercept = mean(si_post_iv), col = "red", linetype = "dashed"
+    xintercept = mean(si_post_iv), col = "green", linetype = "dashed"
   ) +
   scale_fill_identity(
     guide = "legend",
     labels = c("Data", "Posterior (valid & invalid SIs)"),
-    breaks = c("blue", "red")
+    breaks = c("blue", "green")
   ) +
   theme_minimal() +
   xlim(NA, 40)+

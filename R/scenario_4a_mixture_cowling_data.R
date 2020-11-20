@@ -5,8 +5,8 @@ offset <- -3
 
 # select number of simulations from posterior, and parameters for invalid dist.
 nsim <- 10000
-alpha_invalid <- 0.5
-beta_invalid <- 0.5
+alpha_invalid <- 1
+beta_invalid <- 1
 
 # load the data
 data <- readRDS("data/cowling_data_clean.rds")
@@ -45,7 +45,7 @@ fits_4a_mix <- stan(
   ##control = list(adapt_delta = 0.99)
 )
 
-test_fit_4a_mix <- ggmcmc(ggs(fits_4a_mix), here::here("figures/4a_mix.pdf"))
+test_fit_4a_mix <- ggmcmc(ggs(fits_4a_mix), here::here("figures/4a_mix_uniform.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
 
@@ -115,11 +115,11 @@ ggsave("figures/SI_4a_mix.png", psi, width = 7, height = 7, units = "in", dpi = 
 ## including invalid SIs in the figure
 
 si_post_p <- (simulate_3a_mix(mean_inc_og, sd_inc_og, shape1_max, shape2_max, max_shed,
-                              pinvalid = p_invalid_max, nsim = 100000, offset = -offset,
+                              pinvalid = p_invalid_max, nsim = 100000, offset = offset,
                               alpha_invalid, beta_invalid, min_si = min(data_c$si), max_si = max(data_c$si)))
 si_post_iv <- si_post_p$simulated_si$si
 
-psi <- ggplot() +
+psi_iv <- ggplot() +
   geom_histogram(
     data = data_c, aes(si, y = ..density.., fill = "blue"),
     alpha = 0.3,
@@ -143,7 +143,7 @@ psi <- ggplot() +
   theme_minimal() +
   xlab("Serial Interval") +
   theme(legend.title = element_blank())
-ggsave("figures/SI_4a_mix_invalid.png", psi)
+ggsave("figures/SI_4a_mix_invalid.png", psi_iv)
 
 
 ##################################
@@ -206,3 +206,74 @@ p_invalid_post <- fitted_params_4a_mix$pinvalid
 mean(p_invalid_post)
 median(p_invalid_post)
 quantile(p_invalid_post, c(0.025, 0.975))
+
+## adding conditional fitted distribution to the plot
+
+
+fitted_params_4a_mix <- readRDS("fitted_params_4a_mix.rds")
+
+inf_dist <- (max_shed *
+               rbeta(
+                 n = 10000,
+                 shape1 = fitted_max[["alpha1"]],
+                 shape2 = fitted_max[["beta1"]]
+               ))+offset
+
+n <- length(data_c$nu)
+inf_filt <- list() 
+
+for(v in 1:n){ #for each observed nu, filter out any sampled inf delays < nu
+  
+  inf_filt[[v]] <- inf_dist[which(inf_dist<data_c$nu[v])]
+}
+
+inf_conditional <- unlist(inf_filt) 
+inc <- rgamma(
+  n = length(inf_conditional),
+  shape = params_inc_og[["shape"]],
+  scale = params_inc_og[["scale"]]
+)
+si_conditional <- inf_conditional + inc
+
+psi+
+  geom_density(aes(si_conditional, fill = "green"),
+               alpha = 0.3
+  )+
+  geom_vline(
+    xintercept = mean(si_conditional), col = "green", linetype = "dashed"
+  )+
+  scale_fill_identity(
+    guide = "legend",
+    labels = c("Data", "Posterior", "Conditional"),
+    breaks = c("blue", "red", "green")
+  )
+
+## and with the invalid sis as well to assess fit of the whole model
+min_si <- min(data_c$si)
+max_si <- max(data_c$si)
+nsim <- length(si_conditional)
+pinvalid <- p_invalid_max
+
+invalid_si <- (max_si - min_si)*
+  rbeta(nsim, shape1 = alpha_invalid, shape2 = beta_invalid)
+
+invalid_si <- invalid_si + min_si
+toss <- runif(nsim)
+
+sim_invalid <- data.frame(si = invalid_si[toss <= pinvalid], group = "invalid")
+sim_valid <- data.frame(si = si_conditional[toss > pinvalid], group = "valid")
+
+conditional_si <- rbind(sim_invalid, sim_valid) 
+
+psi_cond <- psi+
+  geom_density(aes(conditional_si$si, fill = "green"),
+               alpha = 0.3
+  )+
+  geom_vline(
+    xintercept = mean(conditional_si$si), col = "green", linetype = "dashed"
+  )+
+  scale_fill_identity(
+    guide = "legend",
+    labels = c("Data", "Posterior", "Conditional"),
+    breaks = c("blue", "red", "green")
+  )
