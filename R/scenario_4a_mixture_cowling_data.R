@@ -51,7 +51,7 @@ test_fit_4a_mix <- ggmcmc(ggs(fits_4a_mix), here::here("figures/4a_mix_uniform.p
 
 
 fitted_params_4a_mix <- rstan::extract(fits_4a_mix)
-saveRDS(fitted_params_4a_mix, file = "fitted_params_4a_mix.rds")
+saveRDS(fitted_params_4a_mix, file = "fitted_params_4a_mix_2.rds")
 max_index <- which(fitted_params_4a_mix$lp__==max(fitted_params_4a_mix$lp__))
 
 fitted_max <- c(alpha1 = fitted_params_4a_mix$alpha1[max_index], 
@@ -110,7 +110,7 @@ psi <- ggplot() +
   xlim(NA,40)+
   ylim(0,0.105)+
   theme(legend.title = element_blank())
-ggsave("figures/SI_4a_mix.png", psi, width = 7, height = 7, units = "in", dpi = 300, device = "png")
+ggsave("figures/SI_4a_mix2.png", psi, width = 7, height = 7, units = "in", dpi = 300, device = "png")
 
 ## including invalid SIs in the figure
 
@@ -143,7 +143,7 @@ psi_iv <- ggplot() +
   theme_minimal() +
   xlab("Serial Interval") +
   theme(legend.title = element_blank())
-ggsave("figures/SI_4a_mix_invalid.png", psi_iv)
+ggsave("figures/SI_4a_mix_invalid2.png", psi_iv)
 
 
 ##################################
