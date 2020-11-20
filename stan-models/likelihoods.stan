@@ -220,6 +220,23 @@ functions{
     return out;
   }
 
+  // x: SI
+  // nu: Delay from symptom onset to isolation
+  // approximation of integral of exp(-beta * |t - nu|)dt from
+  // min_si to max_si
+  // For each nu and for sampled recall, we have to normalise over
+  // all possible SIs. Hence this loop.
+  real normalising_constant(real x, real nu, real max_si, real min_si,
+                            real recall, real width) {
+    real si_inner = min_si;
+    real denominator = 0;
+    while (si_inner <= max_si) {
+      denominator = denominator + exp(-recall * fabs(si_inner - nu));
+      si_inner = si_inner + width; 
+    }
+    denominator = log(denominator);
+    return denominator;
+  }
   // x : SI
   // nu: Delay from symptom onset to isolation
   // max_shed: Maximum possible time of infection of secondary case
@@ -232,7 +249,8 @@ functions{
   // smaller than the samllest SI.
   real full_model_lpdf(real x, real nu, real max_shed, real offset1,
                        real recall, real alpha1, real beta1,
-                       real alpha2, real beta2, real width) {
+                       real alpha2, real beta2, real width,
+                       real max_si, real min_si) {
     real s;
     real out;
     real inf_density;
@@ -240,6 +258,7 @@ functions{
     real ulim;
     real max_shed_shifted;
     real nu_shifted;
+    real denominator;
     
     if (x > max_shed) ulim = max_shed;
     else ulim = x;
@@ -268,7 +287,12 @@ functions{
       out = out - beta_lcdf(nu_shifted / max_shed_shifted|alpha1, beta1);
     }
     out = out - recall * fabs(x - nu);
+    denominator = normalising_constant(x, nu, max_si, min_si,
+                                       recall, width);
+    out = out - denominator;
+    
     return out;
   }
+
 }
 

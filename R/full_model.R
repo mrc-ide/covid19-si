@@ -54,7 +54,7 @@ params_recall_all <- map(
 )
 
 prefix <- "full_model_sim_"
-nsim_post_filter <- 200
+nsim_post_filter <- 500
 
 simulated_data <- pmap(
   list(
@@ -138,7 +138,7 @@ width <- 0.1
 
 fits <- pmap(
   list(
-    sim_data = mixed,
+    sim_data = with_recall_bias,
     param_inc = params_inc_all,
     param_offset = params_offset_all
   ),
@@ -153,7 +153,7 @@ fits <- pmap(
         max_shed = max_shed,
         offset1 = param_offset,
         max_si = max(sim_data$si) + 0.001,
-        min_si = min(sim_data$si) - 0.001,
+        min_si = param_offset, ## assuming the smallest incubation period is 0
         alpha2 = param_inc[["shape"]],
         beta2 = 1 / param_inc[["scale"]],
         alpha_invalid = alpha_invalid,
@@ -168,3 +168,23 @@ fits <- pmap(
   }
 )
 
+out1 <- pmap(
+  sim_data[, c("si", "nu")],
+  function(si, nu) {
+    full_model_lpdf(si, nu, max_shed, -1, 0.01,
+                    3.552653, 6.896327, param_inc[["shape"]],
+                    1 / param_inc[["scale"]], width,
+                    max(si) + 0.001, -1)
+  }
+)
+
+
+out2 <- pmap(
+  sim_data[, c("si", "nu")],
+  function(si, nu) {
+    full_model_lpdf(si, nu, max_shed, -1, 0.01,
+                    7, 10, param_inc[["shape"]],
+                    1 / param_inc[["scale"]], width,
+                    max(si) + 0.001, -1)
+  }
+)

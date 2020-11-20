@@ -21,8 +21,6 @@ parameters{
   real <lower = 0, upper = 5> recall;
 }
 model{
-  real si_inner;
-  real denominator;
   real valid;
   real invalid;
   for (outer in 1:N) {
@@ -30,21 +28,9 @@ model{
                            alpha_invalid, beta_invalid);
 
     if ((si[outer] > offset1) && (nu[outer] > offset1)) {
-      // For each nu and for sampled recall, we have to normalise over
-      // all possible SIs. Hence this loop.
-      denominator = 0;
-      si_inner = 0;
-      while (si_inner <= max_si) {
-        denominator = denominator +
-          exp(-recall * fabs(si_inner - nu[outer]));
-        // No real reason to increment this by width as well,
-        // can increase it for speed
-        si_inner = si_inner + width; 
-      }
-      denominator = log(denominator);
       valid = full_model_lpdf(si[outer]| nu[outer], max_shed, offset1,
                               recall, alpha1, beta1, alpha2, beta2,
-                              width) - denominator;
+                              width, max_si, min_si);
       target += log_mix(pinvalid, invalid, valid);
      } else {
        target += invalid;
