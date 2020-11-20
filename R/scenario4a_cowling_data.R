@@ -130,7 +130,7 @@ shape2 <- fitted_params_4a[[2]][idx]
 # 2. for each infectious profile, simulate an SI distribution (of 1000 SIs)
 si_post_4a <- matrix(nrow = 1000, ncol = length(idx))
 for(i in 1:length(idx)){
-  si_post_4a[,i] <- (simulate_si(mean_inc_og, sd_inc_og, shape1[i], shape2[i], max_shed, 2, 2, nsim = 1000))$si - offset
+  si_post_4a[,i] <- (simulate_si(mean_inc_og, sd_inc_og, shape1[i], shape2[i], max_shed, 2, 2, nsim = 1000))$si + offset
 }
 
 # 3. for each simulated SI distribution, extract the median, mean and sd
@@ -169,3 +169,45 @@ ggplot()+
   geom_vline(xintercept = si_sd_95_4a[2], col = "red", lty = 2)+
   geom_vline(xintercept = sd(si_post_max4a))+
   xlim(4, 20)
+
+## adding conditional fitted distribution to the plot
+
+fitted_params <- readRDS("fitted_params_4a.rds")
+
+  inf_dist <- (max_shed *
+                 rbeta(
+                   n = 10000,
+                   shape1 = fitted_max[["alpha1"]],
+                   shape2 = fitted_max[["beta1"]]
+                 ))+offset
+  
+  n <- length(data_offset$nu)
+  inf_filt <- list() 
+  
+  for(v in 1:n){ #for each observed nu, filter out any sampled inf delays < nu
+
+  inf_filt[[v]] <- inf_dist[which(inf_dist<data_offset$nu[v])]
+  }
+ 
+  inf_conditional <- unlist(inf_filt) 
+  inc <- rgamma(
+    n = length(inf_conditional),
+    shape = params_inc_og[["shape"]],
+    scale = params_inc_og[["scale"]]
+  )
+  si_conditional <- inf_conditional + inc
+
+  psi+
+    geom_density(aes(si_conditional, fill = "green"),
+                 alpha = 0.3
+    )+
+    geom_vline(
+      xintercept = mean(si_conditional), col = "green", linetype = "dashed"
+    )+
+    scale_fill_identity(
+      guide = "legend",
+      labels = c("Data", "Posterior", "Conditional"),
+      breaks = c("blue", "red", "green")
+    )
+    
+  
