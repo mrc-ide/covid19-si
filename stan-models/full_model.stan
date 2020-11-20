@@ -5,6 +5,8 @@ data{
   real nu[N]; // Time of isolation
   real max_shed;
   real offset1;
+  real max_si;
+  real min_si;
   real <lower = 0> alpha2; // incubation period parameter
   real <lower = 0> beta2; // incubation period parameter
   real <lower = 0> width;
@@ -27,7 +29,7 @@ model{
     invalid = invalid_lpdf(si[outer] | max_si, min_si,
                            alpha_invalid, beta_invalid);
 
-    if (si[outer] && nu[outer] > offset1) {
+    if ((si[outer] > offset1) && (nu[outer] > offset1)) {
       // For each nu and for sampled recall, we have to normalise over
       // all possible SIs. Hence this loop.
       denominator = 0;
