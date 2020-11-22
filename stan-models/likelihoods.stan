@@ -225,14 +225,25 @@ functions{
   // approximation of integral of exp(-beta * |t - nu|)dt from
   // min_si to max_si
   // For each nu and for sampled recall, we have to normalise over
-  // all possible SIs. Hence this loop.
+  // all possible SIs. Here we have the analytical solution to this
+  // integral
   real normalising_constant(real nu, real max_si, real min_si,
                             real recall) {
 
     real denominator;
-    denominator = (fabs(exp(-recall * (nu - min_si)) - 1) / recall) +
-      (fabs(exp(-recall * (max_si - nu)) + 1) / recall);
-    denominator = log(denominator);
+    if (nu > min_si && nu < max_si) {
+      denominator = 2 - exp(-recall * (nu - min_si)) -
+        exp(-recall * (max_si - nu));      
+    }
+    if (nu <= min_si) {
+      denominator =  -exp(recall * (-max_si + nu)) +
+        exp(recall * (-min_si + nu));
+    }
+    if (nu >= max_si) {
+      denominator = exp(recall * (max_si - nu)) -
+        exp(recall * (min_si - nu));
+    }
+    denominator = log(denominator) - log(recall);
     return denominator;
   }
   // x : SI

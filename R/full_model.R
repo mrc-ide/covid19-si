@@ -122,17 +122,35 @@ mixed <- pmap(
   }
 )
 
-with_recall_bias <- map2(
-  mixed,
-  params_recall_all,
-  function(df, recall_true) {
-    df$p_si <- exp(abs(df$si - df$nu) * -recall_true)
-    idx <- sample(
-      nrow(df), nrow(df), replace = TRUE, prob = df$p_si
-    )
+denominator <- function(nu, recall, max_si, min_si) {
+  if (nu > min_si & nu < max_si) {
+    out <-   (2 - exp(recall * (-nu + min_si)) -
+              exp(recall * (-max_si + nu)))
+  } else if (nu > max_si) {
+    out <- exp(recall * (max_si - nu)) - exp(recall * (min_si - nu))
+  } else if (nu < min_si) {
+    out <- -exp(recall * (-max_si + nu)) + exp(recall * (-min_si + nu))
+  }
+  out / recall
+}
+
+f <- Vectorize(denominator)
+
+with_recall_bias <- pmap(
+  list(
+    df = mixed,
+    recall_true = params_recall_all,
+    offset = params_offset_all
+  ),
+  function(df, recall_true, offset) {
+
+    x <- f(df$nu, recall_true, max(df$si), offset)
+    df$p_si <- exp(abs(df$si - df$nu) * -recall_true) / x
+    idx <- sample(nrow(df), nrow(df), replace = TRUE, prob = df$p_si)
     df[idx, ]
   }
 )
+
 
 width <- 0.1
 
@@ -161,7 +179,7 @@ fits <- pmap(
         width = width
       ),
       chains = 3,
-      iter = 4000,
+      iter = 1000,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
     )
