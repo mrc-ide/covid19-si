@@ -21,7 +21,7 @@ parameters{
   real <lower = 0, upper = 5> recall;
 }
 model{
-  real valid;
+  //real valid;
   //real invalid;
   for (outer in 1:N) {
     //invalid = invalid_lpdf(si[outer] | max_si, min_si,
