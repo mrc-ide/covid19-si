@@ -179,7 +179,7 @@ fits <- pmap(
         width = width
       ),
       chains = 3,
-      iter = 1000,
+      iter = 4000,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
     )
