@@ -41,9 +41,7 @@ params_iso_all <- map(
   }
 )
 
-params_pinv_all <- map(
-  param_grid$params_pinv, function(x) params[[x]]
-)
+params_pinv_all <- 0
 
 params_offset_all <- map(
   param_grid$params_offset, function(x) params[[x]]
@@ -124,11 +122,11 @@ mixed <- pmap(
 
 denominator <- function(nu, recall, max_si, min_si) {
   if (nu > min_si & nu < max_si) {
-    out <-   (2 - exp(recall * (-nu + min_si)) -
+    out <- (2 - exp(recall * (-nu + min_si)) -
               exp(recall * (-max_si + nu)))
-  } else if (nu > max_si) {
+  } else if (nu >= max_si) {
     out <- exp(recall * (max_si - nu)) - exp(recall * (min_si - nu))
-  } else if (nu < min_si) {
+  } else if (nu <= min_si) {
     out <- -exp(recall * (-max_si + nu)) + exp(recall * (-min_si + nu))
   }
   out / recall
@@ -179,12 +177,17 @@ fits <- pmap(
         width = width
       ),
       chains = 3,
-      iter = 4000,
+      iter = 1000,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
     )
   }
 )
+
+## grid <- expand.grid(si = -1:40, nu = 0:40)
+## den <-  map_dbl(grid$nu, ~ denominator(., 0.1, 40, -1))
+## num <- exp(-0.1 * abs(grid$nu - grid$si))
+## grid$p_si <- num / den
 
 out1 <- pmap(
   sim_data[, c("si", "nu")],
