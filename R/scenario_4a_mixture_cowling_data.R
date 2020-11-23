@@ -52,6 +52,7 @@ test_fit_4a_mix <- ggmcmc(ggs(fits_4a_mix), here::here("figures/4a_mix_uniform.p
 
 fitted_params_4a_mix <- rstan::extract(fits_4a_mix)
 saveRDS(fitted_params_4a_mix, file = "fitted_params_4a_mix_2.rds")
+fitted_params_4a_mix <- readRDS("fitted_params_4a_mix.rds")
 max_index <- which(fitted_params_4a_mix$lp__==max(fitted_params_4a_mix$lp__))
 
 fitted_max <- c(alpha1 = fitted_params_4a_mix$alpha1[max_index], 
@@ -222,13 +223,15 @@ inf_dist <- (max_shed *
 
 n <- length(data_c$nu)
 inf_filt <- list() 
+inf_filt_1000 <- list() 
 
 for(v in 1:n){ #for each observed nu, filter out any sampled inf delays < nu
   
   inf_filt[[v]] <- inf_dist[which(inf_dist<data_c$nu[v])]
+  inf_filt_1000[[v]] <- sample(x = inf_filt[[v]], size = 1000, replace = TRUE)
 }
 
-inf_conditional <- unlist(inf_filt) 
+inf_conditional <- unlist(inf_filt_1000) 
 inc <- rgamma(
   n = length(inf_conditional),
   shape = params_inc_og[["shape"]],
@@ -245,7 +248,7 @@ psi+
   )+
   scale_fill_identity(
     guide = "legend",
-    labels = c("Data", "Posterior", "Conditional"),
+    labels = c("Data", "Posterior - 'true SI'", "Conditional SI (+isolation)"),
     breaks = c("blue", "red", "green")
   )
 
@@ -275,7 +278,7 @@ psi_cond <- psi+
   )+
   scale_fill_identity(
     guide = "legend",
-    labels = c("Data", "Posterior", "Conditional"),
+    labels = c("Data", "Posterior - 'true SI'", "Conditional(+isolation, +invalid SI)"),
     breaks = c("blue", "red", "green")
   )
 ggsave("figures/SI_4a_mix2.png", psi_cond, width = 7, height = 7, units = "in", dpi = 300, device = "png")
