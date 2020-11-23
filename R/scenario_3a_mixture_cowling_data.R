@@ -46,10 +46,10 @@ fits_3a_mix <- stan(
   ##control = list(adapt_delta = 0.99)
 )
 
-test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mix_uniform_filter.pdf"))
+test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mix_uniform_filter_pinvalid.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
-
+#fitted_params_3a_mix <- readRDS("fitted_params_3a_mix.rds")
 
 fitted_params_3a_mix <- rstan::extract(fits_3a_mix)
 saveRDS(fitted_params_3a_mix, file = "fitted_params_3a_mix.rds")
@@ -129,16 +129,22 @@ psi <- ggplot() +
   geom_density(aes(si_post_iv, fill = "green"),
                alpha = 0.3
   ) +
+  geom_density(aes(si_post, fill = "red"),
+               alpha = 0.3
+  ) +
   geom_vline(
     xintercept = mean(data_c$si), col = "blue", linetype = "dashed"
   ) +
   geom_vline(
     xintercept = mean(si_post_iv), col = "green", linetype = "dashed"
   ) +
+  geom_vline(
+    xintercept = mean(si_post), col = "red", linetype = "dashed"
+  ) +
   scale_fill_identity(
     guide = "legend",
-    labels = c("Data", "Posterior (valid & invalid SIs)"),
-    breaks = c("blue", "green")
+    labels = c("Data", "Posterior - 'true SI'", "Posterior (valid & invalid SIs)"),
+    breaks = c("blue", "red", "green")
   ) +
   theme_minimal() +
   xlim(NA, 40)+
@@ -205,4 +211,4 @@ p_invalid_post <- fitted_params_3a_mix$pinvalid
 mean(p_invalid_post)
 median(p_invalid_post)
 quantile(p_invalid_post, c(0.025, 0.975))
-
+ 

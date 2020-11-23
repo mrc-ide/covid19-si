@@ -40,7 +40,7 @@ fits_4a_mix <- stan(
     width = 0.1
   ),
   chains = 4,
-  iter = 5000,
+  iter = 4000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
@@ -59,6 +59,7 @@ fitted_max <- c(alpha1 = fitted_params_4a_mix$alpha1[max_index],
                 p_invalid = fitted_params_4a_mix$pinvalid[max_index])
 shape1_max <- fitted_max["alpha1"]
 shape2_max <- fitted_max["beta1"]
+p_invalid_max <- fitted_max["p_invalid"]
 
 x <- (max_shed *
         rbeta(
@@ -199,7 +200,7 @@ ggplot()+
 
 ## getting the CrI for p_invalid
 
-p_invalid_max <- fitted_max["p_invalid"]
+
 
 p_invalid_post <- fitted_params_4a_mix$pinvalid
 
@@ -277,3 +278,4 @@ psi_cond <- psi+
     labels = c("Data", "Posterior", "Conditional"),
     breaks = c("blue", "red", "green")
   )
+ggsave("figures/SI_4a_mix2.png", psi_cond, width = 7, height = 7, units = "in", dpi = 300, device = "png")

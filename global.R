@@ -16,8 +16,8 @@ rstan_options(auto_write = TRUE)
 
 max_shed <- 21
 nsim <- 500
-alpha_invalid <- 0.5
-beta_invalid <- 0.5
+alpha_invalid <- 1
+beta_invalid <- 1
 min_si <- -2 ## For simulations
 offset <- -2 # this is not the smallest possible SI, but the maximum
 ## time before symptom onset when secondary infection can happeb.
