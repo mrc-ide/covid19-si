@@ -152,6 +152,8 @@ with_recall_bias <- pmap(
 
 
 width <- 0.1
+model <- cmdstan_model("stan-models/full_model.stan")
+max_si <- 40
 
 fits <- pmap(
   list(
@@ -160,26 +162,26 @@ fits <- pmap(
     param_offset = params_offset_all
   ),
   function(sim_data, param_inc, param_offset) {
-
-    fit <- stan(
-      file = here::here("stan-models/full_model.stan"),
+    si_vec <- seq(offset + width + 0.01, max_si, 0.1)
+    fit <- model$sample(
       data = list(
         N = length(sim_data$si),
         si = sim_data$si,
         nu = sim_data$nu,
         max_shed = max_shed,
         offset1 = param_offset,
-        max_si = max(sim_data$si) + 0.001,
+        max_si = max_si, ##max(sim_data$si) + 0.001,
         min_si = param_offset, ## assuming the smallest incubation period is 0
         alpha2 = param_inc[["shape"]],
         beta2 = 1 / param_inc[["scale"]],
-        ##alpha_invalid = alpha_invalid,
-        ##beta_invalid = beta_invalid,
-        width = width
+        width = width,
+        M = length(si_vec),
+        y = si_vec
       ),
-      chains = 3,
-      iter = 2000,
-      verbose = TRUE
+      seed = 42,
+      chains = 4,
+      iter_warmup = 200,
+      iter_sampling = 200
       ## control = list(adapt_delta = 0.99)
     )
   }

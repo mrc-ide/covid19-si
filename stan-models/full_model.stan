@@ -66,30 +66,14 @@ functions {
                    real alpha2, real beta2, real width,
                    real max_si, real min_si) {
     real out = 0;
-    for (y in y_slice) {
-      out += full_model_lpdf(y | nu, max_shed, offset1, recall, 
-                             alpha1, beta1, alpha2, beta2, width,
-                             max_si, min_si);
+    for (idx in start:end) {
+      out += full_model_lpdf(y_slice[idx] | nu, max_shed, offset1, 
+                             recall, alpha1, beta1, alpha2, beta2, 
+                             width, max_si, min_si);
     }
     return out;
   }
   
-  real normalising_constant(real[] y, real nu, real max_shed, real offset1,
-                            real recall, real alpha1, real beta1,
-                            real alpha2, real beta2, real width,
-                            real max_si, real min_si){
-
-    real denominator = 0;
-    // Smallest SI allowed is should be at least offset1 + width
-    // But in fact when SI is offset1 + width, pdf is -Inf
-    // So make it a tiny bit bigger
-    //real s = offset1 + width + 0.001;
-    int grainsize = 1;
-    denominator += reduce_sum(partial_sum, y, grainsize, nu, max_shed,
-                              offset1, recall, alpha1, beta1,
-                              alpha2, beta2, width, max_si, min_si)
-    return denominator;
-  }
 }
 data{
   int N; // number of data points
@@ -106,7 +90,8 @@ data{
   // easy way of doing this. In R,
   // y <- seq(offset1 + width + 0.001, max_si, width)
   // See comments below for explanation
-  real[] y; // Vector of possible SIs from min_si to max_si to normalise over
+  int M; // length of this sequence of SIs
+  real y[M]; // Vector of possible SIs from min_si to max_si to normalise over
   //real <lower = 0> alpha_invalid;
   //real <lower = 0> beta_invalid;  
   
@@ -121,14 +106,15 @@ model{
   //real valid;
   //real invalid;
   real denominator;
+  int grainsize = 1;
   for (outer in 1:N) {
     //invalid = invalid_lpdf(si[outer] | max_si, min_si,
     //                     alpha_invalid, beta_invalid);
 
     //if ((si[outer] > offset1) && (nu[outer] > offset1)) {
-    denominator = normalising_constant(y, nu[outer], max_shed, offset1,
-                                       recall, alpha1, beta1, alpha2, 
-                                       beta2, width, max_si, min_si);
+    denominator += reduce_sum(partial_sum, y, grainsize, nu[outer], 
+                              max_shed, offset1, recall, alpha1, beta1,
+                              alpha2, beta2, width, max_si, min_si);
     target += full_model_lpdf(si[outer]| nu[outer], max_shed, offset1,
                               recall, alpha1, beta1, alpha2, beta2,
                               width, max_si, min_si) - denominator;
