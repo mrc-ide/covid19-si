@@ -86,12 +86,8 @@ data{
   real <lower = 0> alpha2; // incubation period parameter
   real <lower = 0> beta2; // incubation period parameter
   real <lower = 0> width;
-  // y is a vector of SIs, created in R because Stan doesn't have an
-  // easy way of doing this. In R,
-  // y <- seq(offset1 + width + 0.001, max_si, width)
-  // See comments below for explanation
-  int M; // length of this sequence of SIs
-  real y[M]; // Vector of possible SIs from min_si to max_si to normalise over
+  int M;
+  real y_vec[M];
   //real <lower = 0> alpha_invalid;
   //real <lower = 0> beta_invalid;  
   
@@ -112,9 +108,10 @@ model{
     //                     alpha_invalid, beta_invalid);
 
     //if ((si[outer] > offset1) && (nu[outer] > offset1)) {
-    denominator += reduce_sum(partial_sum, y, grainsize, nu[outer], 
-                              max_shed, offset1, recall, alpha1, beta1,
-                              alpha2, beta2, width, max_si, min_si);
+    denominator = normalising_constant(y_vec, nu[outer], max_shed, 
+                                       offset1, recall, alpha1, beta1, 
+                                       alpha2, beta2, width, max_si,
+                                       min_si);
     target += full_model_lpdf(si[outer]| nu[outer], max_shed, offset1,
                               recall, alpha1, beta1, alpha2, beta2,
                               width, max_si, min_si) - denominator;

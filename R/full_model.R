@@ -144,7 +144,7 @@ with_recall_bias <- pmap(
   function(df, recall_true, offset) {
 
     ##x <- f(df$nu, recall_true, max(df$si), offset)
-    df$p_si <- exp(abs(df$si - df$nu) * -recall_true)
+    df$p_si <- exp(abs(df$si - df$nu) * -recall_true) ##/ x
     idx <- sample(nrow(df), nrow(df), replace = TRUE, prob = df$p_si)
     df[idx, ]
   }
@@ -152,7 +152,6 @@ with_recall_bias <- pmap(
 
 
 width <- 0.1
-model <- cmdstan_model("stan-models/full_model.stan")
 max_si <- 40
 
 fits <- pmap(
@@ -162,8 +161,10 @@ fits <- pmap(
     param_offset = params_offset_all
   ),
   function(sim_data, param_inc, param_offset) {
-    si_vec <- seq(offset + width + 0.01, max_si, 0.1)
-    fit <- model$sample(
+    ## Choose a coarse grid here to make things faster
+    si_vec <- seq(param_offset + width + 0.001, max_si, 1)
+    fit <- stan(
+      file = here::here("stan-models/full_model.stan"),
       data = list(
         N = length(sim_data$si),
         si = sim_data$si,
@@ -176,7 +177,7 @@ fits <- pmap(
         beta2 = 1 / param_inc[["scale"]],
         width = width,
         M = length(si_vec),
-        y = si_vec
+        y_vec = si_vec
       ),
       seed = 42,
       chains = 4,
