@@ -1,4 +1,4 @@
-functions {
+functions{
  real scenario1a_lpdf(real x,
                        real max_shed,
                        real alpha1,      
@@ -315,4 +315,3 @@ functions {
   }
   
 }
-

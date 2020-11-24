@@ -8,7 +8,6 @@ param_grid <- expand.grid(
   params_pinv = c("pinvalid1", "pinvalid2", "pinvalid3"),
   stringsAsFactors = FALSE
 )
-
 param_grid <- param_grid[1, ]
 nsim <- 20000
 
@@ -152,7 +151,7 @@ with_recall_bias <- pmap(
 
 
 width <- 0.1
-max_si <- 40
+max_si <- 20
 
 fits <- pmap(
   list(
@@ -162,7 +161,7 @@ fits <- pmap(
   ),
   function(sim_data, param_inc, param_offset) {
     ## Choose a coarse grid here to make things faster
-    si_vec <- seq(param_offset + width + 0.001, max_si, 1)
+    si_vec <- seq(param_offset + 0.1 + 0.001, max_si, 0.1)
     fit <- stan(
       file = here::here("stan-models/full_model.stan"),
       data = list(
@@ -171,7 +170,7 @@ fits <- pmap(
         nu = sim_data$nu,
         max_shed = max_shed,
         offset1 = param_offset,
-        max_si = max_si, ##max(sim_data$si) + 0.001,
+        max_si = max(sim_data$si) + 0.001,
         min_si = param_offset, ## assuming the smallest incubation period is 0
         alpha2 = param_inc[["shape"]],
         beta2 = 1 / param_inc[["scale"]],
@@ -179,17 +178,16 @@ fits <- pmap(
         M = length(si_vec),
         y_vec = si_vec
       ),
-      seed = 42,
-      chains = 4,
-      iter_warmup = 200,
-      iter_sampling = 200
+      chains = 1,
+      iter = 2000,
+      verbose = TRUE
       ## control = list(adapt_delta = 0.99)
     )
   }
 )
 
 
-grid <- expand.grid(recall = seq(0, 2, by = 0.01))
+grid <- expand.grid(recall = seq(-1, 2, by = 0.01))
 
 ll <- pmap_dfr(
   grid,
@@ -208,18 +206,12 @@ ll <- pmap_dfr(
           max(sim_data$si) + 0.001, -1
         )
         data.frame(
-          si = si, nu = nu, ll = out, recall = recall
+          si = si, nu = nu, ll = ll, recall = recall
         )
       }
     )
   }
 )
-
-x <- group_by(ll, recall) %>%
-  summarise(total = sum(ll)) %>%
-  ungroup()
-
-x[which.max(x$total), ]
 
 total_ll <- map_dbl(ll, sum)
 ggplot() + geom_point(aes(grid$recall, total_ll))
@@ -289,20 +281,8 @@ normalising_constant(real nu, real max_si, real min_si,
 
 
 denominator(nu = 3.87151, recall = 0.01, max_si = 21.1471, min_si = -1)
-nu <- seq(0, 5, by = 0.1)
-alpha1 <- params_inf_all[[1]][[1]]
-beta1 <- params_inf_all[[1]][[2]]
-alpha2 <- params_inc_all[[1]][[1]]
-beta2 <- params_inc_all[[1]][[2]]
 
-out <- map_dbl(
-  nu, function(x) {
-    normalising_constant(x, max_shed, -1, 0.5,
-                         alpha1, beta1, alpha2, beta2, width, 40, -1)
-  }
-)
-
-
+out <- map_dbl(sim_data$nu, ~ normalising_constant(., 21.14708, -1, 0.01))
 out2 <- map_dbl(
   sim_data$nu, ~ log(denominator(
                 nu = ., max_si = max(sim_data$si) + 0.001,
