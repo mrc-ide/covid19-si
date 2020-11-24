@@ -52,7 +52,7 @@ test_fit_4a_mix <- ggmcmc(ggs(fits_4a_mix), here::here("figures/4a_mix_uniform.p
 
 fitted_params_4a_mix <- rstan::extract(fits_4a_mix)
 saveRDS(fitted_params_4a_mix, file = "fitted_params_4a_mix_2.rds")
-fitted_params_4a_mix <- readRDS("fitted_params_4a_mix.rds")
+#fitted_params_4a_mix <- readRDS("fitted_params_4a_mix.rds")
 max_index <- which(fitted_params_4a_mix$lp__==max(fitted_params_4a_mix$lp__))
 
 fitted_max <- c(alpha1 = fitted_params_4a_mix$alpha1[max_index], 
@@ -216,19 +216,21 @@ fitted_params_4a_mix <- readRDS("fitted_params_4a_mix.rds")
 
 inf_dist <- (max_shed *
                rbeta(
-                 n = 10000,
+                 n = 100000,
                  shape1 = fitted_max[["alpha1"]],
                  shape2 = fitted_max[["beta1"]]
                ))+offset
 
 n <- length(data_c$nu)
-inf_filt <- list() 
+inf_filt <- vector() 
 inf_filt_1000 <- list() 
 
 for(v in 1:n){ #for each observed nu, filter out any sampled inf delays < nu
   
-  inf_filt[[v]] <- inf_dist[which(inf_dist<data_c$nu[v])]
-  inf_filt_1000[[v]] <- sample(x = inf_filt[[v]], size = 1000, replace = TRUE)
+  if(((data_c$nu[v])>offset)&& (data_c$si[v]>offset)){
+    inf_filt <- inf_dist[which(inf_dist<data_c$nu[v])]
+  inf_filt_1000[[v]] <- sample(x = inf_filt, size = 10000, replace = TRUE)
+  }
 }
 
 inf_conditional <- unlist(inf_filt_1000) 
