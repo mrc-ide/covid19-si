@@ -10,6 +10,8 @@ data{
   real <lower = 0> alpha2; // incubation period parameter
   real <lower = 0> beta2; // incubation period parameter
   real <lower = 0> width;
+  int M;
+  real y_vec[M];
   //real <lower = 0> alpha_invalid;
   //real <lower = 0> beta_invalid;  
   
@@ -29,9 +31,10 @@ model{
     //                     alpha_invalid, beta_invalid);
 
     //if ((si[outer] > offset1) && (nu[outer] > offset1)) {
-    denominator = normalising_constant(nu[outer], max_shed, offset1,
-                                       recall, alpha1, beta1, alpha2, 
-                                       beta2, width, max_si, min_si);
+    denominator = normalising_constant(y_vec, nu[outer], max_shed, 
+                                       offset1, recall, alpha1, beta1, 
+                                       alpha2, beta2, width, max_si,
+                                       min_si);
     target += full_model_lpdf(si[outer]| nu[outer], max_shed, offset1,
                               recall, alpha1, beta1, alpha2, beta2,
                               width, max_si, min_si) - denominator;

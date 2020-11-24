@@ -294,23 +294,22 @@ functions{
     return out;
   }
 
-  real normalising_constant(real nu, real max_shed, real offset1,
-                            real recall, real alpha1, real beta1,
-                            real alpha2, real beta2, real width,
-                            real max_si, real min_si){
+  real normalising_constant(real[] y_vec, real nu, real max_shed, 
+                            real offset1, real recall, real alpha1, 
+                            real beta1, real alpha2, real beta2, 
+                            real width, real max_si, real min_si) {
 
     real denominator = 0;
     // Smallest SI allowed is should be at least offset1 + width
     // But in fact when SI is offset1 + width, pdf is -Inf
     // So make it a tiny bit bigger
-    real s = offset1 + width + 0.001;
-    while (s < max_si) {
-      denominator = denominator +
-        full_model_lpdf(s| nu, max_shed, offset1, recall, alpha1,
+    //real s = offset1 + width + 0.001;
+    for (y in y_vec) {
+      denominator +=
+        full_model_lpdf(y| nu, max_shed, offset1, recall, alpha1,
                         beta1, alpha2, beta2, width, max_si, min_si);
       //print("denominator is now ", denominator);
       //print("s is now ", s);
-      s = s + width;
     }
     return denominator;
   }

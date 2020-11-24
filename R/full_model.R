@@ -52,7 +52,7 @@ params_recall_all <- map(
 )
 
 prefix <- "full_model_sim_"
-nsim_post_filter <- 500
+nsim_post_filter <- 100
 
 simulated_data <- pmap(
   list(
@@ -142,8 +142,8 @@ with_recall_bias <- pmap(
   ),
   function(df, recall_true, offset) {
 
-    x <- f(df$nu, recall_true, max(df$si), offset)
-    df$p_si <- exp(abs(df$si - df$nu) * -recall_true) / x
+    ##x <- f(df$nu, recall_true, max(df$si), offset)
+    df$p_si <- exp(abs(df$si - df$nu) * -recall_true) ##/ x
     idx <- sample(nrow(df), nrow(df), replace = TRUE, prob = df$p_si)
     df[idx, ]
   }
@@ -151,6 +151,7 @@ with_recall_bias <- pmap(
 
 
 width <- 0.1
+max_si <- 40
 
 fits <- pmap(
   list(
@@ -159,7 +160,8 @@ fits <- pmap(
     param_offset = params_offset_all
   ),
   function(sim_data, param_inc, param_offset) {
-
+    ## Choose a coarse grid here to make things faster
+    si_vec <- seq(param_offset + width + 0.001, max_si, 1)
     fit <- stan(
       file = here::here("stan-models/full_model.stan"),
       data = list(
@@ -172,9 +174,9 @@ fits <- pmap(
         min_si = param_offset, ## assuming the smallest incubation period is 0
         alpha2 = param_inc[["shape"]],
         beta2 = 1 / param_inc[["scale"]],
-        ##alpha_invalid = alpha_invalid,
-        ##beta_invalid = beta_invalid,
-        width = width
+        width = width,
+        M = length(si_vec),
+        y_vec = si_vec
       ),
       chains = 3,
       iter = 2000,
