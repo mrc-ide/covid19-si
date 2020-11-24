@@ -231,21 +231,39 @@ functions{
                             real recall) {
 
     real denominator;
-    if (nu > min_si && nu < max_si) {
-      denominator = 2 - exp(-recall * (nu - min_si)) -
-        exp(-recall * (max_si - nu));      
+    if (recall == 0) {
+      denominator = log(max_si - min_si);
+      return(denominator);
     }
-    if (nu <= min_si) {
-      denominator =  -exp(recall * (-max_si + nu)) +
-        exp(recall * (-min_si + nu));
-    }
-    if (nu >= max_si) {
-      denominator = exp(recall * (max_si - nu)) -
-        exp(recall * (min_si - nu));
-    }
+
+    if (nu > min_si) {
+      if (nu < max_si) {
+        denominator = 2 - exp(-recall * (nu - min_si)) -
+          exp(-recall * (max_si - nu));              
+      } else {
+        denominator = exp(recall * (max_si - nu)) -
+          exp(recall * (min_si - nu));
+      }
+    } else {
+      denominator =  -exp(-recall * (max_si - nu)) +
+        exp(-recall * (min_si - nu));
+    } 
     denominator = log(denominator) - log(recall);
     return denominator;
   }
+
+  real approx_normalising_constant(real x, real nu, real max_si, 
+                                   real min_si, real recall,
+                                   real width) {
+    real si_inner = min_si;
+    real denominator = 0;
+    while (si_inner <= max_si) {
+      denominator = denominator + exp(-recall * fabs(si_inner - nu));
+      si_inner = si_inner + width; 
+    }
+    denominator = log(denominator);
+    return denominator;
+  }  
   // x : SI
   // nu: Delay from symptom onset to isolation
   // max_shed: Maximum possible time of infection of secondary case
@@ -297,10 +315,12 @@ functions{
     }
     out = out - recall * fabs(x - nu);
     denominator = normalising_constant(nu, max_si, min_si, recall);
+    //print("denominator = ", denominator);
+    //denominator = approx_normalising_constant(x, nu, max_si, min_si,
+    //                                          recall, width);
     out = out - denominator;
     
     return out;
   }
 
 }
-

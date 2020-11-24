@@ -8,7 +8,7 @@ param_grid <- expand.grid(
   params_pinv = c("pinvalid1", "pinvalid2", "pinvalid3"),
   stringsAsFactors = FALSE
 )
-
+param_grid <- param_grid[1, ]
 nsim <- 20000
 
 params_inf_all <- map(
@@ -177,17 +177,47 @@ fits <- pmap(
         width = width
       ),
       chains = 3,
-      iter = 1000,
+      iter = 2000,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
     )
   }
 )
 
+
+grid <- expand.grid(recall = seq(-1, 2, by = 0.01))
+
+ll <- pmap_dfr(
+  grid,
+  function(recall) {
+    pmap_dfr(
+      sim_data[, c("si", "nu")],
+      function(si, nu) {
+        alpha1 <- params_inf_all[[1]][[1]]
+        beta1 <- params_inf_all[[1]][[2]]
+        alpha2 <- params_inc_all[[1]][[1]]
+        beta2 <- params_inc_all[[1]][[2]]
+        out <- full_model_lpdf(
+          si, nu, max_shed, -1, recall,
+          alpha1, beta1, alpha2,
+          1 / beta2, 0.01,
+          max(sim_data$si) + 0.001, -1
+        )
+        data.frame(
+          si = si, nu = nu, ll = ll, recall = recall
+        )
+      }
+    )
+  }
+)
+
+total_ll <- map_dbl(ll, sum)
+ggplot() + geom_point(aes(grid$recall, total_ll))
 ## grid <- expand.grid(si = -1:40, nu = 0:40)
 ## den <-  map_dbl(grid$nu, ~ denominator(., 0.1, 40, -1))
 ## num <- exp(-0.1 * abs(grid$nu - grid$si))
 ## grid$p_si <- num / den
+
 
 out1 <- pmap(
   sim_data[, c("si", "nu")],
@@ -227,3 +257,32 @@ ggplot() +
   geom_line(aes(sim_data$si, unlist(out1)), col = "red") +
   geom_line(aes(sim_data$si, unlist(out2)), col = "blue") +
   geom_line(aes(sim_data$si, unlist(out3)))
+
+
+
+pmap(
+  sim_data[1:2, c("si", "nu")],
+  function(si, nu) {
+    alpha1 <- params_inf_all[[1]][[1]]
+    beta1 <- params_inf_all[[1]][[2]]
+    alpha2 <- params_inc_all[[1]][[1]]
+    beta2 <- params_inc_all[[1]][[2]]
+    full_model_lpdf(x = si, nu = nu, max_shed = max_shed, offset1 = -1,
+                    width = 0.01, alpha1, beta1,
+                    alpha2, 1/ beta2,
+                    width, 0.001 + max(sim_data$si), -1
+                    )
+  })
+
+normalising_constant(real nu, real max_si, real min_si,
+                     real recall)
+
+
+denominator(nu = 3.87151, recall = 0.01, max_si = 21.1471, min_si = -1)
+
+out <- map_dbl(sim_data$nu, ~ normalising_constant(., 21.14708, -1, 0.01))
+out2 <- map_dbl(
+  sim_data$nu, ~ log(denominator(
+                nu = ., max_si = max(sim_data$si) + 0.001,
+                min_si = -1, recall = 0.01))
+)
