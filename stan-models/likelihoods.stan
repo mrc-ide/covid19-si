@@ -220,37 +220,6 @@ functions{
     return out;
   }
 
-  // x: SI
-  // nu: Delay from symptom onset to isolation
-  // approximation of integral of exp(-beta * |t - nu|)dt from
-  // min_si to max_si
-  // For each nu and for sampled recall, we have to normalise over
-  // all possible SIs. Here we have the analytical solution to this
-  // integral
-  real normalising_constant(real nu, real max_si, real min_si,
-                            real recall) {
-
-    real denominator;
-    if (recall == 0) {
-      denominator = log(max_si - min_si);
-      return(denominator);
-    }
-
-    if (nu > min_si) {
-      if (nu < max_si) {
-        denominator = 2 - exp(-recall * (nu - min_si)) -
-          exp(-recall * (max_si - nu));              
-      } else {
-        denominator = exp(recall * (max_si - nu)) -
-          exp(recall * (min_si - nu));
-      }
-    } else {
-      denominator =  -exp(-recall * (max_si - nu)) +
-        exp(-recall * (min_si - nu));
-    } 
-    denominator = log(denominator) - log(recall);
-    return denominator;
-  }
 
   real approx_normalising_constant(real x, real nu, real max_si, 
                                    real min_si, real recall,
@@ -274,6 +243,8 @@ functions{
   // alpha 2, beta2 : shape and rate parameters of incubation profile
   // width: width of rectangle for aproximation of integral. Should be
   // smaller than the samllest SI.
+  // min_si cannot be achieved without an incubation period of 0
+  // so when x = min_si, this function will return -Inf
   real full_model_lpdf(real x, real nu, real max_shed, real offset1,
                        real recall, real alpha1, real beta1,
                        real alpha2, real beta2, real width,
@@ -313,14 +284,35 @@ functions{
     if(nu < max_shed) {
       out = out - beta_lcdf(nu_shifted / max_shed_shifted|alpha1, beta1);
     }
-    out = out - recall * fabs(x - nu);
-    denominator = normalising_constant(nu, max_si, min_si, recall);
+    //out = out - recall * fabs(x - nu);
+    //denominator = normalising_constant(nu, max_si, min_si, recall);
     //print("denominator = ", denominator);
     //denominator = approx_normalising_constant(x, nu, max_si, min_si,
     //                                          recall, width);
-    out = out - denominator;
-    
+    //out = out - denominator;
+    //print("out = ", out);
     return out;
   }
 
+  real normalising_constant(real nu, real max_shed, real offset1,
+                            real recall, real alpha1, real beta1,
+                            real alpha2, real beta2, real width,
+                            real max_si, real min_si){
+
+    real denominator = 0;
+    // Smallest SI allowed is should be at least offset1 + width
+    // But in fact when SI is offset1 + width, pdf is -Inf
+    // So make it a tiny bit bigger
+    real s = offset1 + width + 0.001;
+    while (s < max_si) {
+      denominator = denominator +
+        full_model_lpdf(s| nu, max_shed, offset1, recall, alpha1,
+                        beta1, alpha2, beta2, width, max_si, min_si);
+      //print("denominator is now ", denominator);
+      //print("s is now ", s);
+      s = s + width;
+    }
+    return denominator;
+  }
+  
 }
