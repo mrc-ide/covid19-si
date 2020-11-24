@@ -8,6 +8,7 @@ param_grid <- expand.grid(
   params_pinv = c("pinvalid1", "pinvalid2", "pinvalid3"),
   stringsAsFactors = FALSE
 )
+
 param_grid <- param_grid[1, ]
 nsim <- 20000
 
@@ -52,7 +53,7 @@ params_recall_all <- map(
 )
 
 prefix <- "full_model_sim_"
-nsim_post_filter <- 500
+nsim_post_filter <- 100
 
 simulated_data <- pmap(
   list(
@@ -142,8 +143,8 @@ with_recall_bias <- pmap(
   ),
   function(df, recall_true, offset) {
 
-    x <- f(df$nu, recall_true, max(df$si), offset)
-    df$p_si <- exp(abs(df$si - df$nu) * -recall_true) / x
+    ##x <- f(df$nu, recall_true, max(df$si), offset)
+    df$p_si <- exp(abs(df$si - df$nu) * -recall_true)
     idx <- sample(nrow(df), nrow(df), replace = TRUE, prob = df$p_si)
     df[idx, ]
   }
@@ -185,7 +186,7 @@ fits <- pmap(
 )
 
 
-grid <- expand.grid(recall = seq(-1, 2, by = 0.01))
+grid <- expand.grid(recall = seq(0, 2, by = 0.01))
 
 ll <- pmap_dfr(
   grid,
@@ -204,12 +205,18 @@ ll <- pmap_dfr(
           max(sim_data$si) + 0.001, -1
         )
         data.frame(
-          si = si, nu = nu, ll = ll, recall = recall
+          si = si, nu = nu, ll = out, recall = recall
         )
       }
     )
   }
 )
+
+x <- group_by(ll, recall) %>%
+  summarise(total = sum(ll)) %>%
+  ungroup()
+
+x[which.max(x$total), ]
 
 total_ll <- map_dbl(ll, sum)
 ggplot() + geom_point(aes(grid$recall, total_ll))
@@ -279,8 +286,20 @@ normalising_constant(real nu, real max_si, real min_si,
 
 
 denominator(nu = 3.87151, recall = 0.01, max_si = 21.1471, min_si = -1)
+nu <- seq(0, 5, by = 0.1)
+alpha1 <- params_inf_all[[1]][[1]]
+beta1 <- params_inf_all[[1]][[2]]
+alpha2 <- params_inc_all[[1]][[1]]
+beta2 <- params_inc_all[[1]][[2]]
 
-out <- map_dbl(sim_data$nu, ~ normalising_constant(., 21.14708, -1, 0.01))
+out <- map_dbl(
+  nu, function(x) {
+    normalising_constant(x, max_shed, -1, 0.5,
+                         alpha1, beta1, alpha2, beta2, width, 40, -1)
+  }
+)
+
+
 out2 <- map_dbl(
   sim_data$nu, ~ log(denominator(
                 nu = ., max_si = max(sim_data$si) + 0.001,
