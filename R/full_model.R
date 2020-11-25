@@ -52,7 +52,7 @@ params_recall_all <- map(
 )
 
 prefix <- "full_model_sim_"
-nsim_post_filter <- 100
+nsim_post_filter <- 200
 
 simulated_data <- pmap(
   list(
@@ -120,19 +120,6 @@ mixed <- pmap(
   }
 )
 
-denominator <- function(nu, recall, max_si, min_si) {
-  if (nu > min_si & nu < max_si) {
-    out <- (2 - exp(recall * (-nu + min_si)) -
-              exp(recall * (-max_si + nu)))
-  } else if (nu >= max_si) {
-    out <- exp(recall * (max_si - nu)) - exp(recall * (min_si - nu))
-  } else if (nu <= min_si) {
-    out <- -exp(recall * (-max_si + nu)) + exp(recall * (-min_si + nu))
-  }
-  out / recall
-}
-
-f <- Vectorize(denominator)
 
 with_recall_bias <- pmap(
   list(
@@ -152,8 +139,6 @@ with_recall_bias <- pmap(
 
 width <- 0.1
 max_si <- 20
-alpha1 <- params_inf_all[[1]][[1]]
-beta1 <- params_inf_all[[1]][[2]]
 
 fits <- pmap(
   list(
@@ -163,7 +148,7 @@ fits <- pmap(
   ),
   function(sim_data, param_inc, param_offset) {
     ## Choose a coarse grid here to make things faster
-    si_vec <- seq(param_offset + 0.1 + 0.001, max_si, 0.1)
+    si_vec <- seq(param_offset + 0.1 + 0.001, max_si, 0.5)
     fit <- stan(
       file = here::here("stan-models/full_model.stan"),
       data = list(
@@ -178,12 +163,10 @@ fits <- pmap(
         beta2 = 1 / param_inc[["scale"]],
         width = width,
         M = length(si_vec),
-        y_vec = si_vec,
-        alpha1 = alpha1,
-        beta1 = beta1
+        y_vec = si_vec
       ),
       chains = 1,
-      iter = 800,
+      iter = 1500,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
     )

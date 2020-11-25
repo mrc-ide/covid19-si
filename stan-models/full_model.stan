@@ -12,15 +12,15 @@ data{
   real <lower = 0> width;
   int M;
   real y_vec[M];
-  real alpha1;
-  real beta1;
+  //real alpha1;
+  //real beta1;
   //real <lower = 0> alpha_invalid;
   //real <lower = 0> beta_invalid;  
   
 }
 parameters{
-  //real <lower = 0, upper = 100> alpha1; // infectious profile parameter
-  //real <lower = 0, upper = 100> beta1;  // infectious profile parameter
+  real <lower = 0, upper = 50> alpha1; // infectious profile parameter
+  real <lower = 0, upper = 50> beta1;  // infectious profile parameter
   //real <lower = 0, upper = 1> pinvalid;
   real <lower = 0, upper = 5> recall;
 }
