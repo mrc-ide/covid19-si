@@ -284,7 +284,7 @@ functions{
     if(nu < max_shed) {
       out = out - beta_lcdf(nu_shifted / max_shed_shifted|alpha1, beta1);
     }
-    //out = out - recall * fabs(x - nu);
+    out = out - recall * fabs(x - nu);
     //denominator = normalising_constant(nu, max_si, min_si, recall);
     //print("denominator = ", denominator);
     //denominator = approx_normalising_constant(x, nu, max_si, min_si,
@@ -304,13 +304,16 @@ functions{
     // But in fact when SI is offset1 + width, pdf is -Inf
     // So make it a tiny bit bigger
     //real s = offset1 + width + 0.001;
+    // Add in natural scale, and then take lof because we want
+    // log of integral
     for (y in y_vec) {
       denominator +=
-        full_model_lpdf(y| nu, max_shed, offset1, recall, alpha1,
-                        beta1, alpha2, beta2, width, max_si, min_si);
+        exp(full_model_lpdf(y| nu, max_shed, offset1, recall, alpha1,
+                            beta1, alpha2, beta2, width, max_si, min_si));
       //print("denominator is now ", denominator);
       //print("s is now ", s);
     }
+    denominator = log(denominator);
     return denominator;
   }
   

@@ -1,3 +1,31 @@
+## Returns the pdf, you then intergrate it to get the constant
+full_model <- function(x, nu, max_shed, offset1, recall,
+                       alpha1, beta1, alpha2, beta2, width) {
+    if (x > max_shed) ulim <- max_shed
+    else ulim <- x
+    if(ulim > nu) ulim <- nu
+    out <- 0
+    max_shed_shifted <- max_shed - offset1
+    nu_shifted <- nu - offset1
+    s <- offset1 + width
+    while (s < ulim) {
+      inf_density <- dbeta(
+      (s - offset1)/max_shed_shifted, alpha1, beta1, log = TRUE
+      )
+      inc_density <- dgamma(x - s, alpha2, beta2, log = TRUE)
+      out <- out + exp(inf_density + inc_density)
+      s = s + width
+    }
+    out <- log(out)
+    if(nu < max_shed) {
+      out <- out -
+        pbeta(nu_shifted / max_shed_shifted, alpha1, beta1, log = TRUE)
+    }
+    out <- out - recall * abs(x - nu)
+    out
+}
+
+
 quantile_as_df <- function(vec, probs = c(0.025, 0.25, 0.5, 0.75, 0.975)) {
 
   out <- data.frame(val = quantile(vec, probs), check.names = FALSE)

@@ -152,6 +152,8 @@ with_recall_bias <- pmap(
 
 width <- 0.1
 max_si <- 20
+alpha1 <- params_inf_all[[1]][[1]]
+beta1 <- params_inf_all[[1]][[2]]
 
 fits <- pmap(
   list(
@@ -176,10 +178,12 @@ fits <- pmap(
         beta2 = 1 / param_inc[["scale"]],
         width = width,
         M = length(si_vec),
-        y_vec = si_vec
+        y_vec = si_vec,
+        alpha1 = alpha1,
+        beta1 = beta1
       ),
       chains = 1,
-      iter = 2000,
+      iter = 800,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
     )
