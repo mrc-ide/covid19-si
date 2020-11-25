@@ -22,9 +22,18 @@ full_model <- function(x, nu, max_shed, offset1, recall,
         pbeta(nu_shifted / max_shed_shifted, alpha1, beta1, log = TRUE)
     }
     out <- out - recall * abs(x - nu)
-    out
+    exp(out)
 }
 
+denominator <- function(lower, upper, nu, max_shed, offset1, recall,
+                        alpha1, beta1, alpha2, beta2, width) {
+  f <- Vectorize(full_model)
+  out <- integrate(
+    f, lower, upper, subdivisions = 1000, nu, max_shed, offset1, recall,
+    alpha1, beta1, alpha2, beta2, width
+  )
+  return(log(out$value))
+}
 
 quantile_as_df <- function(vec, probs = c(0.025, 0.25, 0.5, 0.75, 0.975)) {
 

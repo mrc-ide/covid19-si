@@ -120,25 +120,35 @@ mixed <- pmap(
   }
 )
 
+width <- 0.1
+max_si <- 20
 
 with_recall_bias <- pmap(
   list(
     df = mixed,
     recall_true = params_recall_all,
-    offset = params_offset_all
+    offset = params_offset_all,
+    param_inf = params_inf_all,
+    param_inc = params_inc_all
   ),
-  function(df, recall_true, offset) {
-
+  function(df, recall_true, offset, param_inf, param_inc) {
+    den <- map_dbl(
+      df$nu, function(x) {
+        denominator(
+          offset, max_si, x, max_shed, offset, recall_true,
+          param_inf[[1]], param_inf[[2]], param_inc[[1]],
+          1 / param_inc[[2]], width
+        )
+      }
+    )
     ##x <- f(df$nu, recall_true, max(df$si), offset)
-    df$p_si <- exp(abs(df$si - df$nu) * -recall_true) ##/ x
+    df$p_si <- exp(abs(df$si - df$nu) * -recall_true) / den
     idx <- sample(nrow(df), nrow(df), replace = TRUE, prob = df$p_si)
     df[idx, ]
   }
 )
 
 
-width <- 0.1
-max_si <- 20
 
 fits <- pmap(
   list(
