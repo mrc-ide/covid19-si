@@ -1,10 +1,10 @@
-simulate_3a_mix <- function(mean_inc, sd_inc, shape1, shape2, max_shed,
-                            pinvalid, nsim, offset, alpha_invalid, 
-                            beta_invalid, min_si, max_si) {
-  valid_si <- (simulate_si(
-    mean_inc, sd_inc, shape1, shape2,
-    max_shed, NULL, NULL, nsim = nsim
-  )$si) + offset
+simulate_3a_mix <- function(params_inc, params_inf, params_iso, 
+                            offset, max_shed, pinvalid, nsim, 
+                            alpha_invalid, beta_invalid, min_si, max_si) {
+  
+  valid_si <- better_simulate_si(
+    params_inc, params_inf, params_iso, 
+    min_inf = offset, max_inf = max_shed, nsim)$si
   
   invalid_si <- (max_si - min_si)*
     rbeta(nsim, shape1 = alpha_invalid, shape2 = beta_invalid)
