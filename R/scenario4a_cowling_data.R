@@ -39,7 +39,8 @@ test_fit <- ggmcmc(ggs(fits_4a), here::here("figures/4a.pdf"))
 
 
 fitted_params <- rstan::extract(fits_4a)
-
+saveRDS(fitted_params, file = "fitted_params_4a.rds")
+#fitted_params <- readRDS("fitted_params_4a.rds")
 max_index <- which(fitted_params$lp__==max(fitted_params$lp__)) 
 
 fitted_max <- c(alpha1 = fitted_params$alpha1[max_index], beta1 = fitted_params$beta1[max_index])
@@ -119,7 +120,7 @@ ggsave("figures/SI_4a.png", psi)
 
 fitted_params_4a <- fitted_params
 si_post_max4a <- si_post
-saveRDS(fitted_params_4a, file = "fitted_params_4a.rds")
+
 # 1. sample alpha and beta from the posterior to get the infectious profile
 
 nsamples <- length(fitted_params_4a[[1]])
@@ -128,7 +129,7 @@ shape1 <- fitted_params_4a[[1]][idx]
 shape2 <- fitted_params_4a[[2]][idx]
 
 # 2. for each infectious profile, simulate an SI distribution (of 1000 SIs)
-si_post_4a <- matrix(nrow = 1000, ncol = length(idx))
+si_post_4a <- matrix(nrow = 10000, ncol = length(idx))
 for(i in 1:length(idx)){
   params_inf <- list(shape1 = shape1[i], shape2 = shape2[i])
   si_post_4a[,i] <- better_simulate_si(params_inc = params_inc_og, params_inf = params_inf, 
@@ -136,7 +137,7 @@ for(i in 1:length(idx)){
                                        nsim = 10000)$si}
 
 # 3. for each simulated SI distribution, extract the median, mean and sd
-library(matrixStats)
+
 si_medians_4a <- colMedians(si_post_4a)
 si_means_4a <- colMeans(si_post_4a)
 si_sd_4a <- colSds(si_post_4a)
@@ -149,8 +150,7 @@ ggplot()+
   xlab("mean SI (days)")+
   geom_vline(xintercept = si_mean_95_4a[1], col = "red", lty = 2)+
   geom_vline(xintercept = si_mean_95_4a[2], col = "red", lty = 2)+
-  geom_vline(xintercept = mean(si_post_max4a))+
-  xlim(4, 20)
+  geom_vline(xintercept = mean(si_post_max4a))
 
 si_median_95_4a <- quantile(si_medians_4a, c(0.025, 0.975))
 ggplot()+
@@ -159,8 +159,7 @@ ggplot()+
   xlab("median SI (days)")+
   geom_vline(xintercept = si_median_95_4a[1], col = "red", lty = 2)+
   geom_vline(xintercept = si_median_95_4a[2], col = "red", lty = 2)+
-  geom_vline(xintercept = median(si_post_max4a))+
-  xlim(4, 20)
+  geom_vline(xintercept = median(si_post_max4a))
 
 si_sd_95_4a <- quantile(si_sd_4a, c(0.025, 0.975))
 ggplot()+
@@ -169,12 +168,9 @@ ggplot()+
   xlab("sd SI (days)")+
   geom_vline(xintercept = si_sd_95_4a[1], col = "red", lty = 2)+
   geom_vline(xintercept = si_sd_95_4a[2], col = "red", lty = 2)+
-  geom_vline(xintercept = sd(si_post_max4a))+
-  xlim(4, 20)
+  geom_vline(xintercept = sd(si_post_max4a))
 
 ## adding conditional fitted distribution to the plot
-
-fitted_params <- readRDS("fitted_params_4a.rds")
 
   inf_dist <- (max_shed *
                  rbeta(
@@ -199,7 +195,7 @@ fitted_params <- readRDS("fitted_params_4a.rds")
   )
   si_conditional <- inf_conditional + inc
 
-  psi+
+  psi_cond <- psi+
     geom_density(aes(si_conditional, fill = "green"),
                  alpha = 0.3
     )+
@@ -211,5 +207,6 @@ fitted_params <- readRDS("fitted_params_4a.rds")
       labels = c("Data", "Posterior", "Conditional"),
       breaks = c("blue", "red", "green")
     )
-    
+  ggsave("figures/SI_4a.png", psi_cond, width = 7, height = 7, units = "in", dpi = 300, device = "png")
+  
   

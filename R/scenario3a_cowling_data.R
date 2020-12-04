@@ -39,6 +39,8 @@ test_fit_3a <- ggmcmc(ggs(fits_3a), here::here("figures/3a_test.pdf"))
 
 fitted_params_3a <- rstan::extract(fits_3a)
 saveRDS(fitted_params_3a, file = "fitted_params_3a.rds")
+
+fitted_params_3a <- readRDS("fitted_params_3a.rds")
 max_index <- which(fitted_params_3a$lp__==max(fitted_params_3a$lp__)) 
 
 fitted_max <- c(alpha1 = fitted_params_3a$alpha1[max_index], beta1 = fitted_params_3a$beta1[max_index])
@@ -125,7 +127,7 @@ shape1 <- fitted_params_3a[[1]][idx]
 shape2 <- fitted_params_3a[[2]][idx]
 
 # 2. for each infectious profile, simulate an SI distribution (of 1000 SIs)
-si_post_3a <- matrix(nrow = 1000, ncol = length(idx))
+si_post_3a <- matrix(nrow = 10000, ncol = length(idx))
 for(i in 1:length(idx)){
   params_inf <- list(shape1 = shape1[i], shape2 = shape2[i])
   si_post_3a[,i] <- better_simulate_si(params_inc = params_inc_og, params_inf = params_inf, 
@@ -133,7 +135,6 @@ for(i in 1:length(idx)){
                                        nsim = 10000)$si}
 
 # 3. for each simulated SI distribution, extract the median, mean and sd
-library(matrixStats)
 si_medians_3a <- colMedians(si_post_3a)
 si_means_3a <- colMeans(si_post_3a)
 si_sd_3a <- colSds(si_post_3a)
@@ -146,8 +147,7 @@ ggplot()+
   xlab("mean SI (days)")+
   geom_vline(xintercept = si_mean_95_3a[1], col = "red", lty = 2)+
   geom_vline(xintercept = si_mean_95_3a[2], col = "red", lty = 2)+
-  geom_vline(xintercept = mean(si_post_max3a))+
-  xlim(4, 20)
+  geom_vline(xintercept = mean(si_post_max3a))
 
 si_median_95_3a <- quantile(si_medians_3a, c(0.025, 0.975))
 ggplot()+
@@ -156,8 +156,7 @@ ggplot()+
   xlab("median SI (days)")+
   geom_vline(xintercept = si_median_95_3a[1], col = "red", lty = 2)+
   geom_vline(xintercept = si_median_95_3a[2], col = "red", lty = 2)+
-  geom_vline(xintercept = median(si_post_max3a))+
-  xlim(4, 20)
+  geom_vline(xintercept = median(si_post_max3a))
 
 si_sd_95_3a <- quantile(si_sd_3a, c(0.025, 0.975))
 ggplot()+
@@ -166,5 +165,4 @@ ggplot()+
   xlab("sd SI (days)")+
   geom_vline(xintercept = si_sd_95_3a[1], col = "red", lty = 2)+
   geom_vline(xintercept = si_sd_95_3a[2], col = "red", lty = 2)+
-  geom_vline(xintercept = sd(si_post_max3a))+
-  xlim(4, 20)
+  geom_vline(xintercept = sd(si_post_max3a))

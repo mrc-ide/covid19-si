@@ -176,7 +176,7 @@ for(i in 1:length(idx)){
   }
 
 # 3. for each simulated SI distribution, extract the median, mean and sd
-library(matrixStats)
+
 si_medians_4a <- colMedians(si_post_4a)
 si_means_4a <- colMeans(si_post_4a)
 si_sd_4a <- colSds(si_post_4a)
@@ -210,8 +210,6 @@ ggplot()+
   geom_vline(xintercept = sd(si_post))
 
 ## getting the CrI for p_invalid
-
-
 
 p_invalid_post <- fitted_params_4a_mix$pinvalid
 
