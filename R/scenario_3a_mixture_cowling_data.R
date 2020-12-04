@@ -5,8 +5,8 @@ offset <- -3
 
 # select number of simulations from posterior, and parameters for invalid dist.
 nsim <- 10000
-alpha_invalid <- 0.5
-beta_invalid <- 0.5
+alpha_invalid <- 1
+beta_invalid <- 1
 
 # load the data
 data <- readRDS("data/cowling_data_clean.rds")
@@ -29,6 +29,7 @@ fits_3a_mix <- stan(
   data = list(
     N = nrow(data_c),
     si = data_c$si,
+    nu = data_c$nu,
     max_shed = 21,
     offset1 = offset,
     alpha2 = params_inc_og[["shape"]],
@@ -40,18 +41,19 @@ fits_3a_mix <- stan(
     width = 0.1
   ),
   chains = 4,
-  iter = 5000,
+  iter = 4000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
 
-test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mix.pdf"))
+test_fit_3a_mix <- ggmcmc(ggs(fits_3a_mix), here::here("figures/3a_mix_uniform_filter_pinvalid.pdf"))
 
 ## extract fits to turn alpha and beta into mu and cv
-
+#fitted_params_3a_mix <- readRDS("fitted_params_3a_mix.rds")
 
 fitted_params_3a_mix <- rstan::extract(fits_3a_mix)
 saveRDS(fitted_params_3a_mix, file = "fitted_params_3a_mix.rds")
+fitted_params_3a_mix <- readRDS("fitted_params_3a_mix.rds")
 max_index <- which(fitted_params_3a_mix$lp__==max(fitted_params_3a_mix$lp__))
 
 fitted_max <- c(alpha1 = fitted_params_3a_mix$alpha1[max_index], 
@@ -61,7 +63,9 @@ shape1_max <- fitted_max["alpha1"]
 shape2_max <- fitted_max["beta1"]
 p_invalid_max <- fitted_max["p_invalid"]
 
-x <- (max_shed *
+params_inf_max <- list(shape1 = shape1_max, shape2 = shape2_max)
+
+x <- ((max_shed-offset) *
         rbeta(
           n = 100000,
           shape1 = shape1_max,
@@ -82,8 +86,9 @@ ggsave("figures/infectious_profile_params_3a_mix.png", p1)
 
 ## simulate si from the most likely incubation period distibution
 
-
-si_post <- (simulate_si(mean_inc_og, sd_inc_og, shape1_max, shape2_max, max_shed, nsim = 100000))$si + offset
+si_post <- better_simulate_si(params_inc = params_inc_og, params_inf = params_inf_max, 
+                              params_iso = params_iso, min_inf = offset, max_inf = max_shed, 
+                              nsim = 100000)$si
 
 psi <- ggplot() +
   geom_histogram(
@@ -114,9 +119,10 @@ ggsave("figures/SI_3a_mix.png", psi, width = 7, height = 7, units = "in", dpi = 
 
 ## including invalid SIs in the figure
 
-si_post_p <- (simulate_3a_mix(mean_inc_og, sd_inc_og, shape1_max, shape2_max, max_shed,
-                            pinvalid = p_invalid_max, nsim = 100000, offset = -offset,
-                            alpha_invalid, beta_invalid, min_si = min(data_c$si), max_si = max(data_c$si)))
+si_post_p <- (simulate_3a_mix(params_inc = params_inc_og, params_inf = params_inf_max,
+                              params_iso = params_iso, offset = offset, max_shed,
+                              pinvalid = p_invalid_max, nsim = 5000000, alpha_invalid, 
+                              beta_invalid, min_si = min(data_c$si), max_si = max(data_c$si)))
 si_post_iv <- si_post_p$simulated_si$si
 psi <- ggplot() +
   geom_histogram(
@@ -125,19 +131,25 @@ psi <- ggplot() +
     binwidth = 1
   ) +
   
-  geom_density(aes(si_post_iv, fill = "red"),
+  geom_density(aes(si_post_iv, fill = "green"),
+               alpha = 0.3
+  ) +
+  geom_density(aes(si_post, fill = "red"),
                alpha = 0.3
   ) +
   geom_vline(
     xintercept = mean(data_c$si), col = "blue", linetype = "dashed"
   ) +
   geom_vline(
-    xintercept = mean(si_post_iv), col = "red", linetype = "dashed"
+    xintercept = mean(si_post_iv), col = "green", linetype = "dashed"
+  ) +
+  geom_vline(
+    xintercept = mean(si_post), col = "red", linetype = "dashed"
   ) +
   scale_fill_identity(
     guide = "legend",
-    labels = c("Data", "Posterior (valid & invalid SIs)"),
-    breaks = c("blue", "red")
+    labels = c("Data", "Posterior - 'true SI'", "Posterior (valid & invalid SIs)"),
+    breaks = c("blue", "red", "green")
   ) +
   theme_minimal() +
   xlim(NA, 40)+
@@ -158,9 +170,11 @@ shape1 <- fitted_params_3a_mix$alpha1[idx]
 shape2 <- fitted_params_3a_mix$beta1[idx]
 
 # 2. for each infectious profile, simulate an SI distribution (of 10000 SIs)
-si_post_3a <- matrix(nrow = 1000, ncol = length(idx))
+si_post_3a <- matrix(nrow = 10000, ncol = length(idx))
 for(i in 1:length(idx)){
-  si_post_3a[,i] <- (simulate_si(mean_inc_og, sd_inc_og, shape1[i], shape2[i], max_shed, nsim = 1000))$si + offset
+  params_inf <- list(shape1 = shape1[i], shape2 = shape2[i])
+  si_post_3a[,i] <- (better_simulate_si(params_inc = params_inc_og, params_inf = params_inf,
+                                        params_iso, min_inf = offset, max_inf = max_shed, nsim = 10000))$si
 }
 
 # 3. for each simulated SI distribution, extract the median, mean and sd
@@ -204,4 +218,4 @@ p_invalid_post <- fitted_params_3a_mix$pinvalid
 mean(p_invalid_post)
 median(p_invalid_post)
 quantile(p_invalid_post, c(0.025, 0.975))
-
+ 
