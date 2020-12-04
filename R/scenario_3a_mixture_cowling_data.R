@@ -62,7 +62,9 @@ shape1_max <- fitted_max["alpha1"]
 shape2_max <- fitted_max["beta1"]
 p_invalid_max <- fitted_max["p_invalid"]
 
-x <- (max_shed *
+params_inf_max <- list(shape1 = shape1_max, shape2 = shape2_max)
+
+x <- ((max_shed-offset) *
         rbeta(
           n = 100000,
           shape1 = shape1_max,
@@ -83,8 +85,9 @@ ggsave("figures/infectious_profile_params_3a_mix.png", p1)
 
 ## simulate si from the most likely incubation period distibution
 
-
-si_post <- (simulate_si(mean_inc_og, sd_inc_og, shape1_max, shape2_max, max_shed, nsim = 100000))$si + offset
+si_post <- better_simulate_si(params_inc = params_inc_og, params_inf = params_inf_max, 
+                              params_iso = params_iso, min_inf = offset, max_inf = max_shed, 
+                              nsim = 100000)$si
 
 psi <- ggplot() +
   geom_histogram(

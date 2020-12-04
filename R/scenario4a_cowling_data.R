@@ -52,7 +52,7 @@ fitted_max <- c(alpha1 = fitted_params$alpha1[max_index], beta1 = fitted_params$
 ## x[["sigma2"]] <- max_shed^2 * x[["sigma2"]]
 ## x[["sd"]] <- sqrt(x[["sigma2"]])
 
-x <- (max_shed *
+x <- ((max_shed-offset) *
         rbeta(
           n = 100000,
           shape1 = fitted_max[["alpha1"]],
@@ -130,8 +130,10 @@ shape2 <- fitted_params_4a[[2]][idx]
 # 2. for each infectious profile, simulate an SI distribution (of 1000 SIs)
 si_post_4a <- matrix(nrow = 1000, ncol = length(idx))
 for(i in 1:length(idx)){
-  si_post_4a[,i] <- (simulate_si(mean_inc_og, sd_inc_og, shape1[i], shape2[i], max_shed, 2, 2, nsim = 1000))$si + offset
-}
+  params_inf <- list(shape1 = shape1[i], shape2 = shape2[i])
+  si_post_4a[,i] <- better_simulate_si(params_inc = params_inc_og, params_inf = params_inf, 
+                                       params_iso = params_iso, min_inf = offset, max_inf = max_shed, 
+                                       nsim = 10000)$si}
 
 # 3. for each simulated SI distribution, extract the median, mean and sd
 library(matrixStats)
