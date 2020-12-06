@@ -306,6 +306,8 @@ functions{
     //real s = offset1 + width + 0.001;
     // Add in natural scale, and then take lof because we want
     // log of integral
+    // This should be multipied with width but to speed things up I
+    // have set the width to 1.
     for (y in y_vec) {
       denominator +=
         exp(full_model_lpdf(y| nu, max_shed, offset1, recall, alpha1,

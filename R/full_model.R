@@ -46,9 +46,9 @@ params_pinv_all <- 0
 params_offset_all <- map(
   param_grid$params_offset, function(x) params[[x]]
 )
-
+## Set recall to 0 for testing S4.
 params_recall_all <- map(
-  param_grid$params_recall, function(x) params[[x]]
+  param_grid$params_recall, function(x) 0
 )
 
 prefix <- "full_model_sim_"
@@ -121,7 +121,7 @@ mixed <- pmap(
 )
 
 width <- 0.1
-max_si <- 20
+max_si <- 30
 
 with_recall_bias <- pmap(
   list(
@@ -142,6 +142,7 @@ with_recall_bias <- pmap(
       }
     )
     ##x <- f(df$nu, recall_true, max(df$si), offset)
+    df$denominator <- den
     df$p_si <- exp(abs(df$si - df$nu) * -recall_true) / den
     idx <- sample(nrow(df), nrow(df), replace = TRUE, prob = df$p_si)
     df[idx, ]
@@ -158,7 +159,7 @@ fits <- pmap(
   ),
   function(sim_data, param_inc, param_offset) {
     ## Choose a coarse grid here to make things faster
-    si_vec <- seq(param_offset + 0.1 + 0.001, max_si, 0.5)
+    si_vec <- seq(param_offset + 0.1 + 0.001, max_si, 1)
     fit <- stan(
       file = here::here("stan-models/full_model.stan"),
       data = list(
@@ -173,7 +174,8 @@ fits <- pmap(
         beta2 = 1 / param_inc[["scale"]],
         width = width,
         M = length(si_vec),
-        y_vec = si_vec
+        y_vec = si_vec,
+        recall = 0
       ),
       chains = 1,
       iter = 1500,
@@ -182,3 +184,53 @@ fits <- pmap(
     )
   }
 )
+
+## offset should be negative
+posterior_inf_params <- function(fit, nsim, max_shed, offset) {
+  params <- rstan::extract(fit)
+  idx <- sample(length(params[[1]]), nsim, replace = TRUE)
+  shape1 <- params[["alpha1"]][idx]
+  shape2 <- params[["beta1"]][idx]
+  out <- beta_shape1shape22muvar(shape1, shape2)
+  out[["mu"]] <- max_shed * out[["mu"]] + offset
+  out[["sigma2"]] <- max_shed * max_shed * out[["sigma2"]]
+  out
+}
+
+out <- posterior_inf_params(fits[[1]], 5000, max_shed, -1)
+
+
+params_inf_true <- params[[param_grid$params_inf[1]]]
+
+p1 <- ggplot() +
+  geom_density(aes(out[[1]]), fill = "red", col = NA, alpha = 0.3) +
+  geom_vline(
+    xintercept = params_inf_true$mean_inf
+  ) +
+  geom_vline(
+    xintercept = c(
+      mean(out[[1]]),
+      mean(out[[1]]) - sd(out[[1]]),
+      mean(out[[1]]) + sd(out[[1]])
+    ), linetype = "dashed"
+  ) +
+  theme_minimal() +
+  xlab("Mean infectious period")
+
+
+p2 <- ggplot() +
+  geom_density(aes(sqrt(out[[2]])), fill = "red", col = NA, alpha = 0.3) +
+  geom_vline(
+    xintercept = params_inf_true$sd_inf
+  ) +
+  geom_vline(
+    xintercept = c(
+      mean(sqrt(out[[2]])),
+      mean(sqrt(out[[2]])) - sd(sqrt(out[[2]])),
+      mean(sqrt(out[[2]])) + sd(sqrt(out[[2]]))
+    ), linetype = "dashed"
+  ) +
+  theme_minimal() +
+  xlab("SD infectious period")
+
+p <- cowplot::plot_grid(p1, p2, ncol = 1)
