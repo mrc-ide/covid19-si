@@ -313,8 +313,10 @@ functions{
         exp(full_model_lpdf(y| nu, max_shed, offset1, recall, alpha1,
                             beta1, alpha2, beta2, width, max_si, min_si));
       //print("denominator is now ", denominator);
+      //print("y is now ", y);
       //print("s is now ", s);
     }
+    //print("total denominator = ", denominator);
     denominator = log(denominator);
     return denominator;
   }
