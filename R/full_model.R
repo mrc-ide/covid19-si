@@ -51,7 +51,7 @@ sim_data <- sim_data[idx, ]
 
 ###### grid likelihood
 grid <- expand.grid(
-  alpha1 = seq(1, 10, 0.5), beta1 = seq(1, 20, 0.5)
+  alpha1 = seq(1, 10, 0.5), beta1 = seq(1, 25, 0.5)
 )
 ## grid <- expand.grid(
 ##   alpha1 = params_inf$shape1, beta1 = seq(1, 30, 0.5)
@@ -88,12 +88,12 @@ grid$normalised <- pmap_dbl(
   }
 )
 
-mle_6_2_0_norm <- grid[which(grid$normalised == max(grid$normalised)),]
+mle <- grid[which(grid$normalised == max(grid$normalised)),]
 
-mean_6_2_0_norm <- ((max_shed-offset)*(beta_shape1shape22muvar(mle_6_2_0_norm$alpha1, mle_6_2_0_norm$beta1)$mu))+offset
+mean <- ((max_shed-offset)*(beta_shape1shape22muvar(mle$alpha1, mle$beta1)$mu))+offset
 
 t_1_posterior_norm <- ((max_shed - offset) * rbeta(
-  10000, shape1 = mle_6_2_0_norm$alpha1, shape2 = mle_6_2_0_norm$beta1))+offset
+  10000, shape1 = mle$alpha1, shape2 = mle$beta1))+offset
 
 ggplot() +
   geom_density(
