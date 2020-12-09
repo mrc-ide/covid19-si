@@ -7,15 +7,18 @@ param_grid <- expand.grid(
   params_offset = c("offset1"),
   stringsAsFactors = FALSE
 )
-
+param_grid <- param_grid[1, ]
 nsim <- 20000
-
+offset <- -1
 params_inf_all <- pmap(
   param_grid,
   function(params_inf, params_inc, params_iso, params_offset) {
     out <- params[[params_inf]]
+    ## The whole shifting in simulation will shift mu,
+    ## so pass larger my to simulate function/
     beta_muvar2shape1shape2(
-      out$mean_inf/max_shed, out$sd_inf^2 / max_shed^2
+    (out$mean_inf - offset) / (max_shed - offset),
+    out$sd_inf^2 / (max_shed - offset)^2
     )
   }
 )
@@ -48,6 +51,7 @@ params_offsets_all <- pmap(
 )
 
 nsim_post_filter <- 500
+
 simulated_data <- pmap(
   list(
     params_inf = params_inf_all,
@@ -62,7 +66,7 @@ simulated_data <- pmap(
     #sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]  #do not filter by isolation for s3a
     sim_data <- sim_data[abs(sim_data$si) > 0.1, ]
     ## Make sure we have at least nsim_post_filter rows.
-    idx <- sample(nrow(sim_data), nsim_post_filter, replace = TRUE)
+    idx <- sample(nrow(sim_data), nsim_post_filter, replace = FALSE)
     sim_data[idx, ]
   }
 )
@@ -76,7 +80,7 @@ iwalk(
       geom_histogram(alpha = 0.4, col = NA, binwidth = 1) +
       theme_minimal() +
       xlab("Serial Interval")
-    
+
     ggsave(glue::glue("figures/{prefix}{index}.pdf"), p)
   }
 )
@@ -140,7 +144,7 @@ fits <- pmap(
     sim_data = simulated_data
   ),
   function(params_inc, params_offset, sim_data) {
-    
+
     width <- 0.1
     fit_3a <- stan(
       file = here::here("stan-models/scenario3a.stan"),
@@ -153,14 +157,15 @@ fits <- pmap(
         beta2 = 1 / params_inc[["scale"]],
         width = width
       ),
-      chains = 1,
-      iter = 4000,
+      chains = 3,
+      iter = 2000,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
     )
     fit_3a
   }
 )
+
 
 
 iwalk(
@@ -173,6 +178,21 @@ iwalk(
 ## )
 
 ## fits <- map(infiles, readRDS)
+posterior_mu_sd <- map(
+  fits,
+  function(fit) {
+    if (nrow(as.data.frame(fit)) == 0) return(NULL)
+    best_params <- map_estimates(fit)
+    ## Same transformation on fitted params
+    shifted_params <- beta_shape1shape22muvar(
+      best_params[["alpha1"]], best_params[["beta1"]]
+    )
+    list(
+      mu = (shifted_params$mu * (max_shed - offset)) + offset,
+      sigma2 = (shifted_params$sigma2 * (max_shed - offset)^2)
+    )
+  }
+)
 
 posterior_sim <- pmap(
   list(
@@ -217,7 +237,7 @@ posterior_plots <- pmap(
       theme_minimal() +
       theme(legend.title = element_blank())
     p
-    
+
   }
 )
 
@@ -253,7 +273,7 @@ posterior_t1_plots <- pmap(
       theme_minimal() +
       theme(legend.title = element_blank())
     p
-    
+
   }
 )
 
@@ -266,35 +286,6 @@ iwalk(
 )
 
 
-params_compare <- pmap_dfr(
-  list(
-    fit = fits,
-    params_inf = param_grid$params_inf,
-    params_offset = params_offsets_all
-  ),
-  function(fit, params_inf, params_offset) {
-    out <- params[[params_inf]]
-    true_values <- data.frame(
-      param = c("mu", "sd", "offset"),
-      var = "simulated",
-      val = c(out$mean_inf, out$sd_inf, params_offset)
-    )
-    if (nrow(as.data.frame(fit)) == 0) return(NULL)
-    best_params <- map_estimates(fit)
-    
-    out <- rbeta(10000, best_params$alpha1, best_params$beta1)
-    f <- map_into_interval(0, 1, params_offset, max_shed)
-    out <- f(out)
-    out <- data.frame(
-      param = c("mu", "sd", "offset"),
-      var = "posterior",
-      val = c(mean(out), sd(out), params_offset)
-    )
-    out <- rbind(out, true_values)
-    tidyr::pivot_wider(out, names_from = "param", values_from = "val")
-  },
-  .id = "sim"
-)
 
 si_compare <- pmap_dfr(
   list(
@@ -302,7 +293,7 @@ si_compare <- pmap_dfr(
     sim_data = simulated_data
   ),
   function(posterior_si, sim_data) {
-    
+
     if (is.null(posterior_si)) return(NULL)
     simulated_summary <- quantile_as_df(sim_data$si)
     simulated_summary$category <- "Simulated"

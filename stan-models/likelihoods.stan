@@ -144,7 +144,7 @@ functions{
   }
   
   // Make sure to pass offset1 as a *negative* number
-  real scenario3a_lpdf(real x, real nu, real max_shed, real offset1, 
+  real scenario3a_lpdf(real x, real max_shed, real offset1, 
                        real alpha1, real beta1, real alpha2, real beta2,
                        real width) {
 
