@@ -5,7 +5,7 @@ mean_inc <- 3
 sd_inc <- 1
 ## very short isolation
 mean_iso <- 2
-sd_iso <- 0.1
+sd_iso <- 1
 offset <- 0
 
 params_inf <- beta_muvar2shape1shape2(
@@ -16,69 +16,83 @@ params_inc <- epitrix::gamma_mucv2shapescale(
   mu = mean_inc, cv = sd_inc/ mean_inc
 )
 
+alpha2 <- params_inc$shape
+beta2 <- 1 / params_inc$scale
+
 params_iso <- epitrix::gamma_mucv2shapescale(
   mu = mean_iso, cv = sd_iso / mean_iso
 )
 
-nsim_post_filter <- 1000
+nsim_post_filter <- 500
 
-sim_data <- better_simulate_si(
-  params_inc, params_inf, params_iso, offset, max_shed, 1e4
+expose_stan_functions("stan-models/likelihoods.stan")
+
+
+mle <- list()
+mean <- list()
+p <- list()
+t_1_posterior<- list()
+p2 <- list()
+
+sim_data <- replicate(
+  10, better_simulate_si(
+  params_inc, params_inf, params_iso, offset, max_shed, 4e4
 )
+  )
+resized <- list()
 
-unfiltered <- sim_data
-sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]
 
+for(i in 1:10){ # run multiple simulations to check variability
 
-ggplot() +
+unfiltered <- as.data.frame(sim_data[,i])
+
+filtered <- unfiltered[unfiltered$t_1 <= unfiltered$nu, ]
+
+# check simulated inf
+print(mean(unfiltered$t_1))
+print(sd(unfiltered$t_1))
+
+#print(mean(filtered[[i]]$nu))
+
+## Make sure we have at least 500 rows
+idx <- sample(nrow(filtered), nsim_post_filter, replace = FALSE)
+resized[[i]] <- filtered[idx, ]
+
+# plot unfiltered, filtered, and filtered resampled to ensure 500 rows
+p[[i]] <- ggplot() +
   geom_density(
     aes(unfiltered$t_1), fill = "blue", col = NA, alpha = 0.2
   ) +
   geom_density(
-    aes(sim_data$t_1), fill = "red", col = NA, alpha = 0.2
+    aes(resized[[i]]$t_1), fill = "red", col = NA, alpha = 0.2
+  ) +
+  geom_density(
+    aes(filtered$t_1), fill = "red", col = NA, alpha = 0.2
   ) +
   geom_vline(xintercept = offset)+
   theme_minimal()
-# check simulated inf
-mean(unfiltered$t_1)
-sd(unfiltered$t_1)
 
-mean(sim_data$nu)
+# set max si for denominator as max si in the unfiltered data
+max_si <- ceiling(max(unfiltered$si))
 
-## Make sure we have at least 200 rows.
-idx <- sample(nrow(sim_data), nsim_post_filter, replace = TRUE)
-sim_data <- sim_data[idx, ]
+y_vec <- seq(offset, max_si, by = 1)
+
 
 ###### grid likelihood
 grid <- expand.grid(
   alpha1 = seq(1, 10, 0.5), beta1 = seq(1, 25, 0.5)
 )
-## grid <- expand.grid(
-##   alpha1 = params_inf$shape1, beta1 = seq(1, 30, 0.5)
-## )
-
-expose_stan_functions("stan-models/likelihoods.stan")
-
-#max_si <- ceiling(max(sim_data$si))
-
-max_si <- ceiling(max(unfiltered$si))
-
-alpha2 <- params_inc$shape
-beta2 <- 1 / params_inc$scale
-
-y_vec <- seq(offset, max_si, by = 1)
 
 grid$normalised <- pmap_dbl(
   grid,
   function(alpha1, beta1) {
     out <- pmap_dbl(
-      sim_data[, c("si", "nu")],
+      resized[[i]][, c("si", "nu")],
       function(si, nu) {
         full_model_lpdf(
           si, nu, max_shed, offset, 0, alpha1, beta1, alpha2, beta2,
           0.1, max_si, offset
-          )
-         #-  normalising_constant(
+          ) #-  normalising_constant(
           #y_vec, nu, max_shed, offset, 0, alpha1, beta1, alpha2, beta2,
           #0.1, max_si, offset
         #)
@@ -88,32 +102,84 @@ grid$normalised <- pmap_dbl(
   }
 )
 
-mle <- grid[which(grid$normalised == max(grid$normalised)),]
+mle[[i]] <- grid[which(grid$normalised == max(grid$normalised)),]
 
-mean <- ((max_shed-offset)*(beta_shape1shape22muvar(mle$alpha1, mle$beta1)$mu))+offset
+mean[[i]] <- ((max_shed-offset)*(beta_shape1shape22muvar(mle[[i]]$alpha1, mle[[i]]$beta1)$mu))+offset
 
-t_1_posterior_norm <- ((max_shed - offset) * rbeta(
-  10000, shape1 = mle$alpha1, shape2 = mle$beta1))+offset
+t_1_posterior[[i]] <- ((max_shed - offset) * rbeta(
+  10000, shape1 = mle[[i]]$alpha1, shape2 = mle[[i]]$beta1))+offset
 
-ggplot() +
+p2[[i]] <- ggplot() +
   geom_density(
     aes(unfiltered$t_1), fill = "blue", col = NA, alpha = 0.2
   ) +
   geom_density(
-    aes(sim_data$t_1), fill = "red", col = NA, alpha = 0.2
+    aes(resized[[i]]$t_1), fill = "red", col = NA, alpha = 0.2
   ) +
   geom_density(
-    aes(t_1_posterior_norm), fill = "green", col = NA, alpha = 0.2
+    aes(t_1_posterior[[i]]), fill = "green", col = NA, alpha = 0.2
   ) +
   geom_vline(xintercept = offset)+
   theme_minimal()
 
 
-p2 <- ggplot(
+}
+
+# plot the different posteriors onto one graph
+
+t1_posterior_df <- data.frame(matrix(unlist(t_1_posterior), ncol=length(t_1_posterior), byrow=F))
+t1_posterior_long <- reshape2::melt(t1_posterior_df)
+
+# extract the different filtered t_1 data
+filtered_t1 <- matrix(ncol = 10, nrow = length(resized[[1]]$t_1))
+
+for(i in 1:10){
+  
+  filtered_t1[,i] <- resized[[i]]$t_1
+}
+
+# extract the different unfiltered t_1 data
+unfiltered_t1 <- matrix(ncol = 10, nrow = length(sim_data[,1]$t_1))
+
+for(i in 1:10){
+  unfiltered_t1[,i] <- sim_data[,i]$t_1
+}
+
+filtered_t1_long <- reshape2::melt(as.data.frame(filtered_t1))
+unfiltered_t1_long <- reshape2::melt(as.data.frame(unfiltered_t1))
+
+
+q <- ggplot()+
+  geom_density(data = unfiltered_t1_long,
+    aes(value, group = variable), col = "blue", alpha = 0.2
+  ) +
+  geom_density(data = filtered_t1_long,
+    aes(value, group = variable), colour = "red", alpha = 0.2
+  ) +
+  geom_density(data = t1_posterior_long,
+    aes(value, group = variable), colour = "darkgreen"
+    )+
+  theme_minimal()
+  
+
+
+# print the means of each filtered dataset
+mean_filtered <- vector(length = 10)
+for(j in 1:10){
+ mean_filtered[j] <- mean(resized[[j]]$t_1) 
+}
+
+
+
+
+
+p3 <- ggplot(
   grid, aes(x = alpha1, beta1, fill = normalised)) +
   geom_tile() +
   scale_fill_distiller(palette = "YlOrRd") +
   theme_minimal()
+
+
 
 fits <- pmap(
   list(
