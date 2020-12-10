@@ -219,4 +219,26 @@ functions{
     }
     return out;
   }
+
+  real s4_normalising_constant(real[] y_vec, real nu, real max_shed, 
+                               real offset1, real alpha1, real beta1,
+                               real alpha2, real beta2, real width) {
+
+    real denominator = 0;
+    // Smallest SI allowed is should be at least offset1 + width
+    // But in fact when SI is offset1 + width, pdf is -Inf
+    // So make it a tiny bit bigger
+    //real s = offset1 + width + 0.001;
+    // Add in natural scale, and then take lof because we want
+    // log of integral
+    // This should be multipied with width but to speed things up I
+    // have set the width to 1.
+    for (y in y_vec) {
+      denominator +=
+        exp(scenario4a_lpdf(y| nu, max_shed, offset1, alpha1, beta1,
+                           alpha2, beta2, width));
+    }
+    denominator = log(denominator);
+    return denominator;
+  }
 }
