@@ -1,6 +1,6 @@
 max_shed <- 21
-mean_inf <- 6
-sd_inf <- 2
+mean_inf <- 4.973684 # these give an alpha of 4.5 and beta of 14.5: both on the grid for offset = 0
+sd_inf <- 1.99637
 mean_inc <- 3
 sd_inc <- 1
 ## very short isolation
@@ -11,6 +11,11 @@ offset <- 0
 params_inf <- beta_muvar2shape1shape2(
   (mean_inf-offset)/(max_shed-offset), sd_inf^2 /(max_shed-offset)^2
 )
+
+params_inf <- list(shape1 = 4.5, shape2 = 14.5)
+
+params_inf_mu <- ((max_shed-offset)*beta_shape1shape22muvar(4.5,14.5)$mu)+offset
+params_inf_sd <- (max_shed-offset)*sqrt(beta_shape1shape22muvar(4.5,14.5)$sigma2)
 
 params_inc <- epitrix::gamma_mucv2shapescale(
   mu = mean_inc, cv = sd_inc/ mean_inc
@@ -89,7 +94,7 @@ y_vec <- seq(offset, max_si[i], by = 1)
 
 ###### grid likelihood
 grid <- expand.grid(
-  alpha1 = seq(1, 10, 0.5), beta1 = seq(1, 25, 0.5)
+  alpha1 = seq(1, 10, 0.5), beta1 = seq(1, 30, 0.5)
 )
 
 grid$normalised <- pmap_dbl(
