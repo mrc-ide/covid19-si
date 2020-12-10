@@ -1,21 +1,26 @@
 max_shed <- 21
 mean_inf <- 4.973684 # these give an alpha of 4.5 and beta of 14.5: both on the grid for offset = 0
 sd_inf <- 1.99637
+mean_inf <-4.217391 
+mean_sd <- 2.022031
 mean_inc <- 3
 sd_inc <- 1
 ## very short isolation
 mean_iso <- 2
 sd_iso <- 1
-offset <- 0
+offset <- -1
 
 params_inf <- beta_muvar2shape1shape2(
   (mean_inf-offset)/(max_shed-offset), sd_inf^2 /(max_shed-offset)^2
 )
 
-params_inf <- list(shape1 = 4.5, shape2 = 14.5)
+params_inf <- list(shape1 = 5, shape2 = 16)
 
 params_inf_mu <- ((max_shed-offset)*beta_shape1shape22muvar(4.5,14.5)$mu)+offset
 params_inf_sd <- (max_shed-offset)*sqrt(beta_shape1shape22muvar(4.5,14.5)$sigma2)
+
+params_inf_mu <- ((max_shed-offset)*beta_shape1shape22muvar(5,16)$mu)+offset
+params_inf_sd <- (max_shed-offset)*sqrt(beta_shape1shape22muvar(5,16)$sigma2)
 
 params_inc <- epitrix::gamma_mucv2shapescale(
   mu = mean_inc, cv = sd_inc/ mean_inc
