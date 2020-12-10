@@ -58,8 +58,12 @@ p <- ggplot() +
 
 ## Without normalisation
 width <- 0.1
+max_si <- ceiling(max(sim_data$si)) + 1
+si_vec <- seq(offset + 0.1 + 0.001, max_si, 1)
+
 fit <- stan(
-  file = here::here("stan-models/scenario4a.stan"),
+  ##file = here::here("stan-models/scenario4a.stan"),
+  file = here::here("stan-models/scenario4a_with_normalisation.stan"),
   data = list(
     N = length(filtered_data$si),
     si = filtered_data$si,
@@ -68,7 +72,10 @@ fit <- stan(
     alpha2 = params_inc[["shape"]],
     beta2 = 1 / params_inc[["scale"]],
     offset1 = offset,
-    width = width
+    width = width,
+    M = length(si_vec),
+    y_vec = si_vec
+
   ),
   chains = 3,
   iter = 2000,
@@ -76,7 +83,82 @@ fit <- stan(
   ## control = list(adapt_delta = 0.99)
 )
 
+best_params <- map_estimates(fit)
+shifted_params <- beta_shape1shape22muvar(
+  best_params[["alpha1"]], best_params[["beta1"]]
+)
 
+posterior_mu_sd <- list(
+  mu = (shifted_params$mu * (max_shed - offset)) + offset,
+  sigma2 = (shifted_params$sigma2 * (max_shed - offset)^2)
+)
+
+
+posterior_si <- better_simulate_si(
+  params_inc,
+  list(shape1 = best_params[["alpha1"]],
+       shape2 = best_params[["beta1"]]),
+  params_iso, offset, max_shed, nsim = 10000
+)
+
+
+p <- ggplot() +
+  geom_density(
+    aes(sim_data$t_1, fill = "blue"), alpha = 0.3, col = NA
+  ) +
+  geom_density(
+    aes(filtered_data$t_1, fill = "green"), alpha = 0.3, col = NA
+  ) +
+  geom_density(
+     aes(posterior_si$t_1, fill = "red"), alpha = 0.3, col = NA
+   ) +
+  scale_fill_identity(
+    guide = "legend",
+    labels = c("Simulated", "Secondary infection before isolation",
+               "Posterior"),
+    breaks = c("blue", "green", "red")
+  ) +
+  xlab("Infectious Profile") +
+  ylab("Probability Density") +
+  theme_minimal() +
+  theme(
+    legend.title = element_blank(), legend.position = "top"
+  )
+
+posterior_samples <- rstan::extract(fit)
+posterior_samples <- map(
+  posterior_samples, function(x) x[sample(length(x), 1000)]
+)
+
+posterior_mu_distr <- beta_shape1shape22muvar(
+  posterior_samples[["alpha1"]], posterior_samples[["beta1"]]
+)
+
+posterior_mu_distr <- list(
+  mu = (posterior_mu_distr$mu * (max_shed - offset)) + offset,
+  sigma2 = (posterior_mu_distr$sigma2 * (max_shed - offset)^2)
+)
+
+
+p_mu <- ggplot() +
+  geom_density(
+    aes(posterior_mu_distr$mu), fill = "red", col = NA, alpha = 0.3 ) +
+  geom_vline(xintercept = mean_inf) +
+  theme_minimal() +
+  xlab("Mean Infectious Profile")
+
+p_sd <- ggplot() +
+  geom_density(
+    aes(sqrt(posterior_mu_distr$sigma2)),
+    fill = "red", col = NA, alpha = 0.3
+  ) +
+  geom_vline(xintercept = sd_inf) +
+  theme_minimal() +
+  xlab("SD Infectious Profile")
+
+p <- cowplot::plot_grid(p_mu, p_sd, ncol = 1)
+
+ggsave("figures/posterior_params_4a.png", p)
 
 fits <- pmap(
   list(
@@ -85,11 +167,9 @@ fits <- pmap(
     sim_data = filtered_data
   ),
   function(params_inc, params_offset, sim_data) {
-    max_si <- ceiling(sim_data$si) + 1
-    si_vec <- seq(params_offset + 0.1 + 0.001, max_si, 1)
     width <- 0.1
     fit_4a <- stan(
-      file = here::here("stan-models/scenario4a_with_normalisation.stan"),
+
       data = list(
         N = length(sim_data$si),
         si = sim_data$si,
@@ -99,8 +179,6 @@ fits <- pmap(
         beta2 = 1 / params_inc[["scale"]],
         offset1 = params_offset,
         width = width,
-        M = length(si_vec),
-        y_vec = si_vec
       ),
       chains = 3,
       iter = 2000,
@@ -123,43 +201,7 @@ iwalk(
 
 ## fits <- map(infiles, readRDS)
 
-posterior_mu_sd <- pmap(
-  list(
-    fit = fits,
-    offset = params_offsets_all
-  ),
-  function(fit, offset) {
-    if (nrow(as.data.frame(fit)) == 0) return(NULL)
-    out <- map_estimates(fit)
-    ## Same transformation on fitted params
-    shifted_params <- beta_shape1shape22muvar(
-      out[["alpha1"]], out[["beta1"]]
-    )
-    list(
-      mu = (shifted_params$mu * (max_shed - offset)) + offset,
-      sigma2 = (shifted_params$sigma2 * (max_shed - offset)^2)
-    )
-  }
-)
 
-posterior_sim <- pmap(
-  list(
-    fit = fits,
-    params_inc = params_inc_all,
-    params_iso = params_iso_all,
-    params_offset = params_offsets_all
-  ),
-  function(fit, params_inc, params_iso, params_offset) {
-    if (nrow(as.data.frame(fit)) == 0) return(NULL)
-    best_params <- map_estimates(fit)
-    better_simulate_si(
-      params_inc,
-      list(shape1 = best_params[["alpha1"]],
-           shape2 = best_params[["beta1"]]),
-      params_iso, params_offset, max_shed, nsim = 10000
-    )
-  }
-)
 
 posterior_plots <- pmap(
   list(
@@ -209,27 +251,7 @@ posterior_t1_plots <- pmap(
   ),
   function(posterior_si, sim_data, filtered) {
     if (is.null(posterior_si)) return(NULL)
-    p <- ggplot() +
-      geom_density(
-        aes(sim_data$t_1, fill = "blue"), alpha = 0.3, col = NA
-      ) +
-      geom_density(
-        aes(filtered$t_1, fill = "green"), alpha = 0.3, col = NA
-      ) +
-      ## geom_density(
-      ##   aes(posterior_si$t_1, fill = "red"), alpha = 0.3, col = NA
-      ## ) +
-      scale_fill_identity(
-        guide = "legend",
-        labels = c("Simulated All", "Simulated filtered", "Posterior"),
-        breaks = c("blue", "green", "red")
-      ) +
-      xlab("Infectious Profile") +
-      ylab("Probability Density") +
-      theme_minimal() +
-      theme(
-        legend.title = element_blank(), legend.position = "top"
-      )
+
     p
 
   }
