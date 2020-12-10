@@ -6,7 +6,7 @@ sd_inc <- 1
 ## very short isolation
 mean_iso <- 2
 sd_iso <- 1
-offset <- 0
+offset <- -1
 
 params_inf <- beta_muvar2shape1shape2(
   (mean_inf - offset) / (max_shed - offset),
@@ -158,48 +158,7 @@ p_sd <- ggplot() +
 
 p <- cowplot::plot_grid(p_mu, p_sd, ncol = 1)
 
-ggsave("figures/posterior_params_4a.png", p)
-
-fits <- pmap(
-  list(
-    params_inc = params_inc_all,
-    params_offset = params_offsets_all,
-    sim_data = filtered_data
-  ),
-  function(params_inc, params_offset, sim_data) {
-    width <- 0.1
-    fit_4a <- stan(
-
-      data = list(
-        N = length(sim_data$si),
-        si = sim_data$si,
-        nu = sim_data$nu,
-        max_shed = max_shed,
-        alpha2 = params_inc[["shape"]],
-        beta2 = 1 / params_inc[["scale"]],
-        offset1 = params_offset,
-        width = width,
-      ),
-      chains = 3,
-      iter = 2000,
-      verbose = TRUE
-      ## control = list(adapt_delta = 0.99)
-    )
-    fit_4a
-  }
-)
-
-
-iwalk(
-  fits,
-  function(fit, i) saveRDS(fit, glue::glue("stanfits/{prefix}{i}.rds"))
-)
-
-## infiles <- map(
-##   1:nrow(param_grid), function(i) glue::glue("stanfits/{prefix}{i}.rds")
-## )
-
-## fits <- map(infiles, readRDS)
+ggsave("figures/posterior_params_4a_with_normalisation.png", p)
 
 
 
