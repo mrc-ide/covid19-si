@@ -1,12 +1,12 @@
 max_shed <- 21
-mean_inf <- 6
-sd_inf <- 2
-mean_inc <- 3
+mean_inf <- 4
+sd_inf <- 1
+mean_inc <- 2
 sd_inc <- 1
 ## very short isolation
-mean_iso <- 2
-sd_iso <- 1
-offset <- -1
+mean_iso <- 5
+sd_iso <- 2
+offset <- -3
 
 params_inf <- beta_muvar2shape1shape2(
   (mean_inf - offset) / (max_shed - offset),
@@ -19,8 +19,6 @@ params_inc <- epitrix::gamma_mucv2shapescale(
 
 alpha2 <- params_inc$shape
 beta2 <- 1 / params_inc$scale
-
-nsim_post_filter <- 500
 
 params_iso <- epitrix::gamma_mucv2shapescale(
   mu = mean_iso, cv = sd_iso / mean_iso
@@ -75,7 +73,6 @@ fit <- stan(
     width = width,
     M = length(si_vec),
     y_vec = si_vec
-
   ),
   chains = 3,
   iter = 2000,
@@ -124,6 +121,8 @@ p <- ggplot() +
   theme(
     legend.title = element_blank(), legend.position = "top"
   )
+
+ggsave("figures/posterior_t1_4a_sim_1.png", p)
 
 posterior_samples <- rstan::extract(fit)
 posterior_samples <- map(
