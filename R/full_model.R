@@ -38,49 +38,53 @@ mean_norm <- list()
 p_norm <- list()
 t_1_posterior_norm<- list()
 p2_norm <- list()
+max_si <- vector(length = 10)
 
 sim_data <- replicate(
   10, better_simulate_si(
   params_inc, params_inf, params_iso, offset, max_shed, 4e4
 )
   )
+
 resized <- list()
+
+for(i in 1:10){ # run multiple simulations to check variability
+  
+  unfiltered <- as.data.frame(sim_data[,i])
+  
+  filtered <- unfiltered[unfiltered$t_1 <= unfiltered$nu, ]
+  
+  # check simulated inf
+  print(mean(unfiltered$t_1))
+  print(sd(unfiltered$t_1))
+  
+  #print(mean(filtered[[i]]$nu))
+  
+  ## Make sure we have at least 500 rows
+  idx <- sample(nrow(filtered), nsim_post_filter, replace = FALSE)
+  resized[[i]] <- filtered[idx, ]
+  
+  # plot unfiltered, filtered, and filtered resampled to ensure 500 rows
+  p[[i]] <- ggplot() +
+    geom_density(
+      aes(unfiltered$t_1), fill = "blue", col = NA, alpha = 0.2
+    ) +
+    geom_density(
+      aes(resized[[i]]$t_1), fill = "red", col = NA, alpha = 0.2
+    ) +
+    geom_density(
+      aes(filtered$t_1), fill = "red", col = NA, alpha = 0.2
+    ) +
+    geom_vline(xintercept = offset)+
+    theme_minimal()
+  
+  max_si[i] <- ceiling(max(unfiltered$si))
+}
 
 
 for(i in 1:10){ # run multiple simulations to check variability
-
-unfiltered <- as.data.frame(sim_data[,i])
-
-filtered <- unfiltered[unfiltered$t_1 <= unfiltered$nu, ]
-
-# check simulated inf
-print(mean(unfiltered$t_1))
-print(sd(unfiltered$t_1))
-
-#print(mean(filtered[[i]]$nu))
-
-## Make sure we have at least 500 rows
-idx <- sample(nrow(filtered), nsim_post_filter, replace = FALSE)
-resized[[i]] <- filtered[idx, ]
-
-# plot unfiltered, filtered, and filtered resampled to ensure 500 rows
-p[[i]] <- ggplot() +
-  geom_density(
-    aes(unfiltered$t_1), fill = "blue", col = NA, alpha = 0.2
-  ) +
-  geom_density(
-    aes(resized[[i]]$t_1), fill = "red", col = NA, alpha = 0.2
-  ) +
-  geom_density(
-    aes(filtered$t_1), fill = "red", col = NA, alpha = 0.2
-  ) +
-  geom_vline(xintercept = offset)+
-  theme_minimal()
-
-# set max si for denominator as max si in the unfiltered data
-max_si <- ceiling(max(unfiltered$si))
-
-y_vec <- seq(offset, max_si, by = 1)
+print(i)
+y_vec <- seq(offset, max_si[i], by = 1)
 
 
 ###### grid likelihood
@@ -96,37 +100,23 @@ grid$normalised <- pmap_dbl(
       function(si, nu) {
         full_model_lpdf(
           si, nu, max_shed, offset, 0, alpha1, beta1, alpha2, beta2,
-          0.1, max_si, offset
-          ) -  normalising_constant(
-          y_vec, nu, max_shed, offset, 0, alpha1, beta1, alpha2, beta2,
-          0.1, max_si, offset
-        )
+          0.1, max_si[i], offset
+          ) #-  normalising_constant(
+          #y_vec, nu, max_shed, offset, 0, alpha1, beta1, alpha2, beta2,
+          #0.1, max_si[i], offset
+        #)
       }
     )
     sum(out)
   }
 )
 
-mle_norm[[i]] <- grid[which(grid$normalised == max(grid$normalised)),]
+mle[[i]] <- grid[which(grid$normalised == max(grid$normalised)),]
 
-mean_norm[[i]] <- ((max_shed-offset)*(beta_shape1shape22muvar(mle_norm[[i]]$alpha1, mle_norm[[i]]$beta1)$mu))+offset
+mean[[i]] <- ((max_shed-offset)*(beta_shape1shape22muvar(mle[[i]]$alpha1, mle[[i]]$beta1)$mu))+offset
 
-t_1_posterior_norm[[i]] <- ((max_shed - offset) * rbeta(
-  10000, shape1 = mle_norm[[i]]$alpha1, shape2 = mle_norm[[i]]$beta1))+offset
-
-p2_norm[[i]] <- ggplot() +
-  geom_density(
-    aes(unfiltered$t_1), fill = "blue", col = NA, alpha = 0.2
-  ) +
-  geom_density(
-    aes(resized[[i]]$t_1), fill = "red", col = NA, alpha = 0.2
-  ) +
-  geom_density(
-    aes(t_1_posterior_norm[[i]]), fill = "green", col = NA, alpha = 0.2
-  ) +
-  geom_vline(xintercept = offset)+
-  theme_minimal()
-
+t_1_posterior[[i]] <- ((max_shed - offset) * rbeta(
+  10000, shape1 = mle[[i]]$alpha1, shape2 = mle[[i]]$beta1))+offset
 
 }
 
