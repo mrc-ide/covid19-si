@@ -33,6 +33,11 @@ mean <- list()
 p <- list()
 t_1_posterior<- list()
 p2 <- list()
+mle_norm <- list()
+mean_norm <- list()
+p_norm <- list()
+t_1_posterior_norm<- list()
+p2_norm <- list()
 
 sim_data <- replicate(
   10, better_simulate_si(
@@ -92,24 +97,24 @@ grid$normalised <- pmap_dbl(
         full_model_lpdf(
           si, nu, max_shed, offset, 0, alpha1, beta1, alpha2, beta2,
           0.1, max_si, offset
-          ) #-  normalising_constant(
-          #y_vec, nu, max_shed, offset, 0, alpha1, beta1, alpha2, beta2,
-          #0.1, max_si, offset
-        #)
+          ) -  normalising_constant(
+          y_vec, nu, max_shed, offset, 0, alpha1, beta1, alpha2, beta2,
+          0.1, max_si, offset
+        )
       }
     )
     sum(out)
   }
 )
 
-mle[[i]] <- grid[which(grid$normalised == max(grid$normalised)),]
+mle_norm[[i]] <- grid[which(grid$normalised == max(grid$normalised)),]
 
-mean[[i]] <- ((max_shed-offset)*(beta_shape1shape22muvar(mle[[i]]$alpha1, mle[[i]]$beta1)$mu))+offset
+mean_norm[[i]] <- ((max_shed-offset)*(beta_shape1shape22muvar(mle_norm[[i]]$alpha1, mle_norm[[i]]$beta1)$mu))+offset
 
-t_1_posterior[[i]] <- ((max_shed - offset) * rbeta(
-  10000, shape1 = mle[[i]]$alpha1, shape2 = mle[[i]]$beta1))+offset
+t_1_posterior_norm[[i]] <- ((max_shed - offset) * rbeta(
+  10000, shape1 = mle_norm[[i]]$alpha1, shape2 = mle_norm[[i]]$beta1))+offset
 
-p2[[i]] <- ggplot() +
+p2_norm[[i]] <- ggplot() +
   geom_density(
     aes(unfiltered$t_1), fill = "blue", col = NA, alpha = 0.2
   ) +
@@ -117,7 +122,7 @@ p2[[i]] <- ggplot() +
     aes(resized[[i]]$t_1), fill = "red", col = NA, alpha = 0.2
   ) +
   geom_density(
-    aes(t_1_posterior[[i]]), fill = "green", col = NA, alpha = 0.2
+    aes(t_1_posterior_norm[[i]]), fill = "green", col = NA, alpha = 0.2
   ) +
   geom_vline(xintercept = offset)+
   theme_minimal()
@@ -168,6 +173,42 @@ mean_filtered <- vector(length = 10)
 for(j in 1:10){
  mean_filtered[j] <- mean(resized[[j]]$t_1) 
 }
+
+# plot the different posteriors onto one graph
+
+t1_posterior_df_n <- data.frame(matrix(unlist(t_1_posterior_norm), ncol=length(t_1_posterior_norm), byrow=F))
+t1_posterior_long_n <- reshape2::melt(t1_posterior_df_n)
+
+# extract the different filtered t_1 data
+filtered_t1_n <- matrix(ncol = 10, nrow = length(resized[[1]]$t_1))
+
+for(i in 1:10){
+  
+  filtered_t1_n[,i] <- resized[[i]]$t_1
+}
+
+# extract the different unfiltered t_1 data
+unfiltered_t1_n <- matrix(ncol = 10, nrow = length(sim_data[,1]$t_1))
+
+for(i in 1:10){
+  unfiltered_t1_n[,i] <- sim_data[,i]$t_1
+}
+
+filtered_t1_long_n <- reshape2::melt(as.data.frame(filtered_t1_n))
+unfiltered_t1_long_n <- reshape2::melt(as.data.frame(unfiltered_t1_n))
+
+
+q_norm <- ggplot()+
+  geom_density(data = unfiltered_t1_long_n,
+               aes(value, group = variable), col = "blue", alpha = 0.2
+  ) +
+  geom_density(data = filtered_t1_long_n,
+               aes(value, group = variable), colour = "red", alpha = 0.2
+  ) +
+  geom_density(data = t1_posterior_long_n,
+               aes(value, group = variable), colour = "darkgreen"
+  )+
+  theme_minimal()
 
 
 
