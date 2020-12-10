@@ -18,6 +18,7 @@ parameters{
 model{
   //print("alpha1 ", alpha1);
   //print("beta1 ", beta1);
+  real denominator;
   for (n in 1:N) {
     denominator = s4_normalising_constant(y_vec, nu[n], max_shed, 
                                           offset1, alpha1, beta1, 
