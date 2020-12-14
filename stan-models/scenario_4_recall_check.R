@@ -1,4 +1,4 @@
-## multisimulation scenario 4 using full model: 5 simulated datasets 
+## multisimulation scenario 4 + RECALL using full model: 5 simulated datasets 
 
 #1 SIMULATE THE DATA
 
@@ -8,10 +8,17 @@ mean_inf <- 4
 sd_inf <- 2
 mean_inc <- 2
 sd_inc <- 1
-mean_iso <- 2
-sd_iso <- 1
+mean_iso <- 3
+sd_iso <- 3
 param_offset <- -1
+recall <- 0.5
 
+# visualise the recall effect
+# ex <- seq(0, 30, by = 1)
+# ggplot()+
+# geom_point(aes(x = ex, y = exp(-recall*ex)))+
+# theme_minimal()+
+# xlab("absolute difference between SI and isolation delay")
 
 params_inf <- beta_muvar2shape1shape2(
   (mean_inf-param_offset)/(max_shed-param_offset), sd_inf^2 /(max_shed-param_offset)^2
@@ -28,8 +35,8 @@ params_iso <- epitrix::gamma_mucv2shapescale(
   mu = mean_iso, cv = sd_iso / mean_iso
 )
 
-nsim_post_filter <- 4000
-n_datasets <- 3
+nsim_post_filter <- 500
+n_datasets <- 5
 
 sim_data <- replicate(
   n_datasets, better_simulate_si(
@@ -37,29 +44,47 @@ sim_data <- replicate(
   )
 )
 
-filtered_500 <- list()
-p <- list()
-max_si <- vector(length = n_datasets)
+sim_data <- better_simulate_si(
+    params_inc, params_inf, params_iso, param_offset, max_shed, 2e5
+  )
+unfiltered <- sim_data
 
-for(i in 1:n_datasets){ # run multiple simulations to check variability
+# visualise isolation distribution pre-filter
+ggplot()+
+  geom_histogram(aes(x = sim_data$nu), binwidth = 1)
+
+ filtered_500 <- list()
+ max_si <- vector(length = n_datasets)
+ 
+ for(i in 1:n_datasets){ # run multiple simulations to check variability
   
   unfiltered <- as.data.frame(sim_data[,i])
   
+  unfiltered <- unfiltered %>%
+    mutate(recall_p = exp(-recall*abs(si - nu)))
+  
+  unfiltered$runif <- runif(n = length(unfiltered$t_1), min = 0, max = 1)
+  
   filtered <- unfiltered[unfiltered$t_1 <= unfiltered$nu, ]
   
+  filtered_r <- filtered[filtered$runif< filtered$recall_p, ]
+
   # check simulated inf
   print(mean(unfiltered$t_1))
   print(sd(unfiltered$t_1))
-  
-  #print(mean(filtered[[i]]$nu))
+  print(mean(filtered$nu))
+  print(mean(filtered_r$nu))
   
   ## Make sure we have at least 500 rows
-  idx <- sample(nrow(filtered), nsim_post_filter, replace = FALSE)
-  filtered_500[[i]] <- filtered[idx, ]
+  idx <- sample(nrow(filtered_r), nsim_post_filter, replace = FALSE)
+  filtered_500[[i]] <- filtered_r[idx, ]
   
-  max_si[i] <- ceiling(max(unfiltered$si))
-}
+  max_si[i] <- ceiling(max(unfiltered[[i]]$si))
+  
 
+}
+  ggplot()+
+    geom_point(data = filtered_500[[i]], aes(x = si, y = nu))
 #2 CHECK WHAT THE SIMULATED DATA LOOKS LIKE
 
 # extract the different filtered t_1 data
@@ -117,27 +142,27 @@ for(i in 1:n_datasets){
   
   
   fit[[i]] <- stan(
-  file = here::here("stan-models/full_model_no_norm.stan"),
-  data = list(
-    N = length(filtered_500[[i]]$si),
-    si = filtered_500[[i]]$si,
-    nu = filtered_500[[i]]$nu,
-    max_shed = max_shed,
-    offset1 = param_offset,
-    max_si = max(sim_data[,i]$si) + 0.001,
-    min_si = param_offset, ## assuming the smallest incubation period is 0
-    alpha2 = params_inc[["shape"]],
-    beta2 = 1 / params_inc[["scale"]],
-    width = 0.1,
-    #M = length(si_vec),
-    #y_vec = si_vec,
-    recall = 0
-  ),
-  chains = 2,
-  iter = 4000,
-  verbose = TRUE
-  ## control = list(adapt_delta = 0.99)
-)
+    file = here::here("stan-models/full_model_no_norm.stan"),
+    data = list(
+      N = length(filtered_500[[i]]$si),
+      si = filtered_500[[i]]$si,
+      nu = filtered_500[[i]]$nu,
+      max_shed = max_shed,
+      offset1 = param_offset,
+      max_si = max(sim_data[,i]$si) + 0.001,
+      min_si = param_offset, ## assuming the smallest incubation period is 0
+      alpha2 = params_inc[["shape"]],
+      beta2 = 1 / params_inc[["scale"]],
+      width = 0.1,
+      #M = length(si_vec),
+      #y_vec = si_vec,
+      recall = 0
+    ),
+    chains = 2,
+    iter = 4000,
+    verbose = TRUE
+    ## control = list(adapt_delta = 0.99)
+  )
 }
 
 test_fit <- ggmcmc(ggs(fit[[3]]), here::here("figures/test3_4000.pdf"))
@@ -152,20 +177,20 @@ sd <- vector(length = n_datasets)
 x <- matrix(nrow = 100000, ncol = n_datasets, byrow = FALSE)
 
 for(i in 1:n_datasets){
- fitted_params[[i]] <- rstan::extract(fit[[i]]) 
- max_index[[i]] <- which(fitted_params[[i]]$lp__==max(fitted_params[[i]]$lp__))
- fitted_max[[i]] <- c(alpha1 = fitted_params[[i]]$alpha1[max_index[[i]]], 
-                beta1 = fitted_params[[i]]$beta1[max_index[[i]]])
-shape1_max[i] <- fitted_max[[i]]["alpha1"]
-shape2_max[i] <- fitted_max[[i]]["beta1"]
-mean[i] <- ((max_shed-offset)*beta_shape1shape22muvar(shape1_max[i], shape2_max[i])$mu)+offset
-sd[i] <- (max_shed-offset)*sqrt(beta_shape1shape22muvar(shape1_max[i], shape2_max[i])$sigma2)
-x[,i] <- (max_shed *
-        rbeta(
-          n = 100000,
-          shape1 = shape1_max[i],
-          shape2 = shape2_max[i]
-        ))+offset
+  fitted_params[[i]] <- rstan::extract(fit[[i]]) 
+  max_index[[i]] <- which(fitted_params[[i]]$lp__==max(fitted_params[[i]]$lp__))
+  fitted_max[[i]] <- c(alpha1 = fitted_params[[i]]$alpha1[max_index[[i]]], 
+                       beta1 = fitted_params[[i]]$beta1[max_index[[i]]])
+  shape1_max[i] <- fitted_max[[i]]["alpha1"]
+  shape2_max[i] <- fitted_max[[i]]["beta1"]
+  mean[i] <- ((max_shed-offset)*beta_shape1shape22muvar(shape1_max[i], shape2_max[i])$mu)+offset
+  sd[i] <- (max_shed-offset)*sqrt(beta_shape1shape22muvar(shape1_max[i], shape2_max[i])$sigma2)
+  x[,i] <- (max_shed *
+              rbeta(
+                n = 100000,
+                shape1 = shape1_max[i],
+                shape2 = shape2_max[i]
+              ))+offset
 }
 
 saveRDS(fitted_params, file = "fitted_params_check_4000.rds") 
