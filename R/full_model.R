@@ -87,7 +87,7 @@ fit <- stan(
     y_vec = si_vec
   ),
   chains = 2,
-  iter = 100,
+  iter = 2000,
   verbose = TRUE
   ## control = list(adapt_delta = 0.99)
 )
