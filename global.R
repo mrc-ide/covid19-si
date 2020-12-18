@@ -7,6 +7,7 @@ library(ggplot2)
 library(epitrix)
 library(purrr)
 library(sbcrs)
+library(matrixStats)
 source("R/utils.R")
 source("R/scenario_1a_mix_utils.R")
 source("R/scenario_2a_mix_utils.R")
@@ -16,8 +17,8 @@ rstan_options(auto_write = TRUE)
 
 max_shed <- 21
 nsim <- 500
-alpha_invalid <- 0.5
-beta_invalid <- 0.5
+alpha_invalid <- 1
+beta_invalid <- 1
 min_si <- -2 ## For simulations
 offset <- -2 # this is not the smallest possible SI, but the maximum
 ## time before symptom onset when secondary infection can happeb.
@@ -60,7 +61,7 @@ params <- list(
   inc_par2 = list(mean_inc = 5.1, sd_inc = 3.94),
   ## very short incubation period to allow simulation of -ve SIs
   inc_par3 = list(mean_inc = 2, sd_inc = 1),
-  iso_par1 = list(mean_iso = 2, sd_iso = 2),
+  iso_par1 = list(mean_iso = 2, sd_iso = 1),
   iso_par2 = list(mean_iso = 4, sd_iso = 2),
   iso_par3 = list(mean_iso = 4, sd_iso = 4),
   offset1 = -1,
