@@ -5,7 +5,7 @@ mean_inc <- 2
 sd_inc <- 1
 mean_iso <- 2
 sd_iso <- 2
-param_offset <- -1
+offset <- -1
 recall <- 5
 
 params_inf <- beta_muvar2shape1shape2(
@@ -26,14 +26,11 @@ params_iso <- epitrix::gamma_mucv2shapescale(
 
 nsim_post_filter <- 1000
 
-sim_data <- better_simulate_si(
+unfiltered <- better_simulate_si(
   params_inc, params_inf, params_iso, offset, max_shed, 1e4
 )
 
-unfiltered <- sim_data
 sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]
-
-
 
 sim_data$p_si <- exp(-recall * abs(sim_data$si - sim_data$nu))
 
@@ -41,6 +38,28 @@ idx <- sample(
   nrow(sim_data), nsim_post_filter, replace = TRUE, sim_data$p_si
 )
 with_recall_bias <- sim_data[idx, ]
+
+
+ggplot() +
+  geom_density(
+    aes(unfiltered$si, fill = "blue"), col = NA, alpha = 0.2
+  ) +
+  geom_density(
+    aes(sim_data$si, fill = "red"), col = NA, alpha = 0.2
+  ) +
+  geom_density(
+    aes(with_recall_bias$si, fill = "green"), col = NA, alpha = 0.2
+  ) +
+  scale_fill_identity(
+    breaks = c("blue", "red", "green"),
+    labels = c("All", "Filtered", "With recall bias"),
+    guide = "legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+
+
 
 ggplot() +
   geom_density(
@@ -65,10 +84,49 @@ ggplot() +
   geom_point(data = sim_data, aes(nu, si, alpha = p_si)) +
   theme_minimal()
 
+
+### Identify contribution of each component
+grid <- expand.grid(
+  alpha1 = seq(1, 10, 0.5),
+  beta1 = seq(1, 15, 0.5),
+  recall = seq(1, 10, 1)
+)
+
+expose_stan_functions("stan-models/likelihoods.stan")
+
 max_si <- ceiling(max(unfiltered$si))
 y_vec <- seq(offset, max_si, by = 1)
 si_vec <- seq(offset + 0.1 + 0.001, max_si, 1)
 width <- 0.1
+
+
+log_likelihood <- pmap_dfr(
+  grid,
+  function(alpha1, beta1, recall) {
+    pmap_dfr(
+      with_recall_bias[, c("si", "nu")],
+      function(si, nu) {
+        numerator1 <- -recall * abs(si - nu)
+        numerator2 <- full_model_lpdf(
+          si, nu, max_shed, offset, recall, alpha1, beta1, alpha2,
+          beta2, 0.1, max_si, min_si
+        )
+        denominator <- normalising_constant(
+          y_vec, nu, max_shed, offset, recall, alpha1, beta1, alpha2,
+          beta2, 0.1, max_si, min_si
+        )
+        data.frame(
+          alpha1 = alpha1, beta1 = beta1, si = si, nu = nu,
+          numerator1 = numerator1, numerator2 = numerator2,
+          denominator = denominator
+        )
+      }
+    )
+  }
+)
+
+
+
 
 fit <- stan(
   file = here::here("stan-models/full_model.stan"),
@@ -101,7 +159,7 @@ posterior_inf_params <- function(fit, nsim, max_shed, offset) {
   shape1 <- params[["alpha1"]][idx]
   shape2 <- params[["beta1"]][idx]
   out <- beta_shape1shape22muvar(shape1, shape2)
-  out[["mu"]] <- max_shed * out[["mu"]] + offset
+  out[["mu"]] <- (max_shed) * out[["mu"]] + offset
   out[["sigma2"]] <- max_shed * max_shed * out[["sigma2"]]
   out
 }
