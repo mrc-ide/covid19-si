@@ -40,7 +40,7 @@ params_iso_all <- pmap(
   }
 )
 
-params_offsets_all <- pmap(
+params_offset_all <- pmap(
   param_grid,
   function(params_inf, params_inc, params_iso, params_offset) {
     params[[params_offset]]
@@ -53,7 +53,7 @@ simulated_data <- pmap(
     params_inf = params_inf_all,
     params_inc = params_inc_all,
     params_iso = params_iso_all,
-    params_offset = params_offsets_all
+    params_offset = params_offset_all
   ),
   function(params_inf, params_inc, params_iso, params_offset) {
     sim_data <- better_simulate_si(
@@ -136,7 +136,7 @@ iwalk(
 fits <- pmap(
   list(
     params_inc = params_inc_all,
-    params_offset = params_offsets_all,
+    params_offset = params_offset_all,
     sim_data = simulated_data
   ),
   function(params_inc, params_offset, sim_data) {
@@ -180,7 +180,7 @@ posterior_sim <- pmap(
     fit = fits,
     params_inc = params_inc_all,
     params_iso = params_iso_all,
-    params_offset = params_offsets_all
+    params_offset = params_offset_all
   ),
   function(fit, params_inc, params_iso, params_offset) {
     if (nrow(as.data.frame(fit)) == 0) return(NULL)
@@ -271,7 +271,7 @@ params_compare <- pmap_dfr(
   list(
     fit = fits,
     params_inf = param_grid$params_inf,
-    params_offset = params_offsets_all
+    params_offset = params_offset_all
   ),
   function(fit, params_inf, params_offset) {
     out <- params[[params_inf]]
