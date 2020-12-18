@@ -8,8 +8,8 @@ mean_inf <- 4
 sd_inf <- 2
 mean_inc <- 2
 sd_inc <- 1
-mean_iso <- 3
-sd_iso <- 3
+mean_iso <- 2
+sd_iso <- 2
 param_offset <- -1
 recall <- 0.5
 
@@ -35,8 +35,8 @@ params_iso <- epitrix::gamma_mucv2shapescale(
   mu = mean_iso, cv = sd_iso / mean_iso
 )
 
-nsim_post_filter <- 500
-n_datasets <- 5
+nsim_post_filter <- 1000
+n_datasets <- 3
 
 sim_data <- replicate(
   n_datasets, better_simulate_si(
@@ -44,14 +44,9 @@ sim_data <- replicate(
   )
 )
 
-sim_data <- better_simulate_si(
-    params_inc, params_inf, params_iso, param_offset, max_shed, 2e5
-  )
-unfiltered <- sim_data
-
 # visualise isolation distribution pre-filter
 ggplot()+
-  geom_histogram(aes(x = sim_data$nu), binwidth = 1)
+  geom_histogram(aes(x = sim_data[,1]$nu), binwidth = 1)
 
  filtered_500 <- list()
  max_si <- vector(length = n_datasets)
@@ -79,12 +74,12 @@ ggplot()+
   idx <- sample(nrow(filtered_r), nsim_post_filter, replace = FALSE)
   filtered_500[[i]] <- filtered_r[idx, ]
   
-  max_si[i] <- ceiling(max(unfiltered[[i]]$si))
+  max_si[i] <- ceiling(max(unfiltered$si))
   
 
 }
   ggplot()+
-    geom_point(data = filtered_500[[i]], aes(x = si, y = nu))
+    geom_point(data = filtered_500[[1]], aes(x = si, y = nu))
 #2 CHECK WHAT THE SIMULATED DATA LOOKS LIKE
 
 # extract the different filtered t_1 data
@@ -142,7 +137,7 @@ for(i in 1:n_datasets){
   
   
   fit[[i]] <- stan(
-    file = here::here("stan-models/full_model_no_norm.stan"),
+    file = here::here("stan-models/full_model.stan"),
     data = list(
       N = length(filtered_500[[i]]$si),
       si = filtered_500[[i]]$si,
@@ -154,9 +149,9 @@ for(i in 1:n_datasets){
       alpha2 = params_inc[["shape"]],
       beta2 = 1 / params_inc[["scale"]],
       width = 0.1,
-      #M = length(si_vec),
-      #y_vec = si_vec,
-      recall = 0
+      M = length(si_vec),
+      y_vec = si_vec
+      #recall = 0
     ),
     chains = 2,
     iter = 4000,
@@ -165,13 +160,14 @@ for(i in 1:n_datasets){
   )
 }
 
-test_fit <- ggmcmc(ggs(fit[[3]]), here::here("figures/test3_4000.pdf"))
+test_fit <- ggmcmc(ggs(fit[[3]]), here::here("figures/test3_recall.pdf"))
 
 fitted_params <- list()
 max_index <- list()
 fitted_max <- list()
 shape1_max <- vector(length = n_datasets)
 shape2_max <- vector(length = n_datasets)
+recall_max <- vector(length = n_datasets)
 mean <- vector(length = n_datasets)
 sd <- vector(length = n_datasets)
 x <- matrix(nrow = 100000, ncol = n_datasets, byrow = FALSE)
@@ -180,20 +176,22 @@ for(i in 1:n_datasets){
   fitted_params[[i]] <- rstan::extract(fit[[i]]) 
   max_index[[i]] <- which(fitted_params[[i]]$lp__==max(fitted_params[[i]]$lp__))
   fitted_max[[i]] <- c(alpha1 = fitted_params[[i]]$alpha1[max_index[[i]]], 
-                       beta1 = fitted_params[[i]]$beta1[max_index[[i]]])
+                       beta1 = fitted_params[[i]]$beta1[max_index[[i]]],
+                       recall = fitted_params[[i]]$recall[max_index[[i]]])
   shape1_max[i] <- fitted_max[[i]]["alpha1"]
   shape2_max[i] <- fitted_max[[i]]["beta1"]
-  mean[i] <- ((max_shed-offset)*beta_shape1shape22muvar(shape1_max[i], shape2_max[i])$mu)+offset
-  sd[i] <- (max_shed-offset)*sqrt(beta_shape1shape22muvar(shape1_max[i], shape2_max[i])$sigma2)
+  recall_max[i] <- fitted_max[[i]]["recall"]
+  mean[i] <- ((max_shed-param_offset)*beta_shape1shape22muvar(shape1_max[i], shape2_max[i])$mu)+param_offset
+  sd[i] <- (max_shed-param_offset)*sqrt(beta_shape1shape22muvar(shape1_max[i], shape2_max[i])$sigma2)
   x[,i] <- (max_shed *
               rbeta(
                 n = 100000,
                 shape1 = shape1_max[i],
                 shape2 = shape2_max[i]
-              ))+offset
+              ))+param_offset
 }
 
-saveRDS(fitted_params, file = "fitted_params_check_4000.rds") 
+saveRDS(fitted_params, file = "fitted_params_check_recall.rds") 
 
 
 # present the fits alongside the filtered and unfiltered data
@@ -222,7 +220,7 @@ q <- ggplot()+
   theme_minimal()
 
 
-ggsave("figures/recovered_inf_4000.png", q)
+ggsave("figures/recovered_recall.png", q)
 
 # plot the mean and sd
 recov <- data.frame(mean, sd, tag = "recov")
@@ -237,3 +235,8 @@ ggplot()+
 # what about the filtered data is leading to the variance?
 
 tabl <- data.frame(mean, sd, mean_sim, median_sim, min_sim, max_sim, sd_sim)
+
+# plot the distribution of isolation
+
+ggplot(filtered_500[[3]])+
+  geom_histogram(aes(x = nu))

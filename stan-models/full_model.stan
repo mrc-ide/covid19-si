@@ -12,7 +12,7 @@ data{
   real <lower = 0> width;
   int M;
   real y_vec[M];
-  real recall; 
+  //real recall; 
   //real alpha1;
   //real beta1;
   //real <lower = 0> alpha_invalid;
@@ -23,7 +23,7 @@ parameters{
   real <lower = 0, upper = 50> alpha1; // infectious profile parameter
   real <lower = 0, upper = 50> beta1;  // infectious profile parameter
   //real <lower = 0, upper = 1> pinvalid;
-  //real <lower = 0, upper = 5> recall;
+  real <lower = 0, upper = 5> recall;
 }
 model{
   //real valid;
