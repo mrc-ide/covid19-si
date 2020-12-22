@@ -1,4 +1,5 @@
 ## Set up params grid
+prefix <- "3a_mix_sim_"
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
   params_inc = c("inc_par1", "inc_par2"),
@@ -47,103 +48,57 @@ params_iso_all <- map(
   }
 )
 
-params_offsets_all <- map(
+params_offset_all <- map(
   param_grid$params_offset,
   function(params_offset) params[[params_offset]]
 )
 
-unfiltered <- pmap(
+params_pinvalid_all <- map(
+  param_grid$params_pinvalid,
+  function(params_pinvalid) params[[params_pinvalid]]
+)
+
+simulated <- pmap(
   list(
-    params_inf = params_inf_all,
     params_inc = params_inc_all,
+    params_inf = params_inf_all,
     params_iso = params_iso_all,
-    params_offset = params_offsets_all
+    params_offset = params_offsets_all,
+    params_pinvalid = params_pinvalid_all
   ),
-  function(params_inf, params_inc, params_iso, params_offset) {
-    better_simulate_si(
+  function(params_inc, params_inf, params_iso, params_offset,
+           params_pinvalid) {
+    min_si <- params_offset
+    simulate_3a_mix(
       params_inc, params_inf, params_iso, params_offset, max_shed,
-      nsim_pre_filter
+      params_pinvalid, nsim_pre_filter, alpha_invalid, beta_invalid,
+      min_si, max_si
     )
   }
 )
 
-prefix <- "3a_sim_"
-
-iwalk(
-  simulated_data,
-  function(df, index) {
-    p <- ggplot(df, aes(si)) +
-      geom_histogram(alpha = 0.4, col = NA, binwidth = 1) +
-      theme_minimal() +
-      xlab("Serial Interval")
-
-    ggsave(glue::glue("figures/{prefix}{index}.pdf"), p)
+sampled <- map(
+  simulated, function(df) {
+    ## might have NA from when pinvalid = 0
+    out <- df[["simulated_si"]]
+    out <- out[complete.cases(out), ]
+    idx <- sample(nsim_pre_filter, nsim_post_filter, replace = TRUE)
+    out[idx, ]
   }
 )
-
-## fit_1a <- stan(
-##   file = here::here("stan-models/scenario1a.stan"),
-##   data = list(
-##     N = nrow(simulated_data[[1]]),
-##     si = simulated_data[[1]]$si,
-##     max_shed = max_shed,
-##     alpha2 = params_inc_all[[1]][["shape"]],
-##     beta2 = 1 / params_inc_all[[1]][["scale"]],
-##     width = 0.1
-##   ),
-##   chains = 3,
-##   iter = 5000,
-##   verbose = TRUE
-##   ##control = list(adapt_delta = 0.99)
-## )
-
-## fit_2a <- stan(
-##   file = here::here("stan-models/scenario2a.stan"),
-##   data = list(
-##     N = nrow(simulated_data[[1]]),
-##     si = simulated_data[[1]]$si,
-##     nu = simulated_data[[1]]$nu,
-##     max_shed = max_shed,
-##     alpha2 = params_inc_all[[1]][["shape"]],
-##     beta2 = 1 / params_inc_all[[1]][["scale"]],
-##     width = 0.1
-##   ),
-##   chains = 3,
-##   iter = 5000,
-##   verbose = TRUE
-##   ##control = list(adapt_delta = 0.99)
-## )
-
-## fit_3a <- stan(
-##   file = here::here("stan-models/scenario3a.stan"),
-##   data = list(
-##     N = nrow(simulated_data[[1]]),
-##     si = simulated_data[[1]]$si,
-##     ##nu = simulated_data[[1]]$nu,
-##     offset1 = -1,
-##     max_shed = max_shed,
-##     alpha2 = params_inc_all[[1]][["shape"]],
-##     beta2 = 1 / params_inc_all[[1]][["scale"]]
-##     ##width = 0.1
-##   ),
-##   chains = 3,
-##   iter = 5000,
-##   verbose = TRUE
-##   ##control = list(adapt_delta = 0.99)
-## )
 
 
 fits <- pmap(
   list(
     params_inc = params_inc_all,
     params_offset = params_offsets_all,
-    sim_data = simulated_data
+    sim_data = sampled
   ),
   function(params_inc, params_offset, sim_data) {
-
-    width <- 0.1
+    ## Rounding now to check things
+    sim_data$si <- round(sim_data$si)
     fit_3a <- stan(
-      file = here::here("stan-models/scenario3a.stan"),
+      file = here::here("stan-models/scenario3a_mixture_general.stan"),
       data = list(
         N = length(sim_data$si),
         si = sim_data$si,
@@ -151,12 +106,15 @@ fits <- pmap(
         offset1 = params_offset,
         alpha2 = params_inc[["shape"]],
         beta2 = 1 / params_inc[["scale"]],
+        alpha_invalid = alpha_invalid,
+        beta_invalid = beta_invalid,
+        max_si = max_si,
+        min_si = params_offset + 0.001,
         width = width
       ),
       chains = 3,
       iter = 2000,
       verbose = TRUE
-      ## control = list(adapt_delta = 0.99)
     )
     fit_3a
   }
