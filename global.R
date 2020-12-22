@@ -16,10 +16,11 @@ options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
 max_shed <- 21
-nsim <- 600
+nsim_pre_filter <- 20000
+nsim_post_filter <- 600
 
 params <- list(
-  inf_par1 = list(mean_inf = 1, sd_inf = 2), ## short
+  inf_par1 = list(mean_inf = 2, sd_inf = 1), ## short
   inf_par2 = list(mean_inf = 8, sd_inf = 2), ## long
   inc_par1 = list(mean_inc = 2, sd_inc = 1), ## short
   inc_par2 = list(mean_inc = 6, sd_inc = 2), ## long
@@ -35,4 +36,3 @@ params <- list(
   recall2 = 0.5,
   recall3 = 1
 )
-

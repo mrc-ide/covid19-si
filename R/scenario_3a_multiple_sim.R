@@ -1,21 +1,25 @@
 ## Set up params grid
 param_grid <- expand.grid(
-  params_inf = c("inf_par1", "inf_par2", "inf_par3"),
+  params_inf = c("inf_par1", "inf_par2"),
   params_inc = c("inc_par1", "inc_par2"),
-  params_iso = c("iso_par1", "iso_par2", "iso_par3"),
-  ##params_offset = c("offset1", "offset2", "offset3"),
-  params_offset = c("offset1"),
+  params_iso = c("iso_par1", "iso_par2"),
+  params_offset = c("offset1", "offset2", "offset3"),
+  params_pinvalid = c("pinvalid1", "pinvalid2", "pinvalid3"),
   stringsAsFactors = FALSE
 )
 param_grid <- param_grid[1, ]
-nsim <- 20000
-offset <- -1
+
+
 params_inf_all <- pmap(
-  param_grid,
-  function(params_inf, params_inc, params_iso, params_offset) {
+  list(
+    params_inf = param_grid$params_inf,
+    params_offset = param_grid$params_offset
+  ),
+  function(params_inf, params_offset) {
     out <- params[[params_inf]]
     ## The whole shifting in simulation will shift mu,
     ## so pass larger my to simulate function/
+    offset <- params[[params_offset]]
     beta_muvar2shape1shape2(
     (out$mean_inf - offset) / (max_shed - offset),
     out$sd_inf^2 / (max_shed - offset)^2
@@ -23,9 +27,9 @@ params_inf_all <- pmap(
   }
 )
 
-params_inc_all <- pmap(
-  param_grid,
-  function(params_inf, params_inc, params_iso, params_offset) {
+params_inc_all <- map(
+  param_grid$params_inc,
+  function(params_inc) {
     out <- params[[params_inc]]
     epitrix::gamma_mucv2shapescale(
       mu = out[[1]], cv = out[[2]] / out[[1]]
@@ -33,9 +37,9 @@ params_inc_all <- pmap(
   }
 )
 
-params_iso_all <- pmap(
-  param_grid,
-  function(params_inf, params_inc, params_iso, params_offset) {
+params_iso_all <- map(
+  param_grid$params_iso,
+  function(params_iso) {
     out <- params[[params_iso]]
     epitrix::gamma_mucv2shapescale(
       mu = out[[1]], cv = out[[2]] / out[[1]]
@@ -43,16 +47,12 @@ params_iso_all <- pmap(
   }
 )
 
-params_offsets_all <- pmap(
-  param_grid,
-  function(params_inf, params_inc, params_iso, params_offset) {
-    params[[params_offset]]
-  }
+params_offsets_all <- map(
+  param_grid$params_offset,
+  function(params_offset) params[[params_offset]]
 )
 
-nsim_post_filter <- 500
-
-simulated_data <- pmap(
+unfiltered <- pmap(
   list(
     params_inf = params_inf_all,
     params_inc = params_inc_all,
@@ -60,14 +60,10 @@ simulated_data <- pmap(
     params_offset = params_offsets_all
   ),
   function(params_inf, params_inc, params_iso, params_offset) {
-    sim_data <- better_simulate_si(
-      params_inc, params_inf, params_iso, params_offset, max_shed, nsim
+    better_simulate_si(
+      params_inc, params_inf, params_iso, params_offset, max_shed,
+      nsim_pre_filter
     )
-    #sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]  #do not filter by isolation for s3a
-    sim_data <- sim_data[abs(sim_data$si) > 0.1, ]
-    ## Make sure we have at least nsim_post_filter rows.
-    idx <- sample(nrow(sim_data), nsim_post_filter, replace = FALSE)
-    sim_data[idx, ]
   }
 )
 
