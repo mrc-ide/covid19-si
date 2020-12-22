@@ -92,9 +92,10 @@ fits <- pmap(
   list(
     params_inc = params_inc_all,
     params_offset = params_offsets_all,
-    sim_data = sampled
+    sim_data = sampled,
+    index = seq_along(params_inc_all)
   ),
-  function(params_inc, params_offset, sim_data) {
+  function(params_inc, params_offset, sim_data, index) {
     ## Rounding now to check things
     sim_data$si <- round(sim_data$si)
     fit_3a <- stan(
@@ -116,20 +117,13 @@ fits <- pmap(
       iter = 2000,
       verbose = TRUE
     )
+    ## Save it now in case R crashes
+    saveRDS(fit, glue::glue("stanfits/{prefix}{index}.rds"))
     fit_3a
   }
 )
 
 
-
-iwalk(
-  fits,
-  function(fit, i) saveRDS(fit, glue::glue("stanfits/{prefix}{i}.rds"))
-)
-
-## infiles <- map(
-##   1:nrow(param_grid), function(i) glue::glue("stanfits/{prefix}{i}.rds")
-## )
 
 ## fits <- map(infiles, readRDS)
 posterior_mu_sd <- map(
