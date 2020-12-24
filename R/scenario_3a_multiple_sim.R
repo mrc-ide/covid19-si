@@ -98,8 +98,8 @@ fits <- pmap(
   ),
   function(params_inc, params_offset, sim_data, index) {
     ## Rounding now to check things
-    sim_data$si <- round(sim_data$si)
-    sim_data$si[sim_data$si == params_offset] <- params_offset + 0.001
+    ##sim_data$si <- round(sim_data$si)
+
     fit_3a <- stan(
       file = here::here("stan-models/scenario3a_mixture_general.stan"),
       data = list(
@@ -120,7 +120,7 @@ fits <- pmap(
       verbose = TRUE
     )
     ## Save it now in case R crashes
-    saveRDS(fit, glue::glue("stanfits/{prefix}{index}.rds"))
+    saveRDS(fit_3a, glue::glue("stanfits/{prefix}{index}.rds"))
     fit_3a
   }
 )
