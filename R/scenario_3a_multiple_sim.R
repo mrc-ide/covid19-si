@@ -8,7 +8,8 @@ param_grid <- expand.grid(
   params_pinvalid = c("pinvalid1", "pinvalid2", "pinvalid3"),
   stringsAsFactors = FALSE
 )
-param_grid <- param_grid[1, ]
+
+param_grid <- param_grid[61, ]
 
 
 params_inf_all <- pmap(
@@ -63,7 +64,7 @@ simulated <- pmap(
     params_inc = params_inc_all,
     params_inf = params_inf_all,
     params_iso = params_iso_all,
-    params_offset = params_offsets_all,
+    params_offset = params_offset_all,
     params_pinvalid = params_pinvalid_all
   ),
   function(params_inc, params_inf, params_iso, params_offset,
@@ -91,13 +92,14 @@ sampled <- map(
 fits <- pmap(
   list(
     params_inc = params_inc_all,
-    params_offset = params_offsets_all,
+    params_offset = params_offset_all,
     sim_data = sampled,
     index = seq_along(params_inc_all)
   ),
   function(params_inc, params_offset, sim_data, index) {
     ## Rounding now to check things
     sim_data$si <- round(sim_data$si)
+    sim_data$si[sim_data$si == params_offset] <- params_offset + 0.001
     fit_3a <- stan(
       file = here::here("stan-models/scenario3a_mixture_general.stan"),
       data = list(
@@ -110,7 +112,7 @@ fits <- pmap(
         alpha_invalid = alpha_invalid,
         beta_invalid = beta_invalid,
         max_si = max_si,
-        min_si = params_offset + 0.001,
+        min_si = params_offset - 0.001,
         width = width
       ),
       chains = 3,
@@ -147,7 +149,7 @@ posterior_sim <- pmap(
     fit = fits,
     params_inc = params_inc_all,
     params_iso = params_iso_all,
-    params_offset = params_offsets_all
+    params_offset = params_offset_all
   ),
   function(fit, params_inc, params_iso, params_offset) {
     if (nrow(as.data.frame(fit)) == 0) return(NULL)

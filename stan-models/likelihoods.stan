@@ -1,4 +1,21 @@
 functions{
+  // maps a point x in the interval (x_1, y_1) into (x_2, y_2)
+  // useful when we use beta density below
+  // We map the interval (offset, max_shed) into (0.01, 0.99)
+  // 0.01 and 0.99 because mapping offset to 0 gives Inf as log-likelihood
+  // Example: map_into_interval(-1, -1, 21, 0, 1)
+  // map_into_interval(0, 0, 1, -1, 21)
+  real map_into_interval2(real x, real x_1, real y_1, real x_2,
+                         real y_2) {
+    real slope;
+    real intercept;
+    real y;
+    slope = (x_2 - y_2) / (x_1 - y_1);
+    intercept = x_2 - x_1 * slope;
+    y = slope * x + intercept;
+    return y;
+  }
+  
  real scenario1a_lpdf(real x,
                        real max_shed,
                        real alpha1,      
@@ -129,16 +146,11 @@ functions{
  }
 
   
-  real invalid_lpdf(real x, real max_si, real min_si, real alpha_invalid, real beta_invalid) {
+  real invalid_lpdf(real x, real min_si, real max_si, 
+                    real alpha_invalid, real beta_invalid) {
     real out;
     real y;
-    //y = (x + fabs(min_si))/ (max_si - min_si);
-    // Mapping (min_si, max_si) to (0, 1)
-    real a;
-    real b;
-    a = -min_si / (max_si - min_si);
-    b = 1 / (max_si - min_si);
-    y = a + b * x;
+    y = map_into_interval2(x, min_si, max_si, 0.01, 0.99);
     out = beta_lpdf(y| alpha_invalid, beta_invalid);
     return(out);
   }
@@ -146,7 +158,7 @@ functions{
   // Make sure to pass offset1 as a *negative* number
   real scenario3a_lpdf(real x, real max_shed, real offset1, 
                        real alpha1, real beta1, real alpha2, real beta2,
-                       real width) {
+                       real min_si, real max_si, real width) {
 
     real s;
     real out;
@@ -154,6 +166,7 @@ functions{
     real inc_density;
     real ulim;
     real max_shed_shifted;
+    real s_remapped;
     
     if (x > max_shed) ulim = max_shed;
     else ulim = x;
@@ -164,13 +177,13 @@ functions{
     //print("max shed shifted = ", max_shed_shifted);
     // Mapping s which varies from -offset to ulim to
     // interval (0, 1). We want to integrate from offset to ulim
-    s = offset1 + width;
+    s = offset1;
     // Now map it into (0, 1)
     //s = (s - offset1) / max_shed_shifted;
-    
-    while (s < ulim) {
-      inf_density = beta_lpdf((s - offset1)/max_shed_shifted |alpha1, beta1);
-      inc_density = gamma_lpdf(x - s|alpha2, beta2); 
+    while (s <= ulim) {
+      s_remapped = map_into_interval2(s, min_si, max_si, 0.01, 0.99);
+      inf_density = beta_lpdf(s_remapped|alpha1, beta1);
+      inc_density = gamma_lpdf(x - s|alpha2, beta2);
       out = out + exp(inf_density + inc_density);
       s = s + width;
     }
@@ -237,7 +250,7 @@ functions{
   // nu: Delay from symptom onset to isolation
   // max_shed: Maximum possible time of infection of secondary case
   // offset1: Minimum possible time of infection of secondary case
-  // Should be negative of time is before symptom onset
+  // Should be negative if time is before symptom onset
   // recall: coefficient of recall bias component
   // alpha 1, beta1 : shape1 and shape2 parameters of infectious profile
   // alpha 2, beta2 : shape and rate parameters of incubation profile
