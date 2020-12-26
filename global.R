@@ -35,7 +35,7 @@ params <- list(
   offset3 = -2,
   pinvalid1 = 0,
   pinvalid2 = 0.05,
-  pinvalid3 = 0.5,
+  pinvalid3 = 0.2,
   recall1 = 0.1,
   recall2 = 0.5,
   recall3 = 1

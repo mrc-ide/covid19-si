@@ -9,7 +9,7 @@ param_grid <- expand.grid(
   stringsAsFactors = FALSE
 )
 
-param_grid <- param_grid[25, ]
+##param_grid <- param_grid[25, ]
 
 
 params_inf_all <- pmap(
