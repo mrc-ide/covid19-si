@@ -9,7 +9,7 @@ param_grid <- expand.grid(
   stringsAsFactors = FALSE
 )
 
-##param_grid <- param_grid[25, ]
+
 
 
 params_inf_all <- pmap(
@@ -114,8 +114,8 @@ fits <- pmap(
         min_si = params_offset - 0.001,
         width = width
       ),
-      chains = 3,
-      iter = 2000,
+      chains = 1,
+      iter = 1000,
       verbose = TRUE
     )
     ## Save it now in case R crashes
@@ -129,7 +129,7 @@ process_fits <- pmap_dfr(
        true_vals = param_grid$params_inf,
        pinvalid = params_pinvalid_all),
   function(fit, offset, true_vals, pinvalid) {
-    true_vals <- params[[params_inf]]
+    true_vals <- params[[true_vals]]
     true_val_df <- data.frame(
         true_val = c(true_vals$mean_inf, true_vals$sd_inf, pinvalid),
         param = c("mu", "sd", "pinvalid")
@@ -142,8 +142,22 @@ process_fits <- pmap_dfr(
       tidyr::spread(var, val)
 
     left_join(out, true_val_df)
-  }
+  }, .id = "sim"
 )
 
 outfile <- glue::glue("data/{prefix}params_posterior_distr.rds")
 saveRDS(process_fits, outfile)
+
+process_fits$sim <- as.integer(process_fits$sim)
+
+x <- split(process_fits, process_fits$param)
+
+x[[3]] <- arrange(x[[3]], true_val)
+
+ggplot(x[[3]]) +
+  geom_linerange(aes(x = sim, ymin = `25%`, ymax = `75%`)) +
+  geom_point(aes(sim, `50%`)) +
+  geom_point(aes(sim, true_val), shape = 4) +
+  facet_wrap(~true_val, scales = "free_y", ncol = 1) +
+  expand_limits(y = 0) +
+  theme_minimal()
