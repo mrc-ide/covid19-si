@@ -181,8 +181,12 @@ functions{
     // Now map it into (0, 1)
     //s = (s - offset1) / max_shed_shifted;
     while (s <= ulim) {
-      s_remapped = map_into_interval2(s, min_si, max_si, 0.01, 0.99);
+      //print("s = ", s);
+      s_remapped = map_into_interval2(s, min_si, max_shed, 0.01, 0.99);
       inf_density = beta_lpdf(s_remapped|alpha1, beta1);
+      //print("With new mapping function ", inf_density);
+      //inf_density = beta_lpdf((s - offset1)/max_shed_shifted |alpha1, beta1);
+      //print("With old mapping function ", inf_density);      
       inc_density = gamma_lpdf(x - s|alpha2, beta2);
       out = out + exp(inf_density + inc_density);
       s = s + width;
