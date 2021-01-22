@@ -17,7 +17,7 @@ rstan_options(auto_write = TRUE)
 
 max_shed <- 21
 nsim_pre_filter <- 20000
-nsim_post_filter <- 600
+nsim_post_filter <- 1600
 alpha_invalid <- 1
 beta_invalid <- 1
 max_si <- 40
