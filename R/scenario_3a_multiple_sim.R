@@ -171,10 +171,10 @@ outfile <- glue::glue("data/{prefix}params_posterior_distr.rds")
 saveRDS(process_fits, outfile)
 
 
-##process_fits <- readRDS(outfile)
+## process_fits <- readRDS(outfile)
 
 process_fits <- mutate_if(process_fits, is.numeric, ~ signif(., 3))
-process_fits$sim <- as.integer(process_fits$sim)
+##process_fits$sim <- as.integer(process_fits$sim)
 
 x <- split(process_fits, process_fits$param)
 
@@ -185,6 +185,9 @@ iwalk(
   x,
   function(df, param) {
     df$mean_iso <- as.factor(df$mean_iso)
+    df <- arrange(df, mean_iso)
+    df$sim <- factor(df$sim, levels = df$sim, ordered = TRUE)
+
     p <- ggplot(df) +
       geom_linerange(
         aes(
@@ -196,7 +199,10 @@ iwalk(
       facet_grid(mean_inc ~ true_val, scales = "free") +
       expand_limits(y = 0) +
       theme_minimal() +
-      theme(legend.position = "top") +
+      theme(
+        legend.position = "top", axis.text.x = element_blank(),
+        axis.title.x = element_blank()
+      ) +
       ylab(param)
 
     ggsave(glue::glue("figures/{prefix}{param}.png"))
@@ -272,3 +278,41 @@ outfiles <- glue::glue("figures/{prefix}{index}_si.png")
 walk2(
   post_si_plots, outfiles, function(p, filename) ggsave(filename, p)
 )
+
+
+post_si_qntls <- map2_dfr(
+  sampled, post_sampled, function(x, y) {
+    before <- quantile_as_df(x$si)
+    before$category <- "used"
+    after <- quantile_as_df(y$si)
+    after$category <- "posterior"
+    rbind(before, after)
+}, .id = "sim")
+
+
+post_si_qntls <- tidyr::spread(post_si_qntls, var, val)
+##post_si_qntls$sim <- as.integer(post_si_qntls$sim)
+post_si_qntls <- arrange(post_si_qntls, `50%`)
+post_si_qntls$sim <- factor(
+  post_si_qntls$sim,
+  levels = post_si_qntls$sim[! duplicated(post_si_qntls$sim)],
+  ordered = TRUE
+)
+
+ggplot(post_si_qntls) +
+  geom_point(
+    aes(sim, `50%`, col = category),
+    position = position_dodge(width = 0.5)) +
+  geom_linerange(
+    aes(x = sim, ymin = `25%`, ymax = `75%`, col = category),
+    position = position_dodge(width = 0.5)) +
+  ylab("Serial Interval") +
+   theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.x = element_blank(), legend.title = element_blank()
+  )
+
+outfile <- glue::glue("figures/{prefix}serial_interval.png")
+
+ggsave(outfile)
