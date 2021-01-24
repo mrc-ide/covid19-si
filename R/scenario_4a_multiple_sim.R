@@ -91,7 +91,7 @@ sampled <- map(
     out$nu <- round(out$nu)
     out <- out[out$nu > 0, ]
 
-    idx <- sample(nsim_pre_filter, nsim_post_filter, replace = TRUE)
+    idx <- sample(nrow(out), nsim_post_filter, replace = TRUE)
     out[idx, ]
   }
 )
@@ -109,7 +109,7 @@ fits <- pmap(
     ## Rounding now to check things
     min_si <- params_offset - 0.001
     max_si <- max(sim_data$si) + 1
-    si_vec <- seq(offset + 0.1 + 0.001, max_si, 1)
+    si_vec <- seq(min_si + 0.001, max_si, 1)
     fit_4a <- stan(
       file = here::here("stan-models/scenario4a_mixture.stan"),
       data = list(
@@ -148,3 +148,26 @@ fits <- pmap(
 ## out <- map_dbl(sim_data$nu, function(nu) {
 ##  s4_normalising_constant(si_vec, nu, 21, 0, 3.5, 1 / 33.5, 4, 2, 0, 40, 0.1)
 ## })
+## grid <- expand.grid(alpha1 = seq(1, 10, 0.5), beta1 = seq(1, 45, 0.5))
+
+## ll <- pmap_dbl(
+##   grid, function(alpha1, beta1) {
+##     out <- pmap_dbl(
+##       sim_data[, c("si", "nu")],
+##       function(si, nu) {
+##         scenario4a_lpdf(
+##           si, nu, 21, 0, alpha1, beta1, 4, 2, 0.01, 10, 0.1
+##         ) -  s4_normalising_constant(si_vec, nu, 21, 0, alpha1, beta1,
+##                                      4, 2, 0.01, 10, 0.1)
+
+##       }
+##     )
+##     sum(out)
+##   }
+## )
+
+## grid$ll <- ll
+
+## ggplot(grid, aes(alpha1, beta1, fill = ll)) +
+##   geom_tile() +
+##   scale_fill_distiller(palette = "Greens", direction = -1)
