@@ -108,6 +108,7 @@ fits <- pmap(
   function(params_inc, params_offset, sim_data, index) {
     ## Rounding now to check things
     min_si <- params_offset - 0.001
+    max_si <- max(sim_data$si) + 1
     si_vec <- seq(offset + 0.1 + 0.001, max_si, 1)
     fit_4a <- stan(
       file = here::here("stan-models/scenario4a_mixture.stan"),
