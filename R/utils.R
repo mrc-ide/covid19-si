@@ -82,8 +82,8 @@ better_simulate_si <- function(params_inc, params_inf, params_iso,
 
 
   out$nu <- stats::rgamma(
-      n = nsim, shape = params_iso$shape, rate = 1 / params_iso$scale
-    )
+    n = nsim, shape = params_iso$shape, rate = 1 / params_iso$scale
+  )
 
   out
 }

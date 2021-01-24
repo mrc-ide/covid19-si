@@ -12,12 +12,13 @@ source("R/utils.R")
 source("R/scenario_1a_mix_utils.R")
 source("R/scenario_2a_mix_utils.R")
 source("R/scenario_3a_mix_utils.R")
+source("R/scenario_4a_mix_utils.R")
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
 max_shed <- 21
 nsim_pre_filter <- 20000
-nsim_post_filter <- 1600
+nsim_post_filter <- 600
 alpha_invalid <- 1
 beta_invalid <- 1
 max_si <- 40

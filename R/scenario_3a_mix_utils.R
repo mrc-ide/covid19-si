@@ -4,7 +4,8 @@ simulate_3a_mix <- function(params_inc, params_inf, params_iso,
 
   valid_si <- better_simulate_si(
     params_inc, params_inf, params_iso,
-    min_inf = offset, max_inf = max_shed, nsim)
+    min_inf = offset, max_inf = max_shed, nsim
+  )
 
   invalid_si <- rbeta(
     nsim, shape1 = alpha_invalid, shape2 = beta_invalid
