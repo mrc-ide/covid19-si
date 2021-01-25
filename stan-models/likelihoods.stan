@@ -215,9 +215,9 @@ functions{
     
     nu_shifted = nu - offset1;
     max_shed_shifted = max_shed - offset1;
-    s = offset1;
+    s = offset1 + width;
     out = 0;
-    while (s <= ulim) {
+    while (s < ulim) {
       s_remapped = map_into_interval2(s, min_si, max_shed, 0.01, 0.99);
       inf_density = beta_lpdf(s_remapped|alpha1, beta1);
       inc_density = gamma_lpdf(x - s|alpha2, beta2);
