@@ -107,9 +107,9 @@ sampled <- map(
     out <- na.omit(out)
     ## Round here because if nu becomes 0 after rounding, we want to
     ## throw it out
-    out$si <- round(out$si)
-    out$nu <- round(out$nu)
-    out <- out[out$nu > 0, ]
+    ##out$si <- round(out$si)
+    ##out$nu <- round(out$nu)
+    ##out <- out[out$nu > 0, ]
 
     idx <- sample(nrow(out), nsim_post_filter, replace = TRUE)
     out[idx, ]
