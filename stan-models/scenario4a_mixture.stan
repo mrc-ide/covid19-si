@@ -26,22 +26,17 @@ model{
   real invalid;
   real denominator;
   for (n in 1:N) {
-    //print("alpha1 = ", alpha1);
-    //print("beta1 = ", beta1);    
-    
     invalid = invalid_lpdf(si[n] | min_si, max_si, alpha_invalid, beta_invalid);
     if ((si[n] > offset1) && (nu[n] > offset1)) {
-    denominator = s4_normalising_constant(y_vec, nu[n], max_shed,
-                                          offset1, alpha1, beta1,
-                                          alpha2, beta2, min_si, max_si,
-                                          width);
+      denominator = s4_normalising_constant(y_vec, nu[n], max_shed,
+                                            offset1, alpha1, beta1,
+                                            alpha2, beta2, min_si, max_si,
+                                            width);
       valid = scenario4a_lpdf(si[n] | nu[n], max_shed, offset1, alpha1,
                               beta1, alpha2, beta2, min_si, max_si, width) - denominator;
-      //print("denominator = ", denominator);
-      //print("valid pdf = ", valid);
       target += log_mix(pinvalid, invalid, valid);
     } else {
-      target += log(pinvalid) + invalid;
+      target += invalid;
     }
   }
 }
