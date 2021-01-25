@@ -158,7 +158,7 @@ functions{
   // Make sure to pass offset1 as a *negative* number
   real scenario3a_lpdf(real x, real max_shed, real offset1, 
                        real alpha1, real beta1, real alpha2, real beta2,
-                       real min_si, real max_si, real width) {
+                       real width) {
 
     real s;
     real out;
@@ -182,7 +182,7 @@ functions{
     //s = (s - offset1) / max_shed_shifted;
     while (s <= ulim) {
       //print("s = ", s);
-      s_remapped = map_into_interval2(s, min_si, max_shed, 0.01, 0.99);
+      s_remapped = map_into_interval2(s, offset1, max_shed, 0.01, 0.99);
       inf_density = beta_lpdf(s_remapped|alpha1, beta1);
       //print("With new mapping function ", inf_density);
       //inf_density = beta_lpdf((s - offset1)/max_shed_shifted |alpha1, beta1);

@@ -26,7 +26,7 @@ model{
     invalid = invalid_lpdf(si[n] | min_si, max_si, alpha_invalid, beta_invalid);
     if (si[n] > offset1) {
       valid = scenario3a_lpdf(si[n] | max_shed, offset1, alpha1, beta1,
-                              alpha2, beta2, min_si, max_si, width);
+                              alpha2, beta2, width);
       target += log_mix(pinvalid, invalid, valid);    
     } else {
       target += log(pinvalid) + invalid;

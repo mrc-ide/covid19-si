@@ -24,6 +24,8 @@ beta_invalid <- 1
 max_si <- 40
 width <- 0.1
 
+# additional params for sim data
+
 params <- list(
   inf_par1 = list(mean_inf = 2, sd_inf = 1), ## short
   inf_par2 = list(mean_inf = 8, sd_inf = 2), ## long
@@ -41,3 +43,12 @@ params <- list(
   recall2 = 0.5,
   recall3 = 1
 )
+
+# additional parameters for real data
+
+# start of infectiousness relative to symptom onset (days)
+offset_1 <- -2
+
+# incubation period https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7081172/
+inc_params <- list(shape = 5.807, scale = 0.948)
+
