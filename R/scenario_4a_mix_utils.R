@@ -36,7 +36,9 @@ simulate_4a_mix <- function(params_inc, params_inf, params_iso,
     simulated_si <- sim_valid
   } else {
     sim_invalid <- data.frame(
-      si = invalid_si[toss <= pinvalid, ], group = "invalid"
+      si = invalid_si$si[toss <= pinvalid],
+      nu = invalid_si$nu[toss <= pinvalid],
+      group = "invalid"
     )
     simulated_si <- rbind(sim_invalid, sim_valid)
   }

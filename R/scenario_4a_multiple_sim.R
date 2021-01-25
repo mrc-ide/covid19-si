@@ -10,7 +10,7 @@ param_grid <- expand.grid(
   stringsAsFactors = FALSE
 )
 
-index <- 1 ##1:nrow(param_grid)
+index <- 1:nrow(param_grid)
 param_grid <- param_grid[index, ]
 ## param_grid <- tail(param_grid, 1)
 
@@ -80,13 +80,13 @@ simulated <- pmap(
   }
 )
 
-plots <- map(
+iwalk(
   simulated,
-  function(df) {
+  function(df, index) {
     x <- df[["valid_si"]]
     y <- df[["unconditional"]]
     mixed <- df[["simulated_si"]]
-    ggplot() +
+    p <- ggplot() +
       geom_density(aes(x$si, fill = "red"), col = NA, alpha = 0.3) +
       geom_density(aes(y$si, fill = "blue"), col = NA, alpha = 0.3) +
       geom_density(aes(mixed$si, fill = "green"), col = NA, alpha = 0.3) +
@@ -96,7 +96,7 @@ plots <- map(
         guide = "legend"
       ) +
       theme(legend.position = "top", legend.title = element_blank())
-
+    ggsave(glue::glue("figures/{prefix}{index}_simulated.png"))
   }
 )
 
@@ -107,8 +107,8 @@ sampled <- map(
     out <- na.omit(out)
     ## Round here because if nu becomes 0 after rounding, we want to
     ## throw it out
-    ##out$si <- round(out$si)
-    ##out$nu <- round(out$nu)
+    out$si <- round(out$si)
+    out$nu <- round(out$nu)
     out <- out[out$nu > 0, ]
 
     idx <- sample(nrow(out), nsim_post_filter, replace = TRUE)
@@ -147,7 +147,7 @@ fits <- pmap(
         M = length(si_vec),
         y_vec = si_vec
       ),
-      ##chain = 1, iter = 100,
+      ##chain = 1, iter = 1000,
       seed = 42,
       verbose = TRUE
     )
@@ -166,41 +166,41 @@ fits <- pmap(
 ## out <- map_dbl(sim_data$nu, function(nu) {
 ##  s4_normalising_constant(si_vec, nu, 21, 0, 3.5, 1 / 33.5, 4, 2, 0, 40, 0.1)
 ## })
-rstan::expose_stan_functions("stan-models/likelihoods.stan")
-out <- pmap_dbl(sim_data[1:2, c("si", "nu")], function(si, nu) {
- scenario4a_lpdf(si, nu, 21, 0, 3.5, 1 / 33.5, 4, 2, 0, 40, 0.1)
-})
+## rstan::expose_stan_functions("stan-models/likelihoods.stan")
+## out <- pmap_dbl(sim_data[1:2, c("si", "nu")], function(si, nu) {
+##  scenario4a_lpdf(si, nu, 21, 0, 3.5, 1 / 33.5, 4, 2, 0, 40, 0.1)
+## })
 
-grid <- expand.grid(alpha1 = seq(1, 5, 0.5), beta1 = seq(1, 40, 0.5))
+## grid <- expand.grid(alpha1 = seq(1, 5, 0.5), beta1 = seq(1, 40, 0.5))
 
-valid <- pmap_dbl(
-  grid, function(alpha1, beta1) {
-    out <- pmap_dbl(
-      sim_data[, c("si", "nu")],
-      function(si, nu) {
-        scenario4a_lpdf(
-          si, nu, 21, 0, alpha1, beta1, 4, 2, 0.01, 10, 0.1
-        ) -  s4_normalising_constant(si_vec, nu, 21, 0, alpha1, beta1,
-                                     4, 2, 0.01, 10, 0.1)
+## valid <- pmap_dbl(
+##   grid, function(alpha1, beta1) {
+##     out <- pmap_dbl(
+##       sim_data[, c("si", "nu")],
+##       function(si, nu) {
+##         scenario4a_lpdf(
+##           si, nu, 21, 0, alpha1, beta1, 4, 2, 0.01, 10, 0.1
+##         ) -  s4_normalising_constant(si_vec, nu, 21, 0, alpha1, beta1,
+##                                      4, 2, 0.01, 10, 0.1)
 
-      }
-    )
-    sum(out)
-  }
-)
+##       }
+##     )
+##     sum(out)
+##   }
+## )
 
 
-invalid <- pmap_dbl(
-  grid, function(alpha1, beta1) {
-    out <- pmap_dbl(
-      sim_data[, c("si", "nu")],
-      function(si, nu) {
-        invalid_lpdf(si, min_si, max_si, alpha_invalid, beta_invalid)
-      }
-    )
-    sum(out)
-  }
-)
+## invalid <- pmap_dbl(
+##   grid, function(alpha1, beta1) {
+##     out <- pmap_dbl(
+##       sim_data[, c("si", "nu")],
+##       function(si, nu) {
+##         invalid_lpdf(si, min_si, max_si, alpha_invalid, beta_invalid)
+##       }
+##     )
+##     sum(out)
+##   }
+## )
 
 ## grid$ll <- ll
 
