@@ -182,7 +182,7 @@ functions{
     //s = (s - offset1) / max_shed_shifted;
     while (s <= ulim) {
       //print("s = ", s);
-      s_remapped = map_into_interval2(s, offset1, max_shed, 0.01, 0.99);
+      s_remapped = map_into_interval2(s, offset1- 0.001, max_shed, 0.01, 0.99);
       inf_density = beta_lpdf(s_remapped|alpha1, beta1);
       //print("With new mapping function ", inf_density);
       //inf_density = beta_lpdf((s - offset1)/max_shed_shifted |alpha1, beta1);
