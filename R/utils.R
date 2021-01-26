@@ -1,3 +1,18 @@
+mu_sd_posterior_distr <- function(samples, max_shed, offset) {
+
+  extracted <- beta_shape1shape22muvar(
+    samples[["alpha1"]], samples[["beta1"]]
+  )
+  shifted_mu <- extracted$mu * (max_shed - offset) + offset
+  shifted_sd2 <- extracted$sigma2 * (max_shed - offset)^2
+  shifted_sd <- sqrt(shifted_sd2)
+  mu_df <- quantile_as_df(shifted_mu)
+  sd_df <- quantile_as_df(shifted_sd)
+  mu_df$param <- "mu"
+  sd_df$param <- "sd"
+  rbind(mu_df, sd_df)
+}
+
 ## Returns the pdf, you then intergrate it to get the constant
 full_model <- function(x, nu, max_shed, offset1, recall,
                        alpha1, beta1, alpha2, beta2, width) {
@@ -67,8 +82,8 @@ better_simulate_si <- function(params_inc, params_inf, params_iso,
 
 
   out$nu <- stats::rgamma(
-      n = nsim, shape = params_iso$shape, rate = 1 / params_iso$scale
-    )
+    n = nsim, shape = params_iso$shape, rate = 1 / params_iso$scale
+  )
 
   out
 }
