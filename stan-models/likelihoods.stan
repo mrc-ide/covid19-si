@@ -221,18 +221,6 @@ functions{
   }
 
 
-  real approx_normalising_constant(real x, real nu, real max_si, 
-                                   real min_si, real recall,
-                                   real width) {
-    real si_inner = min_si;
-    real denominator = 0;
-    while (si_inner <= max_si) {
-      denominator = denominator + exp(-recall * fabs(si_inner - nu));
-      si_inner = si_inner + width; 
-    }
-    denominator = log(denominator);
-    return denominator;
-  }  
   // x : SI
   // nu: Delay from symptom onset to isolation
   // max_shed: Maximum possible time of infection of secondary case
@@ -320,5 +308,4 @@ functions{
     denominator = log(denominator);
     return denominator;
   }
-  
 }
