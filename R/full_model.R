@@ -5,10 +5,10 @@ mean_inf <-4.217391
 mean_sd <- 2.022031
 mean_inc <- 3
 sd_inc <- 1
-## very short isolation
 mean_iso <- 2
-sd_iso <- 1
+sd_iso <- 2
 offset <- -1
+recall <- 5
 
 params_inf <- beta_muvar2shape1shape2(
   (mean_inf-offset)/(max_shed-offset), sd_inf^2 /(max_shed-offset)^2
@@ -117,7 +117,6 @@ grid$normalised <- pmap_dbl(
         #)
       }
     )
-    sum(out)
   }
 )
 
@@ -228,33 +227,13 @@ fits <- pmap(
     param_inc = params_inc_all,
     param_offset = params_offset_all
   ),
-  function(sim_data, param_inc, param_offset) {
-    ## Choose a coarse grid here to make things faster
-    si_vec <- seq(param_offset + 0.1 + 0.001, max_si, 1)
-    fit <- stan(
-      file = here::here("stan-models/full_model.stan"),
-      data = list(
-        N = length(sim_data$si),
-        si = sim_data$si,
-        nu = sim_data$nu,
-        max_shed = max_shed,
-        offset1 = param_offset,
-        max_si = max(sim_data$si) + 0.001,
-        min_si = param_offset, ## assuming the smallest incubation period is 0
-        alpha2 = param_inc[["shape"]],
-        beta2 = 1 / param_inc[["scale"]],
-        width = width,
-        M = length(si_vec),
-        y_vec = si_vec,
-        recall = 0
-      ),
-      chains = 2,
-      iter = 3500,
-      verbose = TRUE
-      ## control = list(adapt_delta = 0.99)
-    )
-  }
+  chains = 2,
+  iter = 2000,
+  verbose = TRUE
+  ## control = list(adapt_delta = 0.99)
 )
+
+
 
 ## offset should be negative
 posterior_inf_params <- function(fit, nsim, max_shed, offset) {
@@ -263,7 +242,7 @@ posterior_inf_params <- function(fit, nsim, max_shed, offset) {
   shape1 <- params[["alpha1"]][idx]
   shape2 <- params[["beta1"]][idx]
   out <- beta_shape1shape22muvar(shape1, shape2)
-  out[["mu"]] <- max_shed * out[["mu"]] + offset
+  out[["mu"]] <- (max_shed) * out[["mu"]] + offset
   out[["sigma2"]] <- max_shed * max_shed * out[["sigma2"]]
   out
 }

@@ -33,9 +33,9 @@ model{
     //invalid = invalid_lpdf(si[outer] | max_si, min_si,
     //                     alpha_invalid, beta_invalid);
 
-    //if ((si[outer] > offset1) && (nu[outer] > offset1)) {
-    denominator = normalising_constant(y_vec, nu[outer], max_shed, 
-                                       offset1, recall, alpha1, beta1, 
+    if ((si[outer] > offset1) && (nu[outer] > offset1)) {
+    denominator = normalising_constant(y_vec, nu[outer], max_shed,
+                                       offset1, recall, alpha1, beta1,
                                        alpha2, beta2, width, max_si,
                                        min_si);
     target += full_model_lpdf(si[outer]| nu[outer], max_shed, offset1,
