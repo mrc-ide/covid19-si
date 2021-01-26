@@ -46,9 +46,15 @@ params <- list(
 
 # additional parameters for real data
 
-# start of infectiousness relative to symptom onset (days)
-offset_1 <- -2
-
-# incubation period https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7081172/
-inc_params <- list(shape = 5.807, scale = 0.948)
+params_real <- list(
+  inc_par1 =  list(shape = 5.807, scale = 0.948), # Lauer et al gamma
+  inc_par2 = list(shape = 5.807, scale = 0.948),# short
+  inc_par3 = list(shape = 5.807, scale = 0.948), # long
+  offset1 = -1,
+  offset2 = -2,
+  offset3 = -3,
+  maxshed1 = 9,
+  maxshed2 = 14,
+  maxshed3 = 21
+)
 
