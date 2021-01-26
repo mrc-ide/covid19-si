@@ -29,7 +29,7 @@ model{
                               alpha2, beta2, width);
       target += log_mix(pinvalid, invalid, valid);    
     } else {
-      target += log(pinvalid) + invalid;
+      target += log(pinvalid) + invalid + log(1 - pinvalid);
     }
   }
 }
