@@ -24,6 +24,8 @@ beta_invalid <- 1
 max_si <- 40
 width <- 0.1
 
+# additional params for sim data
+
 params <- list(
   inf_par1 = list(mean_inf = 2, sd_inf = 1), ## short
   inf_par2 = list(mean_inf = 8, sd_inf = 2), ## long
@@ -41,3 +43,18 @@ params <- list(
   recall2 = 0.5,
   recall3 = 1
 )
+
+# additional parameters for real data
+
+params_real <- list(
+  inc_par1 =  list(shape = 5.807, scale = 0.948), # Lauer et al gamma
+  inc_par2 = list(shape = 1.675513, scale = 3.043843),# IBM
+  inc_par3 = list(shape = 5.807, scale = 0.948), # long - to be changed
+  offset1 = -1,
+  offset2 = -2,
+  offset3 = -3,
+  maxshed1 = 9,
+  maxshed2 = 14,
+  maxshed3 = 21
+)
+
