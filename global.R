@@ -48,8 +48,8 @@ params <- list(
 
 params_real <- list(
   inc_par1 =  list(shape = 5.807, scale = 0.948), # Lauer et al gamma
-  inc_par2 = list(shape = 5.807, scale = 0.948),# short
-  inc_par3 = list(shape = 5.807, scale = 0.948), # long
+  inc_par2 = list(shape = 1.675513, scale = 3.043843),# IBM
+  inc_par3 = list(shape = 5.807, scale = 0.948), # long - to be changed
   offset1 = -1,
   offset2 = -2,
   offset3 = -3,
