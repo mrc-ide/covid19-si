@@ -20,14 +20,31 @@ params_inc <- epitrix::gamma_mucv2shapescale(
 alpha2 <- params_inc$shape
 beta2 <- 1 / params_inc$scale
 
-params_iso <- epitrix::gamma_mucv2shapescale(
-  mu = mean_iso, cv = sd_iso / mean_iso
+params_offset_all <- pmap(
+  param_grid,
+  function(params_inf, params_inc, params_iso, params_offset) {
+    params[[params_offset]]
+  }
 )
 
 nsim_post_filter <- 500
-
-sim_data <- better_simulate_si(
-  params_inc, params_inf, params_iso, offset, max_shed, 20000
+simulated_data <- pmap(
+  list(
+    params_inf = params_inf_all,
+    params_inc = params_inc_all,
+    params_iso = params_iso_all,
+    params_offset = params_offset_all
+  ),
+  function(params_inf, params_inc, params_iso, params_offset) {
+    sim_data <- better_simulate_si(
+      params_inc, params_inf, params_iso, params_offset, max_shed, nsim
+    )
+    sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]
+    sim_data <- sim_data[abs(sim_data$si) > 0.1, ]
+    ## Make sure we have at least 200 rows.
+    idx <- sample(nrow(sim_data), nsim_post_filter, replace = TRUE)
+    sim_data[idx, ]
+  }
 )
 
 filtered_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]
@@ -98,6 +115,13 @@ posterior_si <- better_simulate_si(
   params_iso, offset, max_shed, nsim = 10000
 )
 
+fits <- pmap(
+  list(
+    params_inc = params_inc_all,
+    params_offset = params_offset_all,
+    sim_data = simulated_data
+  ),
+  function(params_inc, params_offset, sim_data) {
 
 p <- ggplot() +
   geom_density(
@@ -146,14 +170,24 @@ p_mu <- ggplot() +
   theme_minimal() +
   xlab("Mean Infectious Profile")
 
-p_sd <- ggplot() +
-  geom_density(
-    aes(sqrt(posterior_mu_distr$sigma2)),
-    fill = "red", col = NA, alpha = 0.3
-  ) +
-  geom_vline(xintercept = sd_inf) +
-  theme_minimal() +
-  xlab("SD Infectious Profile")
+posterior_sim <- pmap(
+  list(
+    fit = fits,
+    params_inc = params_inc_all,
+    params_iso = params_iso_all,
+    params_offset = params_offset_all
+  ),
+  function(fit, params_inc, params_iso, params_offset) {
+    if (nrow(as.data.frame(fit)) == 0) return(NULL)
+    best_params <- map_estimates(fit)
+    better_simulate_si(
+      params_inc,
+      list(shape1 = best_params[["alpha1"]],
+           shape2 = best_params[["beta1"]]),
+      params_iso, params_offset, max_shed, nsim = 10000
+    )
+  }
+)
 
 p <- cowplot::plot_grid(p_mu, p_sd, ncol = 1)
 
@@ -228,7 +262,7 @@ params_compare <- pmap_dfr(
   list(
     fit = fits,
     params_inf = param_grid$params_inf,
-    params_offset = params_offsets_all
+    params_offset = params_offset_all
   ),
   function(fit, params_inf, params_offset) {
     out <- params[[params_inf]]

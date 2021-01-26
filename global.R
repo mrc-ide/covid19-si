@@ -70,9 +70,9 @@ params <- list(
   pinvalid1 = 0.01,
   pinvalid2 = 0.03,
   pinvalid3 = 0.05,
-  recall1 = 0.01,
-  recall2 = 0.1,
-  recall3 = 0.1
+  recall1 = 0.5,
+  recall2 = 0.7,
+  recall3 = 1
 )
 
 ## Set up params grid
