@@ -21,6 +21,7 @@ nsim_pre_filter <- 20000
 nsim_post_filter <- 600
 alpha_invalid <- 1
 beta_invalid <- 1
+min_invalid_si <- -5 ## Real has as large as -10
 max_si <- 40
 width <- 0.1
 
