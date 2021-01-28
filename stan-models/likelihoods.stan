@@ -197,7 +197,7 @@ functions{
 
   // Commit 9612355612, comments indicate S4 was working at this
   // time
-  real old_scenario4a_lpdf(real x, real nu, real max_shed, real offset1, 
+  real scenario4a_lpdf(real x, real nu, real max_shed, real offset1, 
                        real alpha1, real beta1, real alpha2, real beta2,
                        real width) {
 
@@ -238,42 +238,6 @@ functions{
     return out;
   }
   
-  // Make sure to pass offset1 as a *negative* number
-  real scenario4a_lpdf(real x, real nu, real max_shed, real offset1, 
-                       real alpha1, real beta1, real alpha2, real beta2,
-                       real min_si, real max_si, real width) {
-
-    real s;
-    real out;
-    real inf_density;
-    real inc_density;
-    real ulim;
-    real max_shed_shifted;
-    real nu_shifted;
-    real s_remapped;    
-
-    if (x > max_shed) ulim = max_shed;
-    else ulim = x;
-    if(ulim > nu) ulim = nu;    
-    
-    nu_shifted = nu - offset1;
-    max_shed_shifted = max_shed - offset1;
-    s = offset1 + width;
-    out = 0;
-    while (s < ulim) {
-      s_remapped = map_into_interval2(s, min_si, max_shed, 0.01, 0.99);
-      inf_density = beta_lpdf(s_remapped|alpha1, beta1);
-      inc_density = gamma_lpdf(x - s|alpha2, beta2);
-      out = out + exp(inf_density + inc_density);
-      s = s + width;
-    }
-    out = log(out);
-    if(nu < max_shed) {
-      out = out - beta_lcdf(nu_shifted / max_shed_shifted|alpha1, beta1);
-    }
-    return out;
-  }
-
   real s4_normalising_constant(real[] y_vec, real nu, real max_shed, 
                                real offset1, real alpha1, real beta1,
                                real alpha2, real beta2, real min_si,
@@ -291,7 +255,7 @@ functions{
     for (y in y_vec) {
       denominator +=
         exp(scenario4a_lpdf(y| nu, max_shed, offset1, alpha1, beta1,
-                            alpha2, beta2, min_si, max_si, width));
+                            alpha2, beta2, width));
     }
     denominator = log(denominator);
     return denominator;

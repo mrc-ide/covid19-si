@@ -12,8 +12,8 @@ data{
   real <lower = 0> max_si;
   real <lower = -100> min_si;
   real <lower = 0> width;
-  int M;
-  real y_vec[M];  
+  //int M;
+  //real y_vec[M];  
 }
 parameters{
   // simplex[2] theta;
@@ -33,10 +33,10 @@ model{
       /*                                       alpha2, beta2, min_si, max_si, */
       /*                                       width); */
       valid = scenario4a_lpdf(si[n] | nu[n], max_shed, offset1, alpha1,
-                              beta1, alpha2, beta2, min_si, max_si, width);
+                              beta1, alpha2, beta2, width);
       target += log_mix(pinvalid, invalid, valid);
     } else {
-      target += log(pinvalid) + invalid;
+      target += log(pinvalid) + invalid + log(1 - pinvalid);
     }
   }
 }
