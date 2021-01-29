@@ -1,12 +1,12 @@
 param_grid <- expand.grid(
-  params_inf = c("inf_par1", "inf_par2", "inf_par3"),
-  params_inc = c("inc_par1", "inc_par2", "inc_par2"),
-  params_iso = c("iso_par1", "iso_par2", "iso_par3"),
+  params_inf = c("inf_par1", "inf_par2"),
+  params_inc = c("inc_par1", "inc_par2"),
+  params_iso = c("iso_par1", "iso_par2"),
   params_pinv = c("pinvalid1", "pinvalid2", "pinvalid3"),
   params_offset = c("offset1", "offset2", "offset3"),
   stringsAsFactors = FALSE
 )
-prefix <- "4a_mix_"
+prefix <- "4a_mix"
 
 
 params_inf_all <- pmap(
@@ -52,7 +52,6 @@ params_pinv <- pmap(
     params[[params_pinv]]
   }
 )
-
 
 simulated_data <- pmap(
   list(
