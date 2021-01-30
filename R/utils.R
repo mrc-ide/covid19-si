@@ -6,8 +6,19 @@ mu_sd_posterior_distr <- function(samples, max_shed, offset) {
   shifted_mu <- extracted$mu * (max_shed - offset) + offset
   shifted_sd2 <- extracted$sigma2 * (max_shed - offset)^2
   shifted_sd <- sqrt(shifted_sd2)
+  ## The one with the highest lp
+  idx <- which.max(samples[["lp__"]])
+  best <- beta_shape1shape22muvar(
+    samples[["alpha1"]][idx], samples[["beta1"]][idx]
+  )
+  best_mu <- best$mu * (max_shed - offset) + offset
+  best_sd2 <- best$sigma2 * (max_shed - offset)^2
+  best_sd <- sqrt(best_sd2)
+
   mu_df <- quantile_as_df(shifted_mu)
+  mu_df <- rbind(mu_df, data.frame(var = "best", val = best_mu))
   sd_df <- quantile_as_df(shifted_sd)
+  sd_df <- rbind(sd_df, data.frame(var = "best", val = best_sd))
   mu_df$param <- "mu"
   sd_df$param <- "sd"
   rbind(mu_df, sd_df)

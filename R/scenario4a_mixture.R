@@ -172,3 +172,109 @@ fits <- pmap(
     fit_4a
   }
 )
+## index <- 1:nrow(param_grid)
+## infiles <- glue::glue("stanfits/{prefix}_{index}.rds")
+## fits <- map(infiles, readRDS)
+
+
+process_fits <- pmap_dfr(
+  list(
+    fit = fits,
+    offset = params_offsets_all),
+  function(fit, offset) {
+    samples <- rstan::extract(fit)
+    out <- mu_sd_posterior_distr(samples, max_shed, offset)
+    pivot_wider(
+      out, names_from = c("param", "var"), values_from = "val"
+    )
+  }, .id = "sim"
+)
+
+process_fits$true_mean <- map_dbl(
+  params[param_grid$params_inf], function(x) x$mean_inf
+)
+
+process_fits$true_sd <- map_dbl(
+  params[param_grid$params_inf], function(x) x$sd_inf
+)
+
+process_fits$incubation <- map_dbl(
+  params[param_grid$params_inc], function(x) x$mean_inc
+)
+
+process_fits$isolation <- map_dbl(
+  params[param_grid$params_iso], function(x) x$mean_iso
+)
+
+process_fits$pinvalid <- unlist(params[param_grid$params_pinv])
+process_fits$offset <- unlist(params[param_grid$params_offset])
+
+##### Do results vary bu offset?
+process_fits <- arrange(process_fits, offset)
+process_fits$sim  <- factor(
+  process_fits$sim, levels = process_fits$sim, ordered = TRUE
+)
+process_fits$offset <- factor(process_fits$offset)
+
+mu_by_offset <- ggplot(process_fits) +
+  geom_point(aes(sim, `mu_50%`, col = offset)) +
+  geom_linerange(
+    aes(
+      x = sim, ymin = `mu_25%`, ymax = `mu_75%`,
+      col = offset
+    )
+  ) +
+  geom_point(aes(sim, true_mean), shape = 4) +
+  facet_grid(
+    incubation ~ isolation, scales = "free", labeller = label_both
+  ) +
+  ylab("Mean infectious period") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.y = element_blank()
+  )
+
+
+##### Do results vary bu pinvalid?
+process_fits <- arrange(process_fits, pinvalid)
+process_fits$sim  <- factor(
+  process_fits$sim, levels = process_fits$sim, ordered = TRUE
+)
+process_fits$pinvalid <- factor(process_fits$pinvalid)
+
+mu_by_pinv <- ggplot(process_fits) +
+  geom_point(aes(sim, `mu_50%`, col = pinvalid)) +
+  geom_linerange(
+    aes(
+      x = sim, ymin = `mu_25%`, ymax = `mu_75%`,
+      col = pinvalid
+    )
+  ) +
+  geom_point(aes(sim, true_mean), shape = 4) +
+  facet_grid(
+    incubation ~ isolation, scales = "free", labeller = label_both
+  ) +
+  ylab("Mean infectious period") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.y = element_blank()
+  )
+
+
+ggplot(process_fits) +
+  geom_point(aes(sim, `mu_50%`)) +
+  geom_linerange(aes(x = sim, ymin = `mu_25%`, ymax = `mu_75%`)) +
+  geom_point(aes(sim, true_mean), shape = 4) +
+  facet_grid(
+    pinvalid ~ offset, scales = "free", labeller = label_both
+  ) +
+  ylab("Mean infectious period") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.y = element_blank()
+  )
+
+
