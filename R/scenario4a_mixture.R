@@ -209,6 +209,25 @@ process_fits$isolation <- map_dbl(
 process_fits$pinvalid <- unlist(params[param_grid$params_pinv])
 process_fits$offset <- unlist(params[param_grid$params_offset])
 
+est_pinvalid <- map_dfr(
+  fits,
+  function(fit) {
+    samples <- rstan::extract(fit)
+    out <- quantile_as_df(samples[["pinvalid"]])
+    idx <- which.max(samples[["lp__"]])
+    best <- samples[["pinvalid"]][idx]
+    out <- rbind(out, data.frame(var = "best", val = best))
+    out$param <- "pinvalid"
+    pivot_wider(
+      out, names_from = c("param", "var"), values_from = "val"
+    )
+  }, .id = "sim"
+)
+
+process_fits <- left_join(process_fits, est_pinvalid, by = "sim")
+
+process_fits <- mutate_if(process_fits, is.numeric, ~ round(., 2))
+
 ggplot(process_fits) +
   geom_point(aes(sim, `mu_50%`)) +
   geom_linerange(aes(x = sim, ymin = `mu_25%`, ymax = `mu_75%`)) +
@@ -224,3 +243,149 @@ ggplot(process_fits) +
   )
 
 
+ggplot(process_fits) +
+  geom_point(aes(sim, `sd_50%`)) +
+  geom_linerange(aes(x = sim, ymin = `sd_25%`, ymax = `sd_75%`)) +
+  geom_point(aes(sim, true_sd), shape = 4) +
+  facet_grid(
+    pinvalid ~ offset, scales = "free", labeller = label_both
+  ) +
+  ylab("SD infectious period") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.y = element_blank()
+  )
+
+
+
+ggplot(process_fits) +
+  geom_point(aes(sim, `pinvalid_50%`)) +
+  geom_linerange(aes(x = sim, ymin = `pinvalid_25%`, ymax = `pinvalid_75%`)) +
+  geom_point(aes(sim, pinvalid), shape = 4) +
+  facet_grid(
+    pinvalid ~ offset, scales = "free", labeller = label_both
+  ) +
+  ylab("pinvalid") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.y = element_blank()
+  ) +
+  ylim(0, 1)
+
+
+######### Posterior SI Distribution
+params_inf_post <- map(
+  fits, function(fit) {
+    samples <- rstan::extract(fit)
+    idx <- which.max(samples[["lp__"]])
+    list(
+      shape1 = samples[["alpha1"]][idx],
+      shape2 = samples[["beta1"]][idx]
+    )
+  }
+)
+
+posterior_si <- pmap(
+  list(
+    params_inf = params_inf_post,
+    params_inc = params_inc_all,
+    params_iso = params_iso_all,
+    params_offset = params_offsets_all
+  ),
+  function(params_inf, params_inc, params_iso, params_offset) {
+    sim_data <- better_simulate_si(
+      params_inc, params_inf, params_iso, params_offset, max_shed,
+      nsim_pre_filter
+    )
+    sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]
+    ##sim_data <- sim_data[abs(sim_data$si) > 0.1, ]
+    ## Make sure we have at least 200 rows.
+    idx <- sample(nrow(sim_data), nsim_post_filter, replace = TRUE)
+    sim_data[idx, ]
+  }
+)
+
+mixed <- pmap(
+  list(
+    valid = posterior_si,
+    invalid = invalid_remapped,
+    pinvalid = process_fits$pinvalid_best
+  ),
+  function(valid, invalid, pinvalid) {
+    toss <- runif(nrow(valid))
+    valid$type <- "valid"
+    invalid$type <- "invalid"
+    rbind(
+      valid[toss > pinvalid , c("si", "nu", "type")],
+      invalid[toss <= pinvalid ,c("si", "nu", "type")]
+    )
+  }
+)
+
+sampled <- map(
+  mixed, function(sim_data) {
+    ## Round for consistency with real data
+    sim_data$si <- round(sim_data$si)
+    sim_data$nu <- round(sim_data$nu)
+    sim_data <- sim_data[sim_data$si > 0, ]
+    sim_data <- sim_data[sim_data$nu > 0, ]
+    idx <- sample(nrow(sim_data), nsim_post_filter, replace = TRUE)
+    sim_data[idx, ]
+  }
+)
+
+outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}data.rds")
+training <- map(outfiles, readRDS)
+
+
+compare_si <- map2_dfr(
+  training, sampled,
+  function(x, y) {
+    x$si <- round(x$si)
+    y$nu <- round(x$nu)
+    trng_si <- quantile_as_df(x$si)
+    trng_si$param <- "training"
+    post_si <- quantile_as_df(y$si)
+    post_si$param <- "posterior"
+    rbind(trng_si, post_si) %>%
+      pivot_wider(
+      names_from = c("param", "var"), values_from = "val"
+    )
+  }, .id = "sim"
+)
+
+process_fits <- left_join(process_fits, compare_si, by = "sim")
+process_fits <- arrange(process_fits, `training_50%`)
+process_fits$sim <- factor(process_fits$sim, process_fits$sim)
+
+ggplot(process_fits) +
+  geom_point(aes(sim, `training_50%`, col = "red")) +
+  geom_linerange(
+    aes(
+      x = sim, ymin = `training_25%`, ymax = `training_75%`,
+      col = "red")
+  ) +
+  geom_point(
+    aes(sim, `posterior_50%`, col = "blue"),
+    position = position_nudge(x = 0.5)
+  ) +
+  geom_linerange(
+    aes(
+      x = sim, ymin = `posterior_25%`, ymax = `posterior_75%`,
+      col = "blue"), position = position_nudge(x = 0.5)
+  ) +
+  scale_color_identity(
+    breaks = c("red", "blue"), labels = c("Training", "Posterior"),
+    guide = "legend"
+  ) +
+  facet_grid(
+    pinvalid ~ offset, scales = "free", labeller = label_both
+  ) +
+  ylab("Serial Interval") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.y = element_blank(), legend.title = element_blank()
+  )
