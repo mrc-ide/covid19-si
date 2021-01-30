@@ -257,8 +257,6 @@ ggplot(process_fits) +
     axis.title.y = element_blank()
   )
 
-
-
 ggplot(process_fits) +
   geom_point(aes(sim, `pinvalid_50%`)) +
   geom_linerange(aes(x = sim, ymin = `pinvalid_25%`, ymax = `pinvalid_75%`)) +
