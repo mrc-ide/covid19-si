@@ -116,11 +116,9 @@ fits <- pmap(
         alpha_invalid = alpha_invalid,
         beta_invalid = beta_invalid,
         max_si = max_si,
-        min_si = params_offset - 0.001,
+        min_si = min_invalid_si,
         width = width
       ),
-      ##chains = 3,
-      ##iter = 1000,
       seed = 42,
       verbose = TRUE
     )

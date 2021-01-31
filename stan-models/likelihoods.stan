@@ -181,7 +181,6 @@ functions{
     // Now map it into (0, 1)
     //s = (s - offset1) / max_shed_shifted;
     while (s <= ulim) {
-      //print("s = ", s);
       inf_density = beta_lpdf((s - offset1)/max_shed_shifted |alpha1, beta1);
       inc_density = gamma_lpdf(x - s|alpha2, beta2);
       out = out + exp(inf_density + inc_density);
