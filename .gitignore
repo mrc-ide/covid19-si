@@ -3,4 +3,5 @@ stan-models/.Rhistory
 .Rhistory
 .Rproj.user
 *.rds
+*.pdf
 figures/
