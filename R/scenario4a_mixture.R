@@ -1,13 +1,17 @@
+prefix <- "4a_mix_with_normalisation_sim"
+
 param_grid <- expand.grid(
-  params_inf = c("inf_par1", "inf_par2"),
-  params_inc = c("inc_par1", "inc_par2"),
-  params_iso = c("iso_par1", "iso_par2"),
-  params_pinv = c("pinvalid1", "pinvalid2", "pinvalid3"),
-  params_offset = c("offset1", "offset2", "offset3"),
+  params_inf = c("inf_par2"),
+  params_inc = c("inc_par2"),
+  params_iso = c("iso_par1"),
+  params_pinv = c("pinvalid3"),
+  params_offset = c("offset3"),
   stringsAsFactors = FALSE
 )
-prefix <- "4a_mix"
 
+
+index <- 1:nrow(param_grid)
+param_grid <- param_grid[index, ]
 
 params_inf_all <- pmap(
   param_grid,
@@ -142,10 +146,11 @@ fits <- pmap(
     params_inc = params_inc_all,
     params_offset = params_offsets_all,
     sim_data = sampled,
-    index = seq_along(sampled)
+    index = index
   ),
   function(params_inc, params_offset, sim_data, index) {
-
+    max_si <- max(sim_data$si) + 1
+    si_vec <- seq(params_offset + 0.01, max_si, 1)
     width <- 0.1
     fit_4a <- stan(
       file = here::here("stan-models/scenario4a_mixture.stan"),
@@ -159,9 +164,11 @@ fits <- pmap(
         beta2 = 1 / params_inc[["scale"]],
         alpha_invalid = alpha_invalid,
         beta_invalid = beta_invalid,
-        max_si = max(sim_data$si) + 0.001,
-        min_si = min(sim_data$si) - 0.001,
-        width = width
+        max_si = max_si,
+        min_si = min_invalid_si,
+        width = width,
+        M = length(si_vec),
+        y_vec = si_vec
       ),
       seed = 42,
       verbose = TRUE

@@ -252,7 +252,9 @@ functions{
         exp(scenario4a_lpdf(y| nu, max_shed, offset1, alpha1, beta1,
                             alpha2, beta2, width));
     }
-    denominator = log(denominator);
+    // Return on the natural scale so that we can log the whole
+    // expression after adding invalid density
+    //denominator = log(denominator);
     return denominator;
   }
 

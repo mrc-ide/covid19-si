@@ -1,5 +1,5 @@
 ## Set up params grid
-prefix <- "4a_mix_sim_"
+prefix <- "4a_mix_with_normalisation_sim_"
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
