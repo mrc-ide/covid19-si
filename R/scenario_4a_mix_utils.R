@@ -3,7 +3,7 @@ simulate_4a_mix <- function(params_inc, params_inf, params_iso,
                             alpha_invalid, beta_invalid, min_si, max_si,
                             p_recall) {
   
-  nsim_local <- 100*nsim
+  nsim_local <- 1000*nsim
   
   valid_si <- better_simulate_si(
     params_inc, params_inf, params_iso,
@@ -58,9 +58,9 @@ simulate_4a_mix <- function(params_inc, params_inf, params_iso,
   )
 }
 
-test <- simulate_4a_mix(params_inc = params_inc_all[[1]], 
-                        params_inf = params_inf_all[[1]], 
-                        params_iso = params_iso_all[[1]],
-                            offset = -2, max_shed = 21, pinvalid = 0, nsim = 600,
-                            alpha_invalid = 1, beta_invalid = 1, min_si = -2, max_si = 40,
-                            p_recall = 0.5)
+# test <- simulate_4a_mix(params_inc = params_inc_all[[1]], 
+#                         params_inf = params_inf_all[[1]], 
+#                         params_iso = params_iso_all[[1]],
+#                             offset = -2, max_shed = 21, pinvalid = 0, nsim = 600,
+#                             alpha_invalid = 1, beta_invalid = 1, min_si = -2, max_si = 40,
+#                             p_recall = 0.5)

@@ -12,12 +12,13 @@ source("R/utils.R")
 source("R/scenario_1a_mix_utils.R")
 source("R/scenario_2a_mix_utils.R")
 source("R/scenario_3a_mix_utils.R")
+source("R/scenario_4a_mix_utils.R")
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
 max_shed <- 21
 nsim_pre_filter <- 20000
-nsim_post_filter <- 1600
+nsim_post_filter <- 600
 alpha_invalid <- 1
 beta_invalid <- 1
 max_si <- 40
@@ -27,16 +28,17 @@ params <- list(
   inf_par1 = list(mean_inf = 2, sd_inf = 1), ## short
   inf_par2 = list(mean_inf = 8, sd_inf = 2), ## long
   inc_par1 = list(mean_inc = 2, sd_inc = 1), ## short
-  inc_par2 = list(mean_inc = 6, sd_inc = 2), ## long
+  inc_par2 = list(mean_inc = 5.1, sd_inc = 3.7), ## long
   iso_par1 = list(mean_iso = 2, sd_iso = 2), ## short
   iso_par2 = list(mean_iso = 10, sd_iso = 3), ## long
   offset1 = 0,
   offset2 = -1,
-  offset3 = -2,
+  offset3 = -3,
   pinvalid1 = 0,
   pinvalid2 = 0.05,
   pinvalid3 = 0.2,
-  recall1 = 0.1,
-  recall2 = 0.5,
+  recall1 = 0.4,
+  recall2 = 0.1,
   recall3 = 1
 )
+
