@@ -238,7 +238,22 @@ functions{
                                real alpha2, real beta2, real min_si,
                                real max_si, real width) {
 
+    // All else being equal, S4 likelihood really only depends on
+    // the integral limits - the smallest and largest possible times
+    // at which infection can occur. The smallest is always given by
+    // the offset, the largest is min(SI, nu, max_shed).
+    // To normalise over a given nu, we need to compute
+    // integral from min_si to max_si of S4 likelihood. We only need
+    // to compute the following values: v_i = s4_lpdf(offset, si) for
+    // all si < nu, v = s4_lpdf(offset, nu) for all si > nu and
+    // si < max-shed.
+    // When nu > max-shed, then calculate s4_lpdf(offset, si) for
+    // si < offset, and s4_lpdf(offset, max_shed) for si > offset
+    // Then to get the total normalisation constant, sum appropriately.
+    
+
     real denominator = 0;
+    real length = 0;
     // Smallest SI allowed is should be at least offset1 + width
     // But in fact when SI is offset1 + width, pdf is -Inf
     // So make it a tiny bit bigger
@@ -247,11 +262,19 @@ functions{
     // log of integral
     // This should be multipied with width but to speed things up I
     // have set the width to 1.
-    for (y in y_vec) {
+    for (y in offset1:nu) {
       denominator +=
         exp(scenario4a_lpdf(y| nu, max_shed, offset1, alpha1, beta1,
                             alpha2, beta2, width));
     }
+    length = max_shed - nu + 1;
+    denominator = denominator + 
+              length * exp(scenario4a_lpdf(nu + 1| nu, max_shed, offset1, alpha1, beta1,
+                                           alpha2, beta2, width));
+    length = max_si - max_shed + 1;
+    denominator = denominator + 
+              length * exp(scenario4a_lpdf(max_shed + 1| nu, max_shed, offset1, alpha1, beta1,
+                                           alpha2, beta2, width));    
     // Return on the natural scale so that we can log the whole
     // expression after adding invalid density
     //denominator = log(denominator);
