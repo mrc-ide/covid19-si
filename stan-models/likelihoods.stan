@@ -235,7 +235,7 @@ functions{
 
   real s4_normalising_constant(int nu, real max_shed, 
                                int offset1, real alpha1, real beta1,
-                               real alpha2, real beta2, real min_si,
+                               real alpha2, real beta2, 
                                real max_si, real width) {
 
     // All else being equal, S4 likelihood really only depends on
@@ -250,8 +250,6 @@ functions{
     // When nu > max-shed, then calculate s4_lpdf(offset, si) for
     // si < offset, and s4_lpdf(offset, max_shed) for si > offset
     // Then to get the total normalisation constant, sum appropriately.
-
-    
     real denominator = 0;
     real length = 0;
     // Start a little bit to the right of the minimum possible SI

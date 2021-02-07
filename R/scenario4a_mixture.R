@@ -150,7 +150,6 @@ fits <- pmap(
   ),
   function(params_inc, params_offset, sim_data, index) {
     max_si <- max(sim_data$si) + 1
-    si_vec <- seq(params_offset + 0.01, max_si, 1)
     width <- 0.1
     fit_4a <- stan(
       file = here::here("stan-models/scenario4a_mixture.stan"),
@@ -164,12 +163,15 @@ fits <- pmap(
         beta2 = 1 / params_inc[["scale"]],
         alpha_invalid = alpha_invalid,
         beta_invalid = beta_invalid,
-        max_si = max_si,
-        min_si = min_invalid_si,
+        max_valid_si = max_si,
+        min_valid_si = params_offset,
+        min_invalid_si = min_invalid_si,
+        max_invalid_si = 40,
         width = width,
-        M = length(si_vec),
-        y_vec = si_vec
+        nu_rounded = round(sim_data$nu),
+        offset_rounded = round(params_offset)
       ),
+      chains = 1, iter = 2000,
       seed = 42,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)

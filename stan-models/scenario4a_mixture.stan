@@ -9,8 +9,12 @@ data{
   real <lower = 0> beta2; // incubation period parameter
   real <lower = 0> alpha_invalid;
   real <lower = 0> beta_invalid;
-  real <lower = 0> max_si;
-  real <lower = -100> min_si;
+  real <lower = 0> max_valid_si;
+  real <lower = -100> min_valid_si;
+  // min_invalid_si can be a lot smaller than the min_valid_si.
+  real <lower = 0> max_invalid_si;
+  real <lower = -100> min_invalid_si;
+  
   real <lower = 0> width;
   // Stan cannot convert from real to int. And even though we're
   // working in units of days, *everything* is set up to work with
@@ -27,12 +31,23 @@ parameters{
 model{
   real valid;
   real invalid;
+  real denominator_valid;
+  real denominator_invalid;
+  
   for (n in 1:N) {
-    invalid = invalid_lpdf(si[n] | min_si, max_si, alpha_invalid, beta_invalid);
+    invalid = invalid_lpdf(si[n] | min_invalid_si, max_invalid_si,
+                           alpha_invalid, beta_invalid);
+    denominator_invalid = max_valid_si - min_valid_si;
     if ((si[n] > offset1) && (nu[n] > offset1)) {
       valid = scenario4a_lpdf(si[n] | nu[n], max_shed, offset1, alpha1,
                               beta1, alpha2, beta2, width);
-      target += log_mix(pinvalid, invalid, valid);
+      denominator_valid = s4_normalising_constant(nu_rounded[n], max_shed,
+                                                  offset_rounded, alpha1,
+                                                  beta1, alpha2, beta2,
+                                                  max_valid_si, width);
+
+      target += log_mix(pinvalid, invalid, valid) -
+        log(pinvalid * denominator_invalid + (1 - pinvalid) * denominator_valid);
     } else {
       target += invalid; //+ log(1 - pinvalid);
     }
