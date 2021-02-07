@@ -233,7 +233,6 @@ functions{
     return out;
   }
 
-  // The implementation assumes that si and nu are rounded  
   real s4_normalising_constant(int nu, real max_shed, 
                                int offset1, real alpha1, real beta1,
                                real alpha2, real beta2, real min_si,

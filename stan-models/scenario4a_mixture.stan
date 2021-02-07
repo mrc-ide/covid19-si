@@ -12,6 +12,11 @@ data{
   real <lower = 0> max_si;
   real <lower = -100> min_si;
   real <lower = 0> width;
+  // Stan cannot convert from real to int. And even though we're
+  // working in units of days, *everything* is set up to work with
+  // reals. We will therefore input rounded values from R.
+  int nu_rounded[N];
+  int offset_rounded;
 }
 parameters{
   // simplex[2] theta;
