@@ -233,43 +233,21 @@ functions{
     return out;
   }
 
-  real s4_normalising_constant(int nu, real max_shed, 
-                               int offset1, real alpha1, real beta1,
+  real s4_normalising_constant(real nu, real max_shed, 
+                               real offset1, real alpha1, real beta1,
                                real alpha2, real beta2, 
                                real max_si, real width) {
 
-    // All else being equal, S4 likelihood really only depends on
-    // the integral limits - the smallest and largest possible times
-    // at which infection can occur. The smallest is always given by
-    // the offset, the largest is min(SI, nu, max_shed).
-    // To normalise over a given nu, we need to compute
-    // integral from min_si to max_si of S4 likelihood. We only need
-    // to compute the following values: v_i = s4_lpdf(offset, si) for
-    // all si < nu, v = s4_lpdf(offset, nu) for all si > nu and
-    // si < max-shed.
-    // When nu > max-shed, then calculate s4_lpdf(offset, si) for
-    // si < offset, and s4_lpdf(offset, max_shed) for si > offset
-    // Then to get the total normalisation constant, sum appropriately.
     real denominator = 0;
-    real length = 0;
     // Start a little bit to the right of the minimum possible SI
     // to avoid -Inf
-    int start = offset1 + 1; 
-    for (y in start:nu) {
+    real y = offset1 + 0.5;
+    while (y <= max_si) {
       denominator +=
         exp(scenario4a_lpdf(y| nu, max_shed, offset1, alpha1, beta1,
                             alpha2, beta2, width));
+      y = y + 0.5;
     }
-    length = max_shed - nu + 1;
-    denominator = denominator + 
-              length * exp(scenario4a_lpdf(nu + 1| nu, max_shed,
-                                           offset1, alpha1, beta1,
-                                           alpha2, beta2, width));
-    length = max_si - max_shed + 1;
-    denominator = denominator + 
-              length * exp(scenario4a_lpdf(max_shed + 1| nu, max_shed,
-                                           offset1, alpha1, beta1,
-                                           alpha2, beta2, width));    
     // Return on the natural scale so that we can log the whole
     // expression after adding invalid density
     //denominator = log(denominator);

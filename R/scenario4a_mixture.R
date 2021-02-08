@@ -167,11 +167,9 @@ fits <- pmap(
         min_valid_si = params_offset,
         min_invalid_si = min_invalid_si,
         max_invalid_si = 40,
-        width = width,
-        nu_rounded = round(sim_data$nu),
-        offset_rounded = round(params_offset)
+        width = width
       ),
-      chains = 1, iter = 2000,
+      chains = 1, iter = 1000,
       seed = 42,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
@@ -185,6 +183,49 @@ fits <- pmap(
 ## infiles <- glue::glue("stanfits/{prefix}_{index}.rds")
 ## fits <- map(infiles, readRDS)
 
+## debugging
+sim_data <- sampled[[1]]
+si_vec <- seq(-2, 21, 1) + 1
+nus <- sort(unique(sim_data$nu))
+n_constant <- matrix(
+  NA, nrow = length(si_vec), ncol = length(unique(sim_data$nu))
+)
+
+for (row in seq_along(si_vec)) {
+  for (col in seq_along(nus)) {
+    n_constant[row, col] <- exp(
+      scenario4a_lpdf(
+        si_vec[row], nus[col], max_shed = max_shed, offset1 = -2,
+        alpha1 = 9.52381, beta1 = 15.47619, alpha2 = 9, beta2 = 1 / 0.67,
+        width = 0.1
+      )
+    )
+  }
+}
+
+normalise_valid <- colSums(n_constant)
+normalise_invalid <- (21 - (-2)) / (40 - min_invalid_si)
+normalise_total <- log(0.2 * normalise_invalid + 0.8 * normalise_valid)
+##normalise_total <- log(normalise_valid)
+names(normalise_total) <- nus
+grid <- expand.grid(shape1 = seq(1, 15), shape2 = seq(1, 20))
+
+ll <- pmap_dbl(
+  grid,
+  function(shape1, shape2) {
+    out <- pmap_dbl(
+      sim_data[, c("si", "nu")], function(si, nu) {
+        log(0.2) + log(0.8) + scenario4a_lpdf(
+          si, nu, max_shed, -2, shape1, shape2, alpha2 = 9,
+          beta2 = 1 / 0.67, width = 0.1
+        ) - normalise_total[[nu]]
+      }
+    )
+    sum(out)
+  }
+)
+
+grid$ll <- ll
 
 process_fits <- pmap_dfr(
   list(

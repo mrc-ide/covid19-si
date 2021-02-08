@@ -14,13 +14,7 @@ data{
   // min_invalid_si can be a lot smaller than the min_valid_si.
   real <lower = 0> max_invalid_si;
   real <lower = -100> min_invalid_si;
-  
   real <lower = 0> width;
-  // Stan cannot convert from real to int. And even though we're
-  // working in units of days, *everything* is set up to work with
-  // reals. We will therefore input rounded values from R.
-  int nu_rounded[N];
-  int offset_rounded;
 }
 parameters{
   // simplex[2] theta;
@@ -42,8 +36,8 @@ model{
     if ((si[n] > offset1) && (nu[n] > offset1)) {
       valid = scenario4a_lpdf(si[n] | nu[n], max_shed, offset1, alpha1,
                               beta1, alpha2, beta2, width);
-      denominator_valid = s4_normalising_constant(nu_rounded[n], max_shed,
-                                                  offset_rounded, alpha1,
+      denominator_valid = s4_normalising_constant(nu[n], max_shed,
+                                                  offset1, alpha1,
                                                   beta1, alpha2, beta2,
                                                   max_valid_si, width);
 
