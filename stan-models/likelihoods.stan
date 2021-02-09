@@ -246,6 +246,7 @@ functions{
       denominator +=
         exp(scenario4a_lpdf(y| nu, max_shed, offset1, alpha1, beta1,
                             alpha2, beta2, width));
+      
       y = y + 0.5;
     }
     // Return on the natural scale so that we can log the whole

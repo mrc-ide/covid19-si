@@ -4,7 +4,7 @@ param_grid <- expand.grid(
   params_inf = c("inf_par2"),
   params_inc = c("inc_par2"),
   params_iso = c("iso_par1"),
-  params_pinv = c("pinvalid3"),
+  params_pinv = c("pinvalid1"),
   params_offset = c("offset3"),
   stringsAsFactors = FALSE
 )
@@ -166,10 +166,10 @@ fits <- pmap(
         max_valid_si = max_si,
         min_valid_si = params_offset,
         min_invalid_si = min_invalid_si,
-        max_invalid_si = 40,
+        max_invalid_si = max_si,
         width = width
       ),
-      chains = 1, iter = 1000,
+      chains = 1, iter = 800,
       seed = 42,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
@@ -204,21 +204,21 @@ for (row in seq_along(si_vec)) {
 }
 
 normalise_valid <- colSums(n_constant)
-normalise_invalid <- (21 - (-2)) / (40 - min_invalid_si)
-normalise_total <- log(0.2 * normalise_invalid + 0.8 * normalise_valid)
+normalise_total <- normalise_valid
 ##normalise_total <- log(normalise_valid)
 names(normalise_total) <- nus
 grid <- expand.grid(shape1 = seq(1, 15), shape2 = seq(1, 20))
-
+## This works, ll max at shape1 = 9, shape2 = 15
+## True values 9.5, 15.5
 ll <- pmap_dbl(
   grid,
   function(shape1, shape2) {
     out <- pmap_dbl(
       sim_data[, c("si", "nu")], function(si, nu) {
-        log(0.2) + log(0.8) + scenario4a_lpdf(
+        scenario4a_lpdf(
           si, nu, max_shed, -2, shape1, shape2, alpha2 = 9,
           beta2 = 1 / 0.67, width = 0.1
-        ) - normalise_total[[nu]]
+        ) - normalise_total[[as.character(nu)]]
       }
     )
     sum(out)
