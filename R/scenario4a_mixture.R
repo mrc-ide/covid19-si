@@ -5,7 +5,7 @@ param_grid <- expand.grid(
   params_inc = c("inc_par2"),
   params_iso = c("iso_par1"),
   params_pinv = c("pinvalid1"),
-  params_offset = c("offset3"),
+  params_offset = c("offset1"),
   stringsAsFactors = FALSE
 )
 
@@ -169,7 +169,7 @@ fits <- pmap(
         max_invalid_si = max_si,
         width = width
       ),
-      chains = 1, iter = 800,
+      chains = 1, iter = 1000,
       seed = 42,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
@@ -185,47 +185,71 @@ fits <- pmap(
 
 ## debugging
 sim_data <- sampled[[1]]
-si_vec <- seq(-2, 21, 1) + 1
-nus <- sort(unique(sim_data$nu))
-n_constant <- matrix(
-  NA, nrow = length(si_vec), ncol = length(unique(sim_data$nu))
-)
-
-for (row in seq_along(si_vec)) {
-  for (col in seq_along(nus)) {
-    n_constant[row, col] <- exp(
-      scenario4a_lpdf(
-        si_vec[row], nus[col], max_shed = max_shed, offset1 = -2,
-        alpha1 = 9.52381, beta1 = 15.47619, alpha2 = 9, beta2 = 1 / 0.67,
-        width = 0.1
-      )
-    )
-  }
-}
-
-normalise_valid <- colSums(n_constant)
-normalise_total <- normalise_valid
-##normalise_total <- log(normalise_valid)
-names(normalise_total) <- nus
+max_valid_si <- 21
 grid <- expand.grid(shape1 = seq(1, 15), shape2 = seq(1, 20))
-## This works, ll max at shape1 = 9, shape2 = 15
+rstan::expose_stan_functions("stan-models/likelihoods.stan")
 ## True values 9.5, 15.5
 ll <- pmap_dbl(
   grid,
   function(shape1, shape2) {
     out <- pmap_dbl(
       sim_data[, c("si", "nu")], function(si, nu) {
-        scenario4a_lpdf(
-          si, nu, max_shed, -2, shape1, shape2, alpha2 = 9,
+        up <- scenario4a_lpdf(
+          si, nu, max_shed, 0, shape1, shape2, alpha2 = 9,
           beta2 = 1 / 0.67, width = 0.1
-        ) - normalise_total[[as.character(nu)]]
+        )
+        down <- s4_normalising_constant(
+          nu, max_shed, 0, shape1, shape2, 9, 1 / 0.67, 21, 0.1
+        )
+        up - log(down)
       }
     )
     sum(out)
   }
 )
 
+
+numerator <- pmap_dbl(
+  sim_data[, c("si", "nu")], function(si, nu) {
+    scenario4a_lpdf(
+      si, nu, max_shed, 0, 9.52381, 15.47619, 9, 1 / 0.67, 1
+    )
+  }
+)
+
+denominator <- map_dbl(
+  sim_data$nu, function(nu) {
+    log(s4_normalising_constant(
+      nu, max_shed, 0, 9.52381, 15.47619, 9, 1 / 0.67, 21, 1
+    ))
+  }
+)
+
+sim_data$numerator <- numerator
+sim_data$denominator <- denominator
+
+ggplot(sim_data) +
+  geom_point(aes(si, numerator)) +
+  geom_point(aes(si, denominator), col = "red")
+
+ggplot(sim_data, aes(si, nu, fill = numerator)) +
+  geom_tile() +
+  scale_fill_distiller(palette = "YlOrRd")
+
+ggplot(sim_data, aes(si, nu, fill = denominator)) +
+  geom_tile() +
+  scale_fill_distiller(palette = "YlOrRd")
+
+
 grid$ll <- ll
+ggplot(grid, aes(shape1, shape2, fill = ll)) +
+  geom_tile() + scale_fill_distiller(palette = "YlOrRd") +
+  geom_point(
+    aes(x = grid$shape1[which.max(ll)], y = grid$shape2[which.max(ll)]),
+    size = 2
+  )
+
+ggplot(grid, aes(shape2, ll, group = shape1)) + geom_line()
 
 process_fits <- pmap_dfr(
   list(

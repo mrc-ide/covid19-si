@@ -226,7 +226,6 @@ functions{
       out = out + exp(inf_density + inc_density);
       s = s + width;
     }
-    out = log(out);
     return out;
   }
 
@@ -282,11 +281,14 @@ functions{
     real y = offset1 + 0.5;
     while (y <= max_si) {
       denominator +=
-        exp(scenario4b_lpdf(y| nu, max_shed, offset1, alpha1, beta1,
-                            alpha2, beta2, width));
+        scenario4b_lpdf(y| nu, max_shed, offset1, alpha1, beta1,
+                            alpha2, beta2, width);
       
       y = y + 0.5;
     }
+    if(nu < max_shed) {
+      denominator = denominator / beta_cdf((nu - offset1) / (max_shed - offset1), alpha1, beta1);
+    }    
     // Return on the natural scale so that we can log the whole
     // expression after adding invalid density
     //denominator = log(denominator);
