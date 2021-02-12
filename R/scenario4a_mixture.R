@@ -189,6 +189,8 @@ max_valid_si <- 21
 grid <- expand.grid(shape1 = seq(1, 15), shape2 = seq(1, 20))
 rstan::expose_stan_functions("stan-models/likelihoods.stan")
 ## True values 9.5, 15.5
+## Reliably recovered when I change width to 0.1 or 0.01
+## Recovered params: 10, 16
 ll <- pmap_dbl(
   grid,
   function(shape1, shape2) {
