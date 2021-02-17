@@ -1,5 +1,5 @@
 ## Set up params grid
-prefix <- "4a_recall_sim_"
+prefix <- "4a_recall_sim_no_norm"
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
@@ -96,7 +96,7 @@ sampled <- map(
   }
 )
 
-si_vec <- seq(-2, 40, by = 1)
+#si_vec <- seq(-3, 40, by = 1)
 
 fits <- pmap(
   list(
@@ -109,7 +109,7 @@ fits <- pmap(
     ## Rounding now to check things
     sim_data$si <- round(sim_data$si)
     fit_4a_recall <- stan(
-      file = here::here("stan-models/full_model.stan"),
+      file = here::here("stan-models/full_model_no_norm.stan"),
       data = list(
         N = length(sim_data$si),
         si = sim_data$si,
@@ -120,9 +120,9 @@ fits <- pmap(
         min_si = params_offset - 0.001,  
         alpha2 = params_inc[["shape"]],
         beta2 = 1 / params_inc[["scale"]],
-        width = width,
-        M = length(si_vec),
-        y_vec = si_vec
+        width = width
+        #M = length(si_vec),
+        #y_vec = si_vec
       ),
       chains = 2,
       iter = 2000,

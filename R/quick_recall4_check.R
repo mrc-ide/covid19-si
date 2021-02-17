@@ -1,9 +1,10 @@
 recall4_1 <- readRDS("4a_recall_sim_1.rds")
 recall4_2 <- readRDS("4a_recall_sim_2.rds")
 recall4_3 <- readRDS("4a_recall_sim_3.rds")
+recall4_1_nonorm <- readRDS("stanfits/4a_recall_sim_no_norm1.rds")
 nsim <- 3
-recall41 <- rstan::extract(recall4_3)
-rstan::summary(recall41)
+recall41 <- rstan::extract(recall4_1_nonorm)
+#rstan::summary(recall41)
 
 idx <- which.max(recall41[["lp__"]])
 best_params <- list(lp__ = recall41[["lp__"]][idx],
