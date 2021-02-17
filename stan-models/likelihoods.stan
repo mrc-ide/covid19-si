@@ -295,7 +295,7 @@ functions{
     return denominator;
   }
 
-  // x : SI
+// x : SI
   // nu: Delay from symptom onset to isolation
   // max_shed: Maximum possible time of infection of secondary case
   // offset1: Minimum possible time of infection of secondary case
@@ -366,7 +366,7 @@ functions{
     // But in fact when SI is offset1 + width, pdf is -Inf
     // So make it a tiny bit bigger
     //real s = offset1 + width + 0.001;
-    // Add in natural scale, and then take log because we want
+    // Add in natural scale, and then take lof because we want
     // log of integral
     // This should be multipied with width but to speed things up I
     // have set the width to 1.
