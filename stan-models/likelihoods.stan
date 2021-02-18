@@ -264,8 +264,7 @@ functions{
   // so when x = min_si, this function will return -Inf
   real full_model_lpdf(real x, real nu, real max_shed, real offset1,
                        real recall, real alpha1, real beta1,
-                       real alpha2, real beta2, real width,
-                       real max_si, real min_si) {
+                       real alpha2, real beta2, real width) {
     real s;
     real out;
     real inf_density;
@@ -314,7 +313,7 @@ functions{
   real normalising_constant(real[] y_vec, real nu, real max_shed, 
                             real offset1, real recall, real alpha1, 
                             real beta1, real alpha2, real beta2, 
-                            real width, real max_si, real min_si) {
+                            real width) {
 
     real denominator = 0;
     // Smallest SI allowed is should be at least offset1 + width
@@ -328,7 +327,7 @@ functions{
     for (y in y_vec) {
       denominator +=
         exp(full_model_lpdf(y| nu, max_shed, offset1, recall, alpha1,
-                            beta1, alpha2, beta2, width, max_si, min_si));
+                            beta1, alpha2, beta2, width));
       //print("denominator is now ", denominator);
       //print("y is now ", y);
       //print("s is now ", s);
