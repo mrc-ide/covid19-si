@@ -190,45 +190,6 @@ functions{
     return out;
   }
 
-  // Commit 9612355612, comments indicate S4 was working at this
-  // time
-  real scenario4b_lpdf(real x, real nu, real max_shed, real offset1, 
-                       real alpha1, real beta1, real alpha2, real beta2,
-                       real width) {
-
-    real s;
-    real out;
-    real inf_density;
-    real inc_density;
-    real ulim;
-    real max_shed_shifted;
-    real nu_shifted;
-    
-    if (x > max_shed) ulim = max_shed;
-    else ulim = x;
-    if(ulim > nu) ulim = nu;
-    out = 0;
-    // the whole infectious profile is shifted
-    // right if offset < 0  and left if offset > 0
-    max_shed_shifted = max_shed - offset1;
-    nu_shifted = nu - offset1;
-    //print("nu shifted = ", nu_shifted);
-    //print("max shed shifted = ", max_shed_shifted);
-    // Mapping s which varies from -offset to ulim to
-    // interval (0, 1). We want to integrate from offset to ulim
-    s = offset1 + width;
-    // Now map it into (0, 1)
-    //s = (s - offset1) / max_shed_shifted;
-    
-    while (s < ulim) {
-      inf_density = beta_lpdf((s - offset1)/max_shed_shifted |alpha1, beta1);
-      inc_density = gamma_lpdf(x - s|alpha2, beta2); 
-      out = out + exp(inf_density + inc_density);
-      s = s + width;
-    }
-    return out;
-  }
-
   real scenario4a_lpdf(real x, real nu, real max_shed, real offset1, 
                        real alpha1, real beta1, real alpha2, real beta2,
                        real width) {
@@ -281,14 +242,11 @@ functions{
     real y = offset1 + 0.5;
     while (y <= max_si) {
       denominator +=
-        scenario4b_lpdf(y| nu, max_shed, offset1, alpha1, beta1,
-                            alpha2, beta2, width);
+        exp(scenario4a_lpdf(y| nu, max_shed, offset1, alpha1, beta1,
+                            alpha2, beta2, width));
       
       y = y + 0.5;
     }
-    if(nu < max_shed) {
-      denominator = denominator / beta_cdf((nu - offset1) / (max_shed - offset1), alpha1, beta1);
-    }    
     // Return on the natural scale so that we can log the whole
     // expression after adding invalid density
     //denominator = log(denominator);

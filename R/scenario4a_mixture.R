@@ -13,9 +13,9 @@ param_grid <- expand.grid(
 index <- 1:nrow(param_grid)
 param_grid <- param_grid[index, ]
 
-params_inf_all <- pmap(
-  param_grid,
-  function(params_inf, params_inc, params_iso, params_pinv, params_offset) {
+params_inf_all <- map(
+  param_grid$params_inf,
+  function(params_inf) {
     out <- params[[params_inf]]
     beta_muvar2shape1shape2(
       out$mean_inf/max_shed, out$sd_inf^2 / max_shed^2
@@ -23,9 +23,9 @@ params_inf_all <- pmap(
   }
 )
 
-params_inc_all <- pmap(
-  param_grid,
-  function(params_inf, params_inc, params_iso, params_pinv, params_offset) {
+params_inc_all <- map(
+  param_grid$params_inc,
+  function(params_inc) {
     out <- params[[params_inc]]
     epitrix::gamma_mucv2shapescale(
       mu = out[[1]], cv = out[[2]] / out[[1]]
@@ -33,9 +33,9 @@ params_inc_all <- pmap(
   }
 )
 
-params_iso_all <- pmap(
-  param_grid,
-  function(params_inf, params_inc, params_iso, params_pinv, params_offset) {
+params_iso_all <- map(
+  param_grid$params_iso,
+  function(params_iso) {
     out <- params[[params_iso]]
     epitrix::gamma_mucv2shapescale(
       mu = out[[1]], cv = out[[2]] / out[[1]]
@@ -43,18 +43,14 @@ params_iso_all <- pmap(
   }
 )
 
-params_offsets_all <- pmap(
-  param_grid,
-  function(params_inf, params_inc, params_iso, params_pinv, params_offset) {
+params_offsets_all <- map(
+  param_grid$params_offset, function(params_offset) {
     params[[params_offset]]
   }
 )
 
-params_pinv <- pmap(
-  param_grid,
-  function(params_inf, params_inc, params_iso, params_pinv, params_offset) {
-    params[[params_pinv]]
-  }
+params_pinv <- map(
+  param_grid$params_pinv, function(params_pinv) params[[params_pinv]]
 )
 
 simulated_data <- pmap(
@@ -145,10 +141,11 @@ fits <- pmap(
   list(
     params_inc = params_inc_all,
     params_offset = params_offsets_all,
+    params_iso = params_iso_all,
     sim_data = sampled,
     index = index
   ),
-  function(params_inc, params_offset, sim_data, index) {
+  function(params_inc, params_offset, params_iso, sim_data, index) {
     max_si <- max(sim_data$si) + 1
     width <- 0.1
     fit_4a <- stan(
@@ -167,9 +164,11 @@ fits <- pmap(
         min_valid_si = params_offset,
         min_invalid_si = min_invalid_si,
         max_invalid_si = max_si,
-        width = width
+        width = width,
+        iso_shape = params_iso[[1]],
+        iso_rate = 1 / params_iso[[2]]
       ),
-      chains = 1, iter = 1000,
+      chains = 2, iter = 2000,
       seed = 42,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
@@ -184,74 +183,10 @@ fits <- pmap(
 ## fits <- map(infiles, readRDS)
 
 ## debugging
-sim_data <- sampled[[1]]
-max_valid_si <- 21
-grid <- expand.grid(shape1 = seq(1, 15), shape2 = seq(1, 20))
-rstan::expose_stan_functions("stan-models/likelihoods.stan")
-## True values 9.5, 15.5
-## Reliably recovered when I change width to 0.1 or 0.01
-## Recovered params: 10, 16
-ll <- pmap_dbl(
-  grid,
-  function(shape1, shape2) {
-    out <- pmap_dbl(
-      sim_data[, c("si", "nu")], function(si, nu) {
-        up <- scenario4a_lpdf(
-          si, nu, max_shed, 0, shape1, shape2, alpha2 = 9,
-          beta2 = 1 / 0.67, width = 0.1
-        )
-        down <- s4_normalising_constant(
-          nu, max_shed, 0, shape1, shape2, 9, 1 / 0.67, 21, 0.1
-        )
-        up - log(down)
-      }
-    )
-    sum(out)
-  }
-)
-
-
-numerator <- pmap_dbl(
-  sim_data[, c("si", "nu")], function(si, nu) {
-    scenario4a_lpdf(
-      si, nu, max_shed, 0, 9.52381, 15.47619, 9, 1 / 0.67, 1
-    )
-  }
-)
-
-denominator <- map_dbl(
-  sim_data$nu, function(nu) {
-    log(s4_normalising_constant(
-      nu, max_shed, 0, 9.52381, 15.47619, 9, 1 / 0.67, 21, 1
-    ))
-  }
-)
-
-sim_data$numerator <- numerator
-sim_data$denominator <- denominator
-
-ggplot(sim_data) +
-  geom_point(aes(si, numerator)) +
-  geom_point(aes(si, denominator), col = "red")
-
-ggplot(sim_data, aes(si, nu, fill = numerator)) +
-  geom_tile() +
-  scale_fill_distiller(palette = "YlOrRd")
-
-ggplot(sim_data, aes(si, nu, fill = denominator)) +
-  geom_tile() +
-  scale_fill_distiller(palette = "YlOrRd")
-
-
-grid$ll <- ll
-ggplot(grid, aes(shape1, shape2, fill = ll)) +
-  geom_tile() + scale_fill_distiller(palette = "YlOrRd") +
-  geom_point(
-    aes(x = grid$shape1[which.max(ll)], y = grid$shape2[which.max(ll)]),
-    size = 2
-  )
-
-ggplot(grid, aes(shape2, ll, group = shape1)) + geom_line()
+## checked that constant for full model with recall = 0 is the same as
+## constant for s4.
+## normalising_constant(y_vec, 5, 21, -2, 0, 9.52381, 15.47619, 9, 1 / 0.6666, 0.1, 21, -2)
+## s4_normalising_constant(5, 21, -2, 9.52381, 15.47619, 9, 1 / 0.6666, 21, 0.1)
 
 process_fits <- pmap_dfr(
   list(
@@ -346,7 +281,7 @@ ggplot(process_fits) +
     legend.position = "top", axis.text.x = element_blank(),
     axis.title.y = element_blank()
   ) +
-  ylim(0, 1)
+  ylim(0, 0.5)
 
 
 ######### Posterior SI Distribution
