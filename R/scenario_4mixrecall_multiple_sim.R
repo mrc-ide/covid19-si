@@ -1,12 +1,12 @@
 ## Set up params grid
-prefix <- "4a_recall_sim_no_norm"
+prefix <- "4a_MIXrecall_sim"
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
   params_inc = "inc_par2",
   params_iso = c("iso_par1", "iso_par2"),
   params_offset = "offset3", # just try with offset = -3 initially
-  params_pinvalid = "pinvalid1", #just try with pinvalid = 0 initially
+  params_pinvalid = "pinvalid3", # pinvalid 0.2 initially
   params_recall = c("recall1", "recall2"),
   stringsAsFactors = FALSE
 )
@@ -61,6 +61,9 @@ params_pinvalid_all <- map(
   function(params_pinvalid) params[[params_pinvalid]]
 )
 
+max_invalid_si <- 42
+min_invalid_si <- -10
+
 params_recall_all <- map(
   param_grid$params_recall,
   function(params_recall) params[[params_recall]]
@@ -77,7 +80,8 @@ simulated <- pmap(
   ),
   function(params_inc, params_inf, params_iso, params_offset,
            params_pinvalid, params_recall) {
-    min_si <- params_offset
+    min_si <- min_invalid_si
+    max_si <- max_invalid_si
     simulate_4a_mix(
       params_inc, params_inf, params_iso, params_offset, max_shed,
       params_pinvalid, nsim_post_filter, alpha_invalid, beta_invalid,
@@ -95,8 +99,8 @@ sampled <- map(
     out
   }
 )
-
-#si_vec <- seq(-3, 40, by = 1)
+max_valid_si <- 40
+si_vec <- seq(-3, max_valid_si, by = 1)
 
 fits <- pmap(
   list(
@@ -109,22 +113,25 @@ fits <- pmap(
     ## Rounding now to check things
     sim_data$si <- round(sim_data$si)
     fit_4a_recall <- stan(
-      file = here::here("stan-models/full_model_no_norm.stan"),
+      file = here::here("stan-models/full_model.stan"),
       data = list(
         N = length(sim_data$si),
         si = sim_data$si,
         nu = sim_data$nu,
         max_shed = max_shed,
         offset1 = params_offset,
-        max_si = max_si,
-        min_si = params_offset - 0.001,  
         alpha2 = params_inc[["shape"]],
         beta2 = 1 / params_inc[["scale"]],
-        width = width
-        #M = length(si_vec),
-        #y_vec = si_vec
+        width = width,
+        M = length(si_vec),
+        y_vec = si_vec,
+        alpha_invalid = 1,
+        beta_invalid = 1,
+        max_invalid_si = max_invalid_si,
+        min_invalid_si = min_invalid_si,
+        max_valid_si = max_valid_si
       ),
-      chains = 2,
+      chains = 1,
       iter = 2000,
       seed = 42,
       verbose = TRUE
@@ -134,3 +141,4 @@ fits <- pmap(
     fit_4a_recall
   }
 )
+  
