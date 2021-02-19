@@ -1,7 +1,7 @@
-simulate_4a_mix <- function(params_inc, params_inf, params_iso,
-                            offset, max_shed, pinvalid, nsim,
-                            alpha_invalid, beta_invalid, min_si, max_si,
-                            p_recall) {
+simulate_4a_mix2 <- function(params_inc, params_inf, params_iso,
+                             offset, max_shed, pinvalid, nsim,
+                             alpha_invalid, beta_invalid, min_si, max_si,
+                             p_recall) {
   
   nsim_local <- 1000*nsim
   

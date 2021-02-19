@@ -78,7 +78,7 @@ simulated <- pmap(
   function(params_inc, params_inf, params_iso, params_offset,
            params_pinvalid, params_recall) {
     min_si <- params_offset
-    simulate_4a_mix(
+    simulate_4a_mix2(
       params_inc, params_inf, params_iso, params_offset, max_shed,
       params_pinvalid, nsim_post_filter, alpha_invalid, beta_invalid,
       min_si, max_si, params_recall
