@@ -150,8 +150,9 @@ functions{
                     real alpha_invalid, real beta_invalid) {
     real out;
     real y;
-    y = map_into_interval2(x, min_si, max_si, 0.01, 0.99);
-    out = beta_lpdf(y| alpha_invalid, beta_invalid);
+    //y = map_into_interval2(x, min_si, max_si, 0.01, 0.99);
+    //out = beta_lpdf(y| alpha_invalid, beta_invalid);
+    out = uniform_lpdf(x | max_si, min_si);
     return(out);
   }
   

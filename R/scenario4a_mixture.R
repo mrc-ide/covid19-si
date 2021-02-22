@@ -166,7 +166,7 @@ fits <- pmap(
         max_invalid_si = 30,
         width = width
       ),
-      chains = 2, iter = 2000,
+      chains = 1, iter = 2000,
       seed = 42,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
