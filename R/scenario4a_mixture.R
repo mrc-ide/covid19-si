@@ -4,8 +4,8 @@ param_grid <- expand.grid(
   params_inf = c("inf_par2"),
   params_inc = c("inc_par2"),
   params_iso = c("iso_par1"),
-  params_pinv = c("pinvalid1"),
-  params_offset = c("offset1"),
+  params_pinv = c("pinvalid3"),
+  params_offset = c("offset3"),
   stringsAsFactors = FALSE
 )
 
@@ -127,8 +127,8 @@ sampled <- map(
     ## Round for consistency with real data
     sim_data$si <- round(sim_data$si)
     sim_data$nu <- round(sim_data$nu)
-    sim_data <- sim_data[sim_data$si > 0, ]
-    sim_data <- sim_data[sim_data$nu > 0, ]
+    sim_data <- sim_data[sim_data$si != 0, ]
+    sim_data <- sim_data[sim_data$nu != 0, ]
     idx <- sample(nrow(sim_data), nsim_post_filter, replace = TRUE)
     sim_data[idx, ]
   }
@@ -160,13 +160,11 @@ fits <- pmap(
         beta2 = 1 / params_inc[["scale"]],
         alpha_invalid = alpha_invalid,
         beta_invalid = beta_invalid,
-        max_valid_si = max_si,
+        max_valid_si = 30,
         min_valid_si = params_offset,
         min_invalid_si = min_invalid_si,
-        max_invalid_si = max_si,
-        width = width,
-        iso_shape = params_iso[[1]],
-        iso_rate = 1 / params_iso[[2]]
+        max_invalid_si = 30,
+        width = width
       ),
       chains = 2, iter = 2000,
       seed = 42,
