@@ -1,19 +1,76 @@
 functions{
-  // maps a point x in the interval (x_1, y_1) into (x_2, y_2)
-  // useful when we use beta density below
-  // We map the interval (offset, max_shed) into (0.01, 0.99)
-  // 0.01 and 0.99 because mapping offset to 0 gives Inf as log-likelihood
-  // Example: map_into_interval(-1, -1, 21, 0, 1)
-  // map_into_interval(0, 0, 1, -1, 21)
-  real map_into_interval2(real x, real x_1, real y_1, real x_2,
-                         real y_2) {
-    real slope;
-    real intercept;
-    real y;
-    slope = (x_2 - y_2) / (x_1 - y_1);
-    intercept = x_2 - x_1 * slope;
-    y = slope * x + intercept;
-    return y;
+  real basic_lpdf(real x, real nu, real max_shed, real offset1, 
+                  real alpha1, real beta1, real alpha2, real beta2,
+                  real width) {
+
+    real s;
+    real out;
+    real inf_density;
+    real inc_density;
+    real ulim;
+    real max_shed_shifted;
+    real nu_shifted;
+    
+    if (x > max_shed) ulim = max_shed;
+    else ulim = x;
+    if(ulim > nu) ulim = nu;
+    out = 0;
+    // the whole infectious profile is shifted
+    // right if offset < 0  and left if offset > 0
+    max_shed_shifted = max_shed - offset1;
+    nu_shifted = nu - offset1;
+    //print("nu shifted = ", nu_shifted);
+    //print("max shed shifted = ", max_shed_shifted);
+    // Mapping s which varies from -offset to ulim to
+    // interval (0, 1). We want to integrate from offset to ulim
+    s = offset1 + width;
+    // Now map it into (0, 1)
+    //s = (s - offset1) / max_shed_shifted;
+    while (s < ulim) {
+      inf_density = beta_lpdf((s - offset1)/max_shed_shifted |alpha1, beta1);
+      inc_density = gamma_lpdf(x - s|alpha2, beta2);
+      out = out + (exp(inf_density + inc_density) * width);
+      s = s + width;
+    }
+    out = log(out);
+    return out;
+  }
+  
+  // Assume that nu_vec is sorted so that nu_vec[i] <= nu_vec[i + 1]
+  // for all i.
+  // Similarly si_vec
+  // nus are running across columns and SIs are running down rows
+  matrix pdf_matrix(real[] nu_vec, real[] si_vec, real max_shed, 
+                    real offset1, real alpha1, real beta1, real alpha2, 
+                    real beta2, real width) {
+
+    int num_nu = size(nu_vec);
+    int num_si = size(si_vec);
+    matrix[num_si, num_nu] pdf_mat;
+    // fill the fist column
+    for (row in 1:num_si) {
+      pdf_mat[row, 1] = basic_lpdf(si_vec[row]| nu_vec[1], max_shed, 
+                                   offset1, alpha1, beta1, alpha2,
+                                    beta2, 0.1);
+      
+    }
+    for (row in 1:num_si) {
+      for (col in 2:num_nu) {
+        // First check of the nu here is greater than the SI
+        if (nu_vec[col] > si_vec[row]) {
+          // then copy the value from a previously calculated cell
+          // in the same row but from an earlier column
+          pdf_mat[row, col] = pdf_mat[row, col - 1];
+        } else {
+          // Fill in the basic pdf as each cell will have to conditioned
+          // on nu separately.
+          pdf_mat[row, col] = basic_lpdf(si_vec[row]| nu_vec[col], 
+                                         max_shed, offset1, alpha1, 
+                                         beta1, alpha2, beta2, 0.1);
+        }
+      }
+    }
+    return(pdf_mat);
   }
   
  real scenario1a_lpdf(real x,
@@ -152,7 +209,7 @@ functions{
     real y;
     //y = map_into_interval2(x, min_si, max_si, 0.01, 0.99);
     //out = beta_lpdf(y| alpha_invalid, beta_invalid);
-    out = uniform_lpdf(x | max_si, min_si);
+    out = uniform_lpdf(x | min_si, max_si);
     return(out);
   }
   
@@ -218,11 +275,10 @@ functions{
     s = offset1 + width;
     // Now map it into (0, 1)
     //s = (s - offset1) / max_shed_shifted;
-    
     while (s < ulim) {
       inf_density = beta_lpdf((s - offset1)/max_shed_shifted |alpha1, beta1);
-      inc_density = gamma_lpdf(x - s|alpha2, beta2); 
-      out = out + exp(inf_density + inc_density);
+      inc_density = gamma_lpdf(x - s|alpha2, beta2);
+      out = out + (exp(inf_density + inc_density) * width);
       s = s + width;
     }
     out = log(out);
@@ -242,12 +298,13 @@ functions{
     // to avoid -Inf
     real y = offset1 + 0.5;
     while (y <= max_si) {
-      denominator +=
+      denominator = denominator +
         exp(scenario4a_lpdf(y| nu, max_shed, offset1, alpha1, beta1,
                             alpha2, beta2, width));
       
       y = y + 0.5;
     }
+    
     // Return on the natural scale so that we can log the whole
     // expression after adding invalid density
     //denominator = log(denominator);
