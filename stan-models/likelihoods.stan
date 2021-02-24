@@ -32,7 +32,8 @@ functions{
       out = out + (exp(inf_density + inc_density) * width);
       s = s + width;
     }
-    out = log(out);
+    // Return in natural scale so that we can add up the columns
+    // later
     return out;
   }
   
