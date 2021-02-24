@@ -48,6 +48,10 @@ functions{
     int num_nu = size(nu_vec);
     int num_si = size(si_vec);
     matrix[num_si, num_nu] pdf_mat;
+    matrix[num_nu, num_si] pdf_mat_t;
+    real max_shed_shifted = max_shed - offset1;
+    real nu_shifted;
+
     // fill the fist column
     for (row in 1:num_si) {
       pdf_mat[row, 1] = basic_lpdf(si_vec[row]| nu_vec[1], max_shed, 
@@ -71,6 +75,18 @@ functions{
         }
       }
     }
+    // Transposing because row_vector is special in Stan in that
+    // I can take the row and divide it by F(nu) and assign it back.
+    // Cannot do the same to a column.
+    pdf_mat_t = pdf_mat';
+    for (row in 1:num_nu) {
+      if(nu_vec[row] < max_shed) {
+        nu_shifted = nu_vec[row] - offset1;
+        // pdf_mat is on the natural scale, not log scale
+        pdf_mat_t[row] = pdf_mat_t[row] / beta_cdf(nu_shifted / max_shed_shifted, alpha1, beta1);
+      }
+    }
+    pdf_mat = pdf_mat_t';
     return(pdf_mat);
   }
   
