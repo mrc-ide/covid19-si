@@ -137,6 +137,8 @@ sampled <- map(
 outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}data.rds")
 walk2(mixed, outfiles, function(x, y) saveRDS(x, y))
 
+max_valid_si <- 40
+
 fits <- pmap(
   list(
     params_inc = params_inc_all,
@@ -146,8 +148,9 @@ fits <- pmap(
     index = index
   ),
   function(params_inc, params_offset, params_iso, sim_data, index) {
-    max_si <- max(sim_data$si) + 1
+    si_vec <- seq(params_offset + 0.5, max_valid_si, 1)
     width <- 0.1
+    sim_data <- arrange(sim_data, nu)
     fit_4a <- stan(
       file = here::here("stan-models/scenario4a_mixture.stan"),
       data = list(
@@ -160,13 +163,15 @@ fits <- pmap(
         beta2 = 1 / params_inc[["scale"]],
         alpha_invalid = alpha_invalid,
         beta_invalid = beta_invalid,
-        max_valid_si = 30,
+        max_valid_si = max_valid_si,
         min_valid_si = params_offset,
         min_invalid_si = min_invalid_si,
-        max_invalid_si = 30,
-        width = width
+        max_invalid_si = max_valid_si,
+        width = width,
+        M = length(si_vec),
+        si_vec = si_vec
       ),
-      chains = 1, iter = 2000,
+      chains = 1, iter = 1000,
       seed = 42,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)

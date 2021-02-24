@@ -15,6 +15,10 @@ data{
   real <lower = 0> max_invalid_si;
   real <lower = -100> min_invalid_si;
   real <lower = 0> width;
+  int M;
+  // Vector of SI from min_invalid_si to max_invalid_si, offset by
+  // a small amount to avoid boundary issues.
+  real si_vec[M];
 }
 parameters{
   // simplex[2] theta;
@@ -28,6 +32,13 @@ model{
   real denominator_valid;
   //real denominator_invalid;
   real denominator;
+  matrix[M, N] pdf_mat;
+  pinvalid ~ beta(4, 10);
+  // Do this once when alpha and beta are sampled.
+  // Make sure nus are in increasing order. This will work even if
+  // some values of nu are repeated
+  pdf_mat = pdf_matrix(nu, si_vec, max_shed, offset1, alpha1, beta1,
+                       alpha2, beta2, width);
   for (n in 1:N) {
     invalid = invalid_lpdf(si[n] | min_invalid_si, max_invalid_si,
                            alpha_invalid, beta_invalid);
@@ -36,14 +47,12 @@ model{
     if ((si[n] > offset1) && (nu[n] > offset1)) {
       valid = scenario4a_lpdf(si[n] | nu[n], max_shed, offset1, alpha1,
                               beta1, alpha2, beta2, width);
-      denominator_valid = s4_normalising_constant(nu[n], max_shed,
-                                                  offset1, alpha1,
-                                                  beta1, alpha2, beta2,
-                                                  max_valid_si, width);
+      denominator_valid = sum(col(pdf_mat, n));
       valid = valid - log(denominator_valid);
       target += log_mix(pinvalid, invalid, valid);// - denominator;
     } else {
-      target += invalid; //- log(denominator_invalid);
+      target += log(pinvalid) + invalid;
+      //log(max_invalid_si - min_invalid_si);
     }
   }
 }
