@@ -1,11 +1,11 @@
 prefix <- "4a_mix_with_normalisation_sim"
 
 param_grid <- expand.grid(
-  params_inf = c("inf_par2"),
-  params_inc = c("inc_par2"),
-  params_iso = c("iso_par1"),
-  params_pinv = c("pinvalid3"),
-  params_offset = c("offset3"),
+  params_inf = c("inf_par1", "inf_par2"),
+  params_inc = c("inc_par1", "inc_par2"),
+  params_iso = c("iso_par1", "iso_par2"),
+  params_offset = c("offset1", "offset2", "offset3"),
+  params_pinvalid = c("pinvalid1", "pinvalid2", "pinvalid3"),
   stringsAsFactors = FALSE
 )
 
@@ -92,13 +92,12 @@ invalid_remapped <- map2(
   simulated_data,
   invalid_si,
   function(valid, invalid) {
-    max_si <- max(valid$si)
     ## invalid SIs are draws from beta. Map them into
     ## min and max of valid SI
     ## Can make min_si here much smaller than offset
     ## to make it more like real data, and then the else statement
     ## in the model will take care of those very large negatives
-    f <- map_into_interval(0, 1, min_invalid_si, max_si)
+    f <- map_into_interval(0, 1, min_invalid_si, max_invalid_si)
     invalid$si <- f(invalid$si)
     invalid
   }
@@ -137,7 +136,7 @@ sampled <- map(
 outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}data.rds")
 walk2(mixed, outfiles, function(x, y) saveRDS(x, y))
 
-max_valid_si <- 40
+
 
 fits <- pmap(
   list(
@@ -171,7 +170,7 @@ fits <- pmap(
         M = length(si_vec),
         si_vec = si_vec
       ),
-      chains = 1, iter = 1000,
+      chains = 2, iter = 1000,
       seed = 42,
       verbose = TRUE
       ## control = list(adapt_delta = 0.99)
