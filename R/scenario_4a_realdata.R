@@ -1,4 +1,11 @@
 # s4 + mixture REAL DATA
+###################################################
+# select assumed parameters (from list in global) #
+###################################################
+
+params_offset <- params_real$offset3
+params_inc <- params_real$inc_par2
+max_shed <- params_real$maxshed2
 
 ####################
 # read in the data #
@@ -11,19 +18,17 @@ real_data <- data%>%
   dplyr::rename(nu = onset_first_iso)%>%
   dplyr::filter(!is.na(nu))
 
-###################################################
-# select assumed parameters (from list in global) #
-###################################################
+real_data <- real_data[order(real_data$nu),]
 
-params_offset <- params_real$offset3
-params_inc <- params_real$inc_par2
-max_shed <- params_real$maxshed2
+first_valid_nu <- match(params_offset + 1, real_data$nu)
+
 
 ######################
 # fit the stan model #
 ######################
+si_vec <- seq(params_offset + 1, max_si)
 
-fit_4a_real_14 <- stan(
+fit_4a_real <- stan(
   file = here::here("stan-models/scenario4a_mixture.stan"),
   data = list(
     N = length(real_data$si),
@@ -35,9 +40,14 @@ fit_4a_real_14 <- stan(
     beta2 = 1 / params_inc[["scale"]],
     alpha_invalid = alpha_invalid,
     beta_invalid = beta_invalid,
-    max_si = max(real_data$si) + 0.001,
-    min_si = min(real_data$si) - 0.001,
-    width = width
+    max_valid_si = max_si,
+    min_valid_si = params_offset + 0.001,
+    max_invalid_si = max_si,
+    min_invalid_si = min_invalid_si,
+    width = width,
+    M = length(si_vec),
+    si_vec = si_vec,
+    first_valid_nu = first_valid_nu
   ),
   seed = 42,
   verbose = TRUE
@@ -47,7 +57,7 @@ fit_4a_real_14 <- stan(
 # check mcmc diagnostics #
 ##########################
 
-diagnos <- ggmcmc(ggs(fit_4a_real_14), here::here("4a_real_14.pdf"))
+diagnos <- ggmcmc(ggs(fit_4a_real), here::here("4a_real_14.pdf"))
 
 ################
 # extract fits #

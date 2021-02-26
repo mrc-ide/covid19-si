@@ -43,7 +43,7 @@ functions{
   // nus are running across columns and SIs are running down rows
   matrix pdf_matrix(real[] nu_vec, real[] si_vec, real max_shed, 
                     real offset1, real alpha1, real beta1, real alpha2, 
-                    real beta2, real width) {
+                    real beta2, real width, int first_valid_nu) {
 
     int num_nu = size(nu_vec);
     int num_si = size(si_vec);
@@ -52,15 +52,15 @@ functions{
     real max_shed_shifted = max_shed - offset1;
     real nu_shifted;
 
-    // fill the fist column
+    // fill the fist valid column
     for (row in 1:num_si) {
-      pdf_mat[row, 1] = basic_lpdf(si_vec[row]| nu_vec[1], max_shed, 
+      pdf_mat[row, first_valid_nu] = basic_lpdf(si_vec[row]| nu_vec[first_valid_nu], max_shed, 
                                    offset1, alpha1, beta1, alpha2,
                                     beta2, 0.1);
       
     }
     for (row in 1:num_si) {
-      for (col in 2:num_nu) {
+      for (col in (first_valid_nu + 1):num_nu) {
         // First check of the nu here is greater than the SI
         if (nu_vec[col] > si_vec[row]) {
           // then copy the value from a previously calculated cell
@@ -79,7 +79,7 @@ functions{
     // I can take the row and divide it by F(nu) and assign it back.
     // Cannot do the same to a column.
     pdf_mat_t = pdf_mat';
-    for (row in 1:num_nu) {
+    for (row in first_valid_nu:num_nu) {
       if(nu_vec[row] < max_shed) {
         nu_shifted = nu_vec[row] - offset1;
         // pdf_mat is on the natural scale, not log scale
