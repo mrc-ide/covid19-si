@@ -1,5 +1,5 @@
 ## Set up params grid
-prefix <- "3a_mix_sim_"
+prefix <- "3a_mix_with_normalisation_sim_"
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
@@ -78,7 +78,7 @@ simulated <- pmap(
     simulate_3a_mix(
       params_inc, params_inf, params_iso, params_offset, max_shed,
       params_pinvalid, nsim_pre_filter, alpha_invalid, beta_invalid,
-      min_invalid_si, max_si
+      min_invalid_si, max_invalid_si
     )
   }
 )
@@ -93,6 +93,10 @@ sampled <- map(
   }
 )
 
+outfiles <- glue::glue("data/{prefix}_{seq_along(sampled)}data.rds")
+walk2(sampled, outfiles, function(x, y) saveRDS(x, y))
+
+
 
 fits <- pmap(
   list(
@@ -103,6 +107,7 @@ fits <- pmap(
   ),
   function(params_inc, params_offset, sim_data, index) {
     ## Rounding now to check things
+    si_vec <- seq(params_offset + 0.5, max_valid_si, 1)
     sim_data$si <- round(sim_data$si)
     fit_3a <- stan(
       file = here::here("stan-models/scenario3a_mixture_general.stan"),
@@ -115,9 +120,13 @@ fits <- pmap(
         beta2 = 1 / params_inc[["scale"]],
         alpha_invalid = alpha_invalid,
         beta_invalid = beta_invalid,
-        max_si = max_si,
-        min_si = min_invalid_si,
-        width = width
+        max_valid_si = max_valid_si,
+        min_valid_si = params_offset,
+        max_invalid_si = max_invalid_si,
+        min_invalid_si = min_invalid_si,
+        width = width,
+        M = length(si_vec),
+        si_vec = si_vec
       ),
       seed = 42,
       verbose = TRUE
