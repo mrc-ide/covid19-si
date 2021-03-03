@@ -25,7 +25,7 @@ parameters{
   // simplex[2] theta;
   real <lower = 0, upper = 1> pinvalid;
   real <lower = alpha_invalid, upper = 100> alpha1; // infectious profile parameter
-  real <lower = 0, upper = 100> beta1;  // infectious profile parameter
+  real <lower = beta_invalid, upper = 100> beta1;  // infectious profile parameter
 }
 model{
   real valid;
