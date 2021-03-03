@@ -241,7 +241,7 @@ process_fits <- left_join(process_fits, est_pinvalid, by = "sim")
 
 process_fits <- mutate_if(process_fits, is.numeric, ~ round(., 2))
 
-ggplot(process_fits) +
+p <- ggplot(process_fits) +
   geom_point(aes(sim, `mu_50%`)) +
   geom_linerange(aes(x = sim, ymin = `mu_25%`, ymax = `mu_75%`)) +
   geom_point(aes(sim, true_mean), shape = 4) +
@@ -255,8 +255,9 @@ ggplot(process_fits) +
     axis.title.y = element_blank()
   )
 
+cowplot::save_plot(glue::glue("figures/{prefix}_inf_mu.png"), p)
 
-ggplot(process_fits) +
+psd <- ggplot(process_fits) +
   geom_point(aes(sim, `sd_50%`)) +
   geom_linerange(aes(x = sim, ymin = `sd_25%`, ymax = `sd_75%`)) +
   geom_point(aes(sim, true_sd), shape = 4) +
@@ -270,7 +271,9 @@ ggplot(process_fits) +
     axis.title.y = element_blank()
   )
 
-ggplot(process_fits) +
+cowplot::save_plot(glue::glue("figures/{prefix}_inf_sd.png"), psd)
+
+ppinv <- ggplot(process_fits) +
   geom_point(aes(sim, `pinvalid_50%`)) +
   geom_linerange(aes(x = sim, ymin = `pinvalid_25%`, ymax = `pinvalid_75%`)) +
   geom_point(aes(sim, pinvalid), shape = 4) +
@@ -285,7 +288,7 @@ ggplot(process_fits) +
   ) +
   ylim(0, 0.5)
 
-
+cowplot::save_plot(glue::glue("figures/{prefix}_inf_pinv.png"), ppinv)
 ######### Posterior SI Distribution
 params_inf_post <- map(
   fits, function(fit) {
@@ -371,7 +374,7 @@ process_fits <- left_join(process_fits, compare_si, by = "sim")
 process_fits <- arrange(process_fits, `training_50%`)
 process_fits$sim <- factor(process_fits$sim, process_fits$sim)
 
-ggplot(process_fits) +
+psi <- ggplot(process_fits) +
   geom_point(aes(sim, `training_50%`, col = "red")) +
   geom_linerange(
     aes(
@@ -400,3 +403,4 @@ ggplot(process_fits) +
     legend.position = "top", axis.text.x = element_blank(),
     axis.title.y = element_blank(), legend.title = element_blank()
   )
+cowplot::save_plot(glue::glue("figures/{prefix}_inf_si.png"), psi)
