@@ -1,4 +1,11 @@
 # s4 + mixture REAL DATA
+###################################################
+# select assumed parameters (from list in global) #
+###################################################
+
+params_offset <- params_real$offset3
+params_inc <- params_real$inc_par2
+max_shed <- params_real$maxshed3
 
 ####################
 # read in the data #
@@ -11,19 +18,17 @@ real_data <- data%>%
   dplyr::rename(nu = onset_first_iso)%>%
   dplyr::filter(!is.na(nu))
 
-###################################################
-# select assumed parameters (from list in global) #
-###################################################
+real_data <- real_data[order(real_data$nu),]
 
-params_offset <- params_real$offset3
-params_inc <- params_real$inc_par2
-max_shed <- params_real$maxshed2
+first_valid_nu <- match(params_offset + 1, real_data$nu)
+
 
 ######################
 # fit the stan model #
 ######################
+si_vec <- seq(params_offset + 1, max_si)
 
-fit_4a_real_14 <- stan(
+fit_4a_real_beta <- stan(
   file = here::here("stan-models/scenario4a_mixture.stan"),
   data = list(
     N = length(real_data$si),
@@ -35,9 +40,14 @@ fit_4a_real_14 <- stan(
     beta2 = 1 / params_inc[["scale"]],
     alpha_invalid = alpha_invalid,
     beta_invalid = beta_invalid,
-    max_si = max(real_data$si) + 0.001,
-    min_si = min(real_data$si) - 0.001,
-    width = width
+    max_valid_si = max_si,
+    min_valid_si = params_offset + 0.001,
+    max_invalid_si = max_si,
+    min_invalid_si = min_invalid_si,
+    width = width,
+    M = length(si_vec),
+    si_vec = si_vec,
+    first_valid_nu =  
   ),
   seed = 42,
   verbose = TRUE
@@ -47,25 +57,25 @@ fit_4a_real_14 <- stan(
 # check mcmc diagnostics #
 ##########################
 
-diagnos <- ggmcmc(ggs(fit_4a_real_14), here::here("4a_real_14.pdf"))
-
+diagnos <- ggmcmc(ggs(fit_4a_real_beta), here::here("4a_real_beta.pdf"))
+saveRDS(fit_4a_real_beta, file = "fit_4a_03032021.rds")
 ################
 # extract fits #
 ################
 
-fitted_params_4a_real14 <- rstan::extract(fit_4a_real_14)
-saveRDS(fitted_params_4a_real14, file = "fitted_params_4a_real14.rds")
+fitted_params_4a_real_beta <- rstan::extract(fit_4a_real_beta)
+saveRDS(fitted_params_4a_real_beta, file = "fitted_params_4a_real_beta.rds")
 
-fitted_params_4a_real <- readRDS("fitted_params_4a_real14.rds")
+fitted_params_4a_real_beta <- readRDS("fitted_params_4a_real_beta.rds")
 
   # best fits
-max_index <- which.max(fitted_params_4a_real$lp__)
+max_index <- which.max(fitted_params_4a_real_beta$lp__)
 params_inf_max <- list(
-  shape1 = fitted_params_4a_real$alpha1[max_index],
-  shape2 = fitted_params_4a_real$beta1[max_index]
+  shape1 = fitted_params_4a_real_beta$alpha1[max_index],
+  shape2 = fitted_params_4a_real_beta$beta1[max_index]
 )
 
-p_invalid_max <- fitted_params_4a_real$pinvalid[max_index]
+p_invalid_max <- fitted_params_4a_real_beta$pinvalid[max_index]
 
 ##################
 # plot best fits #
@@ -92,8 +102,8 @@ p_inf <- ggplot() +
 p_presymp3 <- sum(shifted_inf>0) / length(shifted_inf)
 
 ## Mean and CV of positive delays
-mean_delay <- mean(real_data$nu[real_data$nu > 0])
-sd_delay <- sd(real_data$nu[real_data$nu > 0])
+mean_delay <- mean(real_data$nu[real_data$nu > params_offset])
+sd_delay <- sd(real_data$nu[real_data$nu > params_offset])
 iso_params_obs <- epitrix::gamma_mucv2shapescale(mean_delay,
                                                  sd_delay / mean_delay
                                                  )
@@ -105,6 +115,13 @@ posterior_si <- better_simulate_si(
 )
 posterior_si <- posterior_si[posterior_si$t_1 <= posterior_si$nu, ]
 
+### plot with invalid serial intervals
+posterior_tot_si <- simulate_4a_mix(params_inc, params_inf_max, iso_params_obs,
+                                    params_offset, max_shed, p_invalid_max, nsim_pre_filter,
+                                                alpha_invalid, beta_invalid, min_invalid_si, max_si)
+posterior_all_si <- posterior_tot_si$simulated_si
+posterior_uncon_si <- posterior_tot_si$unconditional
+
 psi <- ggplot() +
   geom_histogram(
     data = real_data, aes(si, y = ..density.., fill = "blue"),
@@ -114,15 +131,24 @@ psi <- ggplot() +
   geom_density(
     aes(posterior_si$si, fill = "green"), color = NA, alpha = 0.3
   ) +
+  geom_density(
+    aes(posterior_uncon_si$si, fill = "darkgreen"), color = NA, alpha = 0.3
+  ) +
+  geom_density(
+    aes(posterior_all_si$si), color = "red", alpha = 0.3
+  ) +
   geom_vline(
     xintercept = mean(real_data$si), col = "blue", linetype = "dashed"
   ) +
   geom_vline(
     xintercept = mean(posterior_si$si), col = "green", linetype = "dashed"
   ) +
+  geom_vline(
+    xintercept = mean(posterior_uncon_si$si), col = "darkgreen", linetype = "dashed"
+  ) +
   scale_fill_identity(
     guide = "legend",
-    labels = c("Data", "Posterior - 'true SI'", "Posterior (valid & invalid SIs)"),
+    labels = c("Data", "Posterior - 'conditional SI'", "Posterior (valid & invalid SIs)"),
     breaks = c("blue", "green", "red")
   ) +
   theme_minimal() +

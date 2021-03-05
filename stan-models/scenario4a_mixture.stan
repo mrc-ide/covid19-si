@@ -19,12 +19,13 @@ data{
   // Vector of SI from min_invalid_si to max_invalid_si, offset by
   // a small amount to avoid boundary issues.
   real si_vec[M];
+  int first_valid_nu;
 }
 parameters{
   // simplex[2] theta;
   real <lower = 0, upper = 1> pinvalid;
   real <lower = alpha_invalid, upper = 100> alpha1; // infectious profile parameter
-  real <lower = 0, upper = 100> beta1;  // infectious profile parameter
+  real <lower = beta_invalid, upper = 100> beta1;  // infectious profile parameter
 }
 model{
   real valid;
@@ -33,12 +34,12 @@ model{
   //real denominator_invalid;
   real denominator;
   matrix[M, N] pdf_mat;
-  pinvalid ~ beta(4, 10);
+  pinvalid ~ beta(1, 8);
   // Do this once when alpha and beta are sampled.
   // Make sure nus are in increasing order. This will work even if
   // some values of nu are repeated
   pdf_mat = pdf_matrix(nu, si_vec, max_shed, offset1, alpha1, beta1,
-                       alpha2, beta2, width);
+                       alpha2, beta2, width, first_valid_nu);
   for (n in 1:N) {
     invalid = invalid_lpdf(si[n] | min_invalid_si, max_invalid_si,
                            alpha_invalid, beta_invalid);
