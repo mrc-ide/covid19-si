@@ -269,7 +269,7 @@ posterior_si <- pmap(
     simulate_3a_mix(
       params_inc, params_inf, params_iso, params_offset, max_shed,
       params_pinvalid, nsim_pre_filter, alpha_invalid, beta_invalid,
-      min_invalid_si, max_si
+      min_invalid_si, max_invalid_si
     )
   }
 )
