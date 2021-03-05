@@ -18,10 +18,13 @@ rstan_options(auto_write = TRUE)
 
 max_shed <- 21
 nsim_pre_filter <- 20000
-nsim_post_filter <- 600
+nsim_post_filter <- 300
 alpha_invalid <- 1
 beta_invalid <- 1
+min_invalid_si <- -11 ## Real has as large as -11
 max_si <- 40
+max_invalid_si <- 40
+max_valid_si <- 40
 width <- 0.1
 
 # additional params for sim data

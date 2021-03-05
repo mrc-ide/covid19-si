@@ -87,7 +87,7 @@ p_inf <- ggplot() +
   xlab("delay from symptoms to transmission (days)")+
   theme_minimal()
 
-
+p_presymp3 <- sum(shifted_inf>0) / length(shifted_inf)
   # plot the resulting SI of best fitting parameters
 si_post <- (simulate_3a_mix(params_inc = params_inc, params_inf = params_inf_max,
                               params_iso = list(shape = 1, scale = 1), offset = params_offset, max_shed,

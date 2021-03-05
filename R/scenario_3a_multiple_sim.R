@@ -1,10 +1,10 @@
 ## Set up params grid
-prefix <- "3a_mix_sim_"
+prefix <- "3a_mix_with_normalisation_sim_"
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
   params_inc = c("inc_par1", "inc_par2"),
-  params_iso = c("iso_par1", "iso_par2"),
+  params_iso = "iso_par1", ## S3 doesn't care about Isolation
   params_offset = c("offset1", "offset2", "offset3"),
   params_pinvalid = c("pinvalid1", "pinvalid2", "pinvalid3"),
   stringsAsFactors = FALSE
@@ -78,7 +78,7 @@ simulated <- pmap(
     simulate_3a_mix(
       params_inc, params_inf, params_iso, params_offset, max_shed,
       params_pinvalid, nsim_pre_filter, alpha_invalid, beta_invalid,
-      min_si, max_si
+      min_invalid_si, max_invalid_si
     )
   }
 )
@@ -93,6 +93,10 @@ sampled <- map(
   }
 )
 
+outfiles <- glue::glue("data/{prefix}_{seq_along(sampled)}data.rds")
+walk2(sampled, outfiles, function(x, y) saveRDS(x, y))
+
+
 
 fits <- pmap(
   list(
@@ -103,6 +107,7 @@ fits <- pmap(
   ),
   function(params_inc, params_offset, sim_data, index) {
     ## Rounding now to check things
+    si_vec <- seq(params_offset + 0.5, max_valid_si, 1)
     sim_data$si <- round(sim_data$si)
     fit_3a <- stan(
       file = here::here("stan-models/scenario3a_mixture_general.stan"),
@@ -115,12 +120,14 @@ fits <- pmap(
         beta2 = 1 / params_inc[["scale"]],
         alpha_invalid = alpha_invalid,
         beta_invalid = beta_invalid,
-        max_si = max_si,
-        min_si = params_offset - 0.001,
-        width = width
+        max_valid_si = max_valid_si,
+        min_valid_si = params_offset,
+        max_invalid_si = max_invalid_si,
+        min_invalid_si = min_invalid_si,
+        width = width,
+        M = length(si_vec),
+        si_vec = si_vec
       ),
-      ##chains = 3,
-      ##iter = 1000,
       seed = 42,
       verbose = TRUE
     )
@@ -130,125 +137,146 @@ fits <- pmap(
   }
 )
 
+
+## index <- 1:nrow(param_grid)
 ## infiles <- glue::glue("stanfits/{prefix}{index}.rds")
 ## fits <- map(infiles, readRDS)
+
 
 process_fits <- pmap_dfr(
   list(
     fit = fits,
-    true_vals = param_grid$params_inf,
-    params_inc = param_grid$params_inc,
-    params_iso = param_grid$params_iso,
-    offset = params_offset_all,
-    pinvalid = params_pinvalid_all),
-  function(fit, true_vals, params_inc, params_iso, offset, pinvalid) {
-
-    true_vals <- params[[true_vals]]
-    incubation <- params[[params_inc]]
-    isolation <- params[[params_iso]]
-
-    true_val_df <- data.frame(
-      true_val = c(true_vals$mean_inf, true_vals$sd_inf, pinvalid),
-      param = c("mu", "sd", "pinvalid")
-    )
+    offset = params_offset_all),
+  function(fit, offset) {
     samples <- rstan::extract(fit)
-    pinvalid_posterior <- quantile_as_df(samples[["pinvalid"]])
-    pinvalid_posterior$param <- "pinvalid"
     out <- mu_sd_posterior_distr(samples, max_shed, offset)
-    out <- rbind(out, pinvalid_posterior) %>%
-      tidyr::spread(var, val)
-
-    out <- left_join(out, true_val_df)
-    out$mean_inc <- incubation$mean_inc
-    out$sd_inc <- incubation$sd_inc
-    out$mean_iso <- isolation$mean_iso
-    out$sd_iso <- isolation$sd_iso
-    out
+    pivot_wider(
+      out, names_from = c("param", "var"), values_from = "val"
+    )
   }, .id = "sim"
 )
 
-outfile <- glue::glue("data/{prefix}params_posterior_distr.rds")
-saveRDS(process_fits, outfile)
-
-
-## process_fits <- readRDS(outfile)
-
-process_fits <- mutate_if(process_fits, is.numeric, ~ signif(., 3))
-##process_fits$sim <- as.integer(process_fits$sim)
-
-x <- split(process_fits, process_fits$param)
-
-names(x) <- c("Mean (Infectious Profile)", "pinvalid",
-              "SD (infectious profile)")
-
-iwalk(
-  x,
-  function(df, param) {
-    df$mean_iso <- as.factor(df$mean_iso)
-    df <- arrange(df, mean_iso)
-    df$sim <- factor(df$sim, levels = df$sim, ordered = TRUE)
-
-    p <- ggplot(df) +
-      geom_linerange(
-        aes(
-          x = sim, ymin = `25%`, ymax = `75%`, col = mean_iso
-        )
-      ) +
-      geom_point(aes(sim, `50%`, col = mean_iso)) +
-      geom_point(aes(sim, true_val), shape = 4) +
-      facet_grid(mean_inc ~ true_val, scales = "free") +
-      expand_limits(y = 0) +
-      theme_minimal() +
-      theme(
-        legend.position = "top", axis.text.x = element_blank(),
-        axis.title.x = element_blank()
-      ) +
-      ylab(param)
-
-    ggsave(glue::glue("figures/{prefix}{param}.png"))
-  }
+process_fits$true_mean <- map_dbl(
+  params[param_grid$params_inf], function(x) x$mean_inf
 )
 
-##################################################
-### SI posterior distribution
-##################################################
-best_params <- map(
+process_fits$true_sd <- map_dbl(
+  params[param_grid$params_inf], function(x) x$sd_inf
+)
+
+process_fits$incubation <- map_dbl(
+  params[param_grid$params_inc], function(x) x$mean_inc
+)
+
+process_fits$isolation <- map_dbl(
+  params[param_grid$params_iso], function(x) x$mean_iso
+)
+
+process_fits$pinvalid <- unlist(params[param_grid$params_pinv])
+process_fits$offset <- unlist(params[param_grid$params_offset])
+
+est_pinvalid <- map_dfr(
   fits,
   function(fit) {
-    out <- rstan::extract(fit)
-    idx <- which.max(out[["lp__"]])
-    map(out, ~ .[idx])
-  }
+    samples <- rstan::extract(fit)
+    out <- quantile_as_df(samples[["pinvalid"]])
+    idx <- which.max(samples[["lp__"]])
+    best <- samples[["pinvalid"]][idx]
+    out <- rbind(out, data.frame(var = "best", val = best))
+    out$param <- "pinvalid"
+    pivot_wider(
+      out, names_from = c("param", "var"), values_from = "val"
+    )
+  }, .id = "sim"
 )
 
+process_fits <- left_join(process_fits, est_pinvalid, by = "sim")
+
+
+process_fits <- mutate_if(process_fits, is.numeric, ~ round(., 2))
+
+p <- ggplot(process_fits) +
+  geom_point(aes(sim, `mu_50%`)) +
+  geom_linerange(aes(x = sim, ymin = `mu_25%`, ymax = `mu_75%`)) +
+  geom_point(aes(sim, true_mean), shape = 4) +
+  facet_grid(
+    pinvalid ~ offset, scales = "free", labeller = label_both
+  ) +
+  ylab("Mean infectious period") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.x = element_blank()
+  )
+ggsave(glue::glue("figures/{prefix}mean_inf.png"), p)
+
+p <- ggplot(process_fits) +
+  geom_point(aes(sim, `sd_50%`)) +
+  geom_linerange(aes(x = sim, ymin = `sd_25%`, ymax = `sd_75%`)) +
+  geom_point(aes(sim, true_sd), shape = 4) +
+  facet_grid(
+    pinvalid ~ offset, scales = "free", labeller = label_both
+  ) +
+  ylab("SD infectious period") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.x = element_blank()
+  )
+ggsave(glue::glue("figures/{prefix}sd_inf.png"), p)
+
+p <- ggplot(process_fits) +
+  geom_point(aes(sim, `pinvalid_50%`)) +
+  geom_linerange(aes(x = sim, ymin = `pinvalid_25%`, ymax = `pinvalid_75%`)) +
+  geom_point(aes(sim, pinvalid), shape = 4) +
+  facet_grid(
+    pinvalid ~ offset, scales = "free", labeller = label_both
+  ) +
+  ylab("pinvalid") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.x = element_blank()
+  ) +
+  ylim(0, 1)
+
+ggsave(glue::glue("figures/{prefix}pinvalid.png"), p)
+
+
+######### Posterior SI Distribution
+training <- sampled
 params_inf_post <- map(
-  best_params, ~ list(shape1 = .$alpha1, shape2 = .$beta1)
-)
-
-params_pinvalid_post <- map(best_params, ~ .$pinvalid)
-
-post_simulated <- pmap(
-  list(
-    params_inc = params_inc_all,
-    params_inf = params_inf_post,
-    params_iso = params_iso_all,
-    params_offset = params_offset_all,
-    params_pinvalid = params_pinvalid_post
-  ),
-  function(params_inc, params_inf, params_iso, params_offset,
-           params_pinvalid) {
-    min_si <- params_offset
-    simulate_3a_mix(
-      params_inc, params_inf, params_iso, params_offset, max_shed,
-      params_pinvalid, nsim_pre_filter, alpha_invalid, beta_invalid,
-      min_si, max_si
+  fits, function(fit) {
+    samples <- rstan::extract(fit)
+    idx <- which.max(samples[["lp__"]])
+    list(
+      shape1 = samples[["alpha1"]][idx],
+      shape2 = samples[["beta1"]][idx]
     )
   }
 )
 
-post_sampled <- map(
-  post_simulated, function(df) {
-    ## might have NA from when pinvalid = 0
+posterior_si <- pmap(
+  list(
+    params_inf = params_inf_post,
+    params_inc = params_inc_all,
+    params_iso = params_iso_all,
+    params_offset = params_offset_all,
+    params_pinvalid = params_pinvalid_all
+  ),
+  function(params_inf, params_inc, params_iso, params_offset,
+           params_pinvalid) {
+    simulate_3a_mix(
+      params_inc, params_inf, params_iso, params_offset, max_shed,
+      params_pinvalid, nsim_pre_filter, alpha_invalid, beta_invalid,
+      min_invalid_si, max_invalid_si
+    )
+  }
+)
+
+
+sampled <- map(
+  posterior_si, function(df) {
     out <- df[["simulated_si"]]
     out <- out[complete.cases(out), ]
     idx <- sample(nsim_pre_filter, nsim_post_filter, replace = TRUE)
@@ -256,63 +284,56 @@ post_sampled <- map(
   }
 )
 
-post_si_plots <- map2(
-  sampled, post_sampled, function(x, y) {
-    ggplot() +
-      geom_density(aes(round(x$si), fill = "red"), alpha = 0.3, col = NA) +
-      geom_density(aes(round(y$si), fill = "blue"), alpha = 0.3, col = NA) +
-      scale_fill_identity(
-        breaks = c("red", "blue"),
-        labels = c("SI used for fitting", "SI Posterior distributio"),
-        guide = "legend"
-      ) +
-      xlab("Serial Interval") +
-      theme_minimal() +
-      theme(legend.position = "top", legend.title = element_blank())
 
-  }
+
+
+
+compare_si <- map2_dfr(
+  training, sampled,
+  function(x, y) {
+    x$si <- round(x$si)
+    trng_si <- quantile_as_df(x$si)
+    trng_si$param <- "training"
+    post_si <- quantile_as_df(y$si)
+    post_si$param <- "posterior"
+    rbind(trng_si, post_si) %>%
+      pivot_wider(
+      names_from = c("param", "var"), values_from = "val"
+    )
+  }, .id = "sim"
 )
 
-outfiles <- glue::glue("figures/{prefix}{index}_si.png")
+process_fits <- left_join(process_fits, compare_si, by = "sim")
+process_fits <- arrange(process_fits, `training_50%`)
+process_fits$sim <- factor(process_fits$sim, process_fits$sim)
 
-walk2(
-  post_si_plots, outfiles, function(p, filename) ggsave(filename, p)
-)
-
-
-post_si_qntls <- map2_dfr(
-  sampled, post_sampled, function(x, y) {
-    before <- quantile_as_df(x$si)
-    before$category <- "used"
-    after <- quantile_as_df(y$si)
-    after$category <- "posterior"
-    rbind(before, after)
-}, .id = "sim")
-
-
-post_si_qntls <- tidyr::spread(post_si_qntls, var, val)
-##post_si_qntls$sim <- as.integer(post_si_qntls$sim)
-post_si_qntls <- arrange(post_si_qntls, `50%`)
-post_si_qntls$sim <- factor(
-  post_si_qntls$sim,
-  levels = post_si_qntls$sim[! duplicated(post_si_qntls$sim)],
-  ordered = TRUE
-)
-
-ggplot(post_si_qntls) +
-  geom_point(
-    aes(sim, `50%`, col = category),
-    position = position_dodge(width = 0.5)) +
+p <- ggplot(process_fits) +
+  geom_point(aes(sim, `training_50%`, col = "red")) +
   geom_linerange(
-    aes(x = sim, ymin = `25%`, ymax = `75%`, col = category),
-    position = position_dodge(width = 0.5)) +
+    aes(
+      x = sim, ymin = `training_25%`, ymax = `training_75%`,
+      col = "red")
+  ) +
+  geom_point(
+    aes(sim, `posterior_50%`, col = "blue"),
+    position = position_nudge(x = 0.5)
+  ) +
+  geom_linerange(
+    aes(
+      x = sim, ymin = `posterior_25%`, ymax = `posterior_75%`,
+      col = "blue"), position = position_nudge(x = 0.5)
+  ) +
+  scale_color_identity(
+    breaks = c("red", "blue"), labels = c("Training", "Posterior"),
+    guide = "legend"
+  ) +
+  facet_grid(
+    pinvalid ~ offset, scales = "free", labeller = label_both
+  ) +
   ylab("Serial Interval") +
-   theme_minimal() +
+  theme_minimal() +
   theme(
     legend.position = "top", axis.text.x = element_blank(),
     axis.title.x = element_blank(), legend.title = element_blank()
   )
-
-outfile <- glue::glue("figures/{prefix}serial_interval.png")
-
-ggsave(outfile)
+ggsave(glue::glue("figures/{prefix}si.png"), p)
