@@ -11,19 +11,25 @@ real_data <- data%>%
   dplyr::rename(nu = onset_first_iso)%>%
   dplyr::filter(!is.na(nu))
 
+real_data <- real_data[order(real_data$nu),]
+
+
+
 ###################################################
 # select assumed parameters (from list in global) #
 ###################################################
 
 params_offset <- params_real$offset3
 params_inc <- params_real$inc_par2
-max_shed <- params_real$maxshed2
-
+max_shed <- params_real$maxshed3
+first_valid_nu <- match(params_offset + 1, real_data$nu)
 ######################
 # fit the stan model #
 ######################
+si_vec <- seq(params_offset + 1, max_si)
 
-fit_3a_real_14 <- stan(
+
+fit_3a_real <- stan(
   file = here::here("stan-models/scenario3a_mixture_general.stan"),
   data = list(
     N = length(real_data$si),
@@ -34,30 +40,37 @@ fit_3a_real_14 <- stan(
     beta2 = 1 / params_inc[["scale"]],
     alpha_invalid = alpha_invalid,
     beta_invalid = beta_invalid,
-    max_si = max(real_data$si) + 0.001,
-    min_si = min(real_data$si) - 0.001,
-    width = width
+    max_valid_si = max_si,
+    min_valid_si = params_offset + 0.001,
+    max_invalid_si = max_si,
+    min_invalid_si = min_invalid_si,
+    width = width,
+    M = length(si_vec),
+    si_vec = si_vec,
+    first_valid_nu = 1
   ),
-  chains = 2,
-  iter = 2000,
   seed = 42,
   verbose = TRUE
 )
+
 
 ##########################
 # check mcmc diagnostics #
 ##########################
 
-diagnos <- ggmcmc(ggs(fit_3a_real_14), here::here("3a_real_14.pdf"))
+diagnos <- ggmcmc(ggs(fit_3a_real), here::here("3a_real.pdf"))
+
+saveRDS(fit_3a_real, file = "fit_3a_05032021.rds")
 
 ################
 # extract fits #
 ################
 
-fitted_params_3a_real14 <- rstan::extract(fit_3a_real_14)
+fitted_params_3a_real <- rstan::extract(fit_3a_real)
 saveRDS(fitted_params_3a_real14, file = "fitted_params_3a_real14.rds")
 
-fitted_params_3a_real <- readRDS("fitted_params_3a_real14.rds")
+fitted_params_3a_real <- readRDS("fit_3a_05032021.rds")
+fitted_params_3a_real <- rstan::extract(fitted_params_3a_real)
 
   # best fits
 max_index <- which(fitted_params_3a_real$lp__==max(fitted_params_3a_real$lp__))
