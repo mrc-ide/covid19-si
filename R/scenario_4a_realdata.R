@@ -47,7 +47,8 @@ fit_4a_real_beta <- stan(
     width = width,
     M = length(si_vec),
     si_vec = si_vec,
-    first_valid_nu =  
+    first_valid_nu =  first_valid_nu,
+    pinvalid = 0.05
   ),
   seed = 42,
   verbose = TRUE
@@ -58,15 +59,13 @@ fit_4a_real_beta <- stan(
 ##########################
 
 diagnos <- ggmcmc(ggs(fit_4a_real_beta), here::here("4a_real_beta.pdf"))
-saveRDS(fit_4a_real_beta, file = "fit_4a_03032021.rds")
+saveRDS(fit_4a_real_beta, file = "fit_4a_04032021.rds")
+fit_4a_real_beta <- readRDS("fit_4a_03032021.rds")
+
 ################
 # extract fits #
 ################
-
 fitted_params_4a_real_beta <- rstan::extract(fit_4a_real_beta)
-saveRDS(fitted_params_4a_real_beta, file = "fitted_params_4a_real_beta.rds")
-
-fitted_params_4a_real_beta <- readRDS("fitted_params_4a_real_beta.rds")
 
   # best fits
 max_index <- which.max(fitted_params_4a_real_beta$lp__)
@@ -161,10 +160,10 @@ psi <- ggplot() +
 
 # 1. sample alpha and beta from the posterior to get the infectious profile
 
-nsamples <- length(fitted_params_4a_real[[1]])
+nsamples <- length(fitted_params_4a_real_beta[[1]])
 idx <- sample(nsamples, size = ceiling(nsamples/2), replace = FALSE)
-shape1 <- fitted_params_4a_real$alpha1[idx]
-shape2 <- fitted_params_4a_real$beta1[idx]
+shape1 <- fitted_params_4a_real_beta$alpha1[idx]
+shape2 <- fitted_params_4a_real_beta$beta1[idx]
 
 # 2. for each infectious profile, simulate an SI distribution (of 10000 SIs)
 si_post_4a <- matrix(nrow = 10000, ncol = length(idx))
@@ -189,7 +188,7 @@ ggplot()+
   xlab("mean SI (days)")+
   geom_vline(xintercept = si_mean_95_4a[1], col = "red", lty = 2)+
   geom_vline(xintercept = si_mean_95_4a[2], col = "red", lty = 2)+
-  geom_vline(xintercept = mean(si_post_v))
+  geom_vline(xintercept = mean(posterior_uncon_si$si))
 
 si_median_95_4a <- quantile(si_medians_4a, c(0.025, 0.975))
 ggplot()+
@@ -198,7 +197,7 @@ ggplot()+
   xlab("median SI (days)")+
   geom_vline(xintercept = si_median_95_4a[1], col = "red", lty = 2)+
   geom_vline(xintercept = si_median_95_4a[2], col = "red", lty = 2)+
-  geom_vline(xintercept = median(si_post_v))
+  geom_vline(xintercept = median(posterior_uncon_si$si))
 
 si_sd_95_4a <- quantile(si_sd_4a, c(0.025, 0.975))
 ggplot()+
@@ -207,11 +206,11 @@ ggplot()+
   xlab("sd SI (days)")+
   geom_vline(xintercept = si_sd_95_4a[1], col = "red", lty = 2)+
   geom_vline(xintercept = si_sd_95_4a[2], col = "red", lty = 2)+
-  geom_vline(xintercept = sd(si_post_v))
+  geom_vline(xintercept = sd(posterior_uncon_si$si))
 
 ## getting the CrI for p_invalid
 
-p_invalid_post <- fitted_params_4a_real$pinvalid
+p_invalid_post <- fitted_params_4a_real_beta$pinvalid
 
 mean(p_invalid_post)
 median(p_invalid_post)

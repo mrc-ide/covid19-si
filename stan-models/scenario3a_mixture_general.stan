@@ -18,6 +18,7 @@ data{
   // Vector of SI from min_invalid_si to max_invalid_si, offset by
   // a small amount to avoid boundary issues.
   real si_vec[M];  
+  int first_valid_nu;
 }
 parameters{
   // simplex[2] theta;
@@ -37,7 +38,7 @@ model{
   // than max_shed so that the division by F(nu) never takes place.
   dummy[1] = max_shed + 10;
   pdf_mat = pdf_matrix(dummy, si_vec, max_shed, offset1, 
-                       alpha1, beta1, alpha2, beta2, width);
+                       alpha1, beta1, alpha2, beta2, width, first_valid_nu);
   denominator_valid = sum(col(pdf_mat, 1));
   for (n in 1:N) {
     invalid = invalid_lpdf(si[n] | min_invalid_si, max_invalid_si,
