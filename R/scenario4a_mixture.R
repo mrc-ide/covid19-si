@@ -168,7 +168,8 @@ fits <- pmap(
         max_invalid_si = max_valid_si,
         width = width,
         M = length(si_vec),
-        si_vec = si_vec
+        si_vec = si_vec,
+        first_valid_nu = 1
       ),
       chains = 2, iter = 1000,
       seed = 42,

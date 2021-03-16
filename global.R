@@ -61,3 +61,18 @@ params_real <- list(
   maxshed3 = 21
 )
 
+
+## Further investigation.
+##  distribution parameters assume max_shed = 21
+params_check <- list(
+  inf_par1 = list(shape1 = 8.285714, shape2 = 107.7143), ## short
+  inc_par1 = list(shape = 4, scale = 0.5), ## short
+  inc_par2 = list(shape = 1.675513, scale = 3.043843),# IBM
+  offset1 = -3,
+  offset2 = -4,
+  offset3 = -5,
+  offset4 = -6,
+  pinvalid1 = 0.05,
+  pinvalid2 = 0.2,
+  iso_par1 = list(shape = 1.259434, scale = 4.087185)
+)
