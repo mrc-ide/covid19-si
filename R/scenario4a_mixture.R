@@ -3,9 +3,9 @@ prefix <- "4a_mix_with_normalisation_sim"
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
   params_inc = c("inc_par1", "inc_par2"),
-  params_iso = c("iso_par1", "iso_par2"),
-  params_offset = c("offset1", "offset2", "offset3"),
-  params_pinvalid = c("pinvalid1", "pinvalid2", "pinvalid3"),
+  params_iso = "iso_par1",
+  params_offset = c("offset1", "offset2"),
+  params_pinvalid = c("pinvalid1", "pinvalid2"),
   stringsAsFactors = FALSE
 )
 
@@ -13,44 +13,38 @@ param_grid <- expand.grid(
 index <- 1:nrow(param_grid)
 param_grid <- param_grid[index, ]
 
-params_inf_all <- map(
-  param_grid$params_inf,
-  function(params_inf) {
-    out <- params[[params_inf]]
+params_inf_all <- pmap(
+  list(
+    params_inf = param_grid$params_inf,
+    params_offset = param_grid$params_offset
+  ),
+  function(params_inf, params_offset) {
+    out <- params_check[[params_inf]]
+    offset <- params_check[[params_offset]]
     beta_muvar2shape1shape2(
-      out$mean_inf/max_shed, out$sd_inf^2 / max_shed^2
+      (out$mean_inf - offset) / (max_shed - offset),
+      out$sd_inf^2 / (max_shed - offset)^2
     )
   }
 )
 
 params_inc_all <- map(
   param_grid$params_inc,
-  function(params_inc) {
-    out <- params[[params_inc]]
-    epitrix::gamma_mucv2shapescale(
-      mu = out[[1]], cv = out[[2]] / out[[1]]
-    )
-  }
+  function(params_inc) params_check[[params_inc]]
 )
 
 params_iso_all <- map(
   param_grid$params_iso,
-  function(params_iso) {
-    out <- params[[params_iso]]
-    epitrix::gamma_mucv2shapescale(
-      mu = out[[1]], cv = out[[2]] / out[[1]]
-    )
-  }
+  function(params_iso) params_check[[params_iso]]
 )
 
 params_offsets_all <- map(
-  param_grid$params_offset, function(params_offset) {
-    params[[params_offset]]
-  }
+  param_grid$params_offset, 
+  function(params_offset) params_check[[params_offset]]
 )
 
 params_pinv <- map(
-  param_grid$params_pinv, function(params_pinv) params[[params_pinv]]
+  param_grid$params_pinv, function(params_pinv) params_check[[params_pinv]]
 )
 
 simulated_data <- pmap(
