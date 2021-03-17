@@ -65,8 +65,8 @@ params_real <- list(
 ## Further investigation.
 ##  distribution parameters assume max_shed = 21
 params_check <- list(
-  inf_par1 = list(shape1 = 8.285714, shape2 = 107.7143), ## short (comparable to s3 real data)
-  inf_par2 = list(shape1 = 1.5, shape2 = 3), ## long (comparable to s4 real data)
+  inf_par1 = list(mean = 1.5, sd = 0.5), ## short (comparable to s3 real data)
+  inf_par2 = list(mean = 5, sd = 2), ## long (comparable to s4 real data)
   inc_par1 = list(shape = 4, scale = 0.5), ## short
   inc_par2 = list(shape = 1.675513, scale = 3.043843),# IBM
   offset1 = -3,
