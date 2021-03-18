@@ -115,13 +115,16 @@ mixed <- pmap(
   }
 )
 
-sampled <- map(
-  mixed, function(sim_data) {
+sampled <- pmap(
+  list(sim_data = mixed,
+       params_offset = params_offsets_all
+    ),
+  function(sim_data, params_offset) {
     ## Round for consistency with real data
     sim_data$si <- round(sim_data$si)
     sim_data$nu <- round(sim_data$nu)
-    sim_data <- sim_data[sim_data$si != 0, ]
-    sim_data <- sim_data[sim_data$nu != 0, ]
+    sim_data <- sim_data[sim_data$si > params_offset, ]
+    sim_data <- sim_data[sim_data$nu > params_offset, ]
     idx <- sample(nrow(sim_data), nsim_post_filter, replace = TRUE)
     sim_data[idx, ]
   }
