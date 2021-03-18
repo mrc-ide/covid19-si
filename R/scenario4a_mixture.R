@@ -47,7 +47,8 @@ params_pinv <- map(
   param_grid$params_pinv, function(params_pinv) params_check[[params_pinv]]
 )
 
-simulated_data <- pmap(
+## unconditional 
+unconditional_data <- pmap(
   list(
     params_inf = params_inf_all,
     params_inc = params_inc_all,
@@ -55,12 +56,18 @@ simulated_data <- pmap(
     params_offset = params_offsets_all
   ),
   function(params_inf, params_inc, params_iso, params_offset) {
-    sim_data <- better_simulate_si(
+    better_simulate_si(
       params_inc, params_inf, params_iso, params_offset, max_shed,
       nsim_pre_filter
     )
+  }
+)
+
+## conditional
+simulated_data <- map(
+  unconditional_data,
+  function(sim_data) {
     sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]
-    ##sim_data <- sim_data[abs(sim_data$si) > 0.1, ]
     ## Make sure we have at least 200 rows.
     idx <- sample(nrow(sim_data), nsim_post_filter, replace = TRUE)
     sim_data[idx, ]
@@ -104,7 +111,7 @@ mixed <- pmap(
     params_pinv = param_grid$params_pinv
   ),
   function(valid, invalid, params_pinv) {
-    pinvalid <- params[[params_pinv]]
+    pinvalid <- params_check[[params_pinv]]
     toss <- runif(nrow(valid))
     valid$type <- "valid"
     invalid$type <- "invalid"
@@ -133,6 +140,25 @@ sampled <- pmap(
 outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}data.rds")
 walk2(mixed, outfiles, function(x, y) saveRDS(x, y))
 
+figs <- pmap(
+  list(
+    x = unconditional_data, y = simulated_data, z = mixed, index = index
+  ),
+  function(x, y, z, index){
+    p <- ggplot() +
+      geom_density(aes(x$si, fill = "red"), col = NA, alpha = 0.3) +
+      geom_density(aes(y$si, fill = "blue"), col = NA, alpha = 0.3) +
+      geom_density(aes(z$si, fill = "green"), col = NA, alpha = 0.3) +
+      scale_fill_identity(
+        breaks = c("red", "blue", "green"),
+        labels = c("Conditional on nu", "Unconditional", "Mixed"),
+        guide = "legend"
+      ) +
+      theme(legend.position = "top", legend.title = element_blank())
+    ggsave(glue::glue("figures/{prefix}{index}_simulated.png"))
+    
+  }
+)
 
 
 fits <- pmap(
