@@ -1,4 +1,4 @@
-prefix <- "3a_mix_stress_testing_sim"
+prefix <- "3a_mix_stress_testing_sim_"
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
@@ -93,11 +93,11 @@ invalid_si <- map(
   params_iso_all,
   function(params_iso) {
     invalid_si <- rbeta(
-      nsim_post_filter, shape1 = alpha_invalid, shape2 = beta_invalid
+      nsim_pre_filter, shape1 = alpha_invalid, shape2 = beta_invalid
     )
 
     invalid_iso <- rgamma(
-      nsim_post_filter, shape = params_iso$shape, scale = params_iso$scale
+      nsim_pre_filter, shape = params_iso$shape, scale = params_iso$scale
     )
     data.frame(si = invalid_si, nu = invalid_iso)
   }
