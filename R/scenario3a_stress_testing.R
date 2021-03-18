@@ -57,9 +57,10 @@ uncdtnl_data <- pmap(
     params_offset = params_offsets_all
   ),
   function(params_inf, params_inc, params_iso, params_offset) {
+    ## ok to use nsim_post_filter here as we won't filter
     better_simulate_si(
       params_inc, params_inf, params_iso, params_offset, max_shed,
-      nsim_pre_filter
+      nsim_post_filter
     )
   }
 )
@@ -93,11 +94,11 @@ invalid_si <- map(
   params_iso_all,
   function(params_iso) {
     invalid_si <- rbeta(
-      nsim_pre_filter, shape1 = alpha_invalid, shape2 = beta_invalid
+      nsim_post_filter, shape1 = alpha_invalid, shape2 = beta_invalid
     )
 
     invalid_iso <- rgamma(
-      nsim_pre_filter, shape = params_iso$shape, scale = params_iso$scale
+      nsim_post_filter, shape = params_iso$shape, scale = params_iso$scale
     )
     data.frame(si = invalid_si, nu = invalid_iso)
   }
@@ -167,6 +168,7 @@ figs <- pmap(
         labels = c("Sampled", "Unconditional", "Mixed"),
         guide = "legend"
       ) +
+      theme_minimal() +
       theme(legend.position = "top", legend.title = element_blank())
     ggsave(glue::glue("figures/{prefix}{index}_simulated.png"), p)
   }
@@ -238,7 +240,8 @@ fits <- pmap(
 process_fits <- pmap_dfr(
   list(
     fit = fits,
-    offset = params_offsets_all),
+    offset = params_offsets_all
+  ),
   function(fit, offset) {
     samples <- rstan::extract(fit)
     out <- mu_sd_posterior_distr(samples, max_shed, offset)

@@ -39,7 +39,7 @@ params_iso_all <- map(
 )
 
 params_offsets_all <- map(
-  param_grid$params_offset, 
+  param_grid$params_offset,
   function(params_offset) params_check[[params_offset]]
 )
 
@@ -47,7 +47,7 @@ params_pinv <- map(
   param_grid$params_pinv, function(params_pinv) params_check[[params_pinv]]
 )
 
-## unconditional 
+## unconditional
 uncdtnl_data <- pmap(
   list(
     params_inf = params_inf_all,
@@ -66,7 +66,7 @@ uncdtnl_data <- pmap(
 ## with -ve nu
 unconditional_data <- pmap(
   list(
-   dat = uncdtnl_data, 
+   dat = uncdtnl_data,
    params_offset = params_offsets_all
   ),
   function(dat, params_offset) {
@@ -159,7 +159,8 @@ walk2(mixed, outfiles, function(x, y) saveRDS(x, y))
 
 figs <- pmap(
   list(
-    x = unconditional_data, y = simulated_data, z = mixed, index = index
+    x = unconditional_data, y = simulated_data, z = sampled,
+    index = index
   ),
   function(x, y, z, index){
     p <- ggplot() +
@@ -173,7 +174,7 @@ figs <- pmap(
       ) +
       theme(legend.position = "top", legend.title = element_blank())
     ggsave(glue::glue("figures/{prefix}{index}_simulated.png"))
-    
+
   }
 )
 
