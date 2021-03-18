@@ -73,5 +73,5 @@ params_check <- list(
   offset2 = -6,
   pinvalid1 = 0.05,
   pinvalid2 = 0.2,
-  iso_par1 = list(shape = 1.259434, scale = 4.087185)
+  iso_par1 = list(shape = 1, scale = 5)
 )
