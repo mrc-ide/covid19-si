@@ -10,7 +10,7 @@ param_grid <- expand.grid(
 )
 
 
-index <- 1
+index <- 1:nrow(param_grid)
 param_grid <- param_grid[index, ]
 
 params_inf_all <- pmap(
