@@ -48,7 +48,7 @@ params_pinv <- map(
 )
 
 ## unconditional 
-unconditional_data <- pmap(
+uncdtnl_data <- pmap(
   list(
     params_inf = params_inf_all,
     params_inc = params_inc_all,
@@ -60,6 +60,23 @@ unconditional_data <- pmap(
       params_inc, params_inf, params_iso, params_offset, max_shed,
       nsim_pre_filter
     )
+  }
+)
+
+## with -ve nu
+unconditional_data <- pmap(
+  list(
+   dat = uncdtnl_data, 
+   params_offset = params_offsets_all
+  ),
+  function(dat, params_offset) {
+    toss <- runif(nrow(dat), 0, 1)
+    for(i in 1:(nrow(dat))){
+      if(toss[i] < 0.02) {
+        dat$nu[i] <- runif(1, params_offset, 0)
+      }
+    }
+    dat[,]
   }
 )
 
