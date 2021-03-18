@@ -192,3 +192,10 @@ map_into_interval <- function(x_1, y_1, x_2, y_2) {
   f <- function(x) slope * x + intercept
   f
 }
+
+map_estimates <- function(fit) {
+
+  fitted_params <- rstan::extract(fit)
+  map_idx <- which.max(fitted_params[["lp__"]])
+  map(fitted_params, ~ .[map_idx])
+}
