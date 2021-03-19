@@ -231,12 +231,6 @@ fits <- pmap(
 ## infiles <- glue::glue("stanfits/{prefix}_{index}.rds")
 ## fits <- map(infiles, readRDS)
 
-## debugging
-## checked that constant for full model with recall = 0 is the same as
-## constant for s4.
-## normalising_constant(y_vec, 5, 21, -2, 0, 9.52381, 15.47619, 9, 1 / 0.6666, 0.1, 21, -2)
-## s4_normalising_constant(5, 21, -2, 9.52381, 15.47619, 9, 1 / 0.6666, 21, 0.1)
-
 process_fits <- pmap_dfr(
   list(
     fit = fits,
@@ -252,23 +246,29 @@ process_fits <- pmap_dfr(
 )
 
 process_fits$true_mean <- map_dbl(
-  params[param_grid$params_inf], function(x) x$mean_inf
+  params_check[param_grid$params_inf], function(x) x$mean_inf
 )
 
 process_fits$true_sd <- map_dbl(
-  params[param_grid$params_inf], function(x) x$sd_inf
+  params_check[param_grid$params_inf], function(x) x$sd_inf
 )
 
 process_fits$incubation <- map_dbl(
-  params[param_grid$params_inc], function(x) x$mean_inc
+  params_check[param_grid$params_inc],
+  function(x) {
+    epitrix::gamma_shapescale2mucv(x$shape, x$scale)[["mu"]]
+  }
 )
 
 process_fits$isolation <- map_dbl(
-  params[param_grid$params_iso], function(x) x$mean_iso
+  params_check[param_grid$params_iso],
+  function(x) {
+    epitrix::gamma_shapescale2mucv(x$shape, x$scale)[["mu"]]
+  }
 )
 
-process_fits$pinvalid <- unlist(params[param_grid$params_pinv])
-process_fits$offset <- unlist(params[param_grid$params_offset])
+process_fits$pinvalid <- unlist(params_check[param_grid$params_pinv])
+process_fits$offset <- unlist(params_check[param_grid$params_offset])
 
 est_pinvalid <- map_dfr(
   fits,
@@ -290,12 +290,18 @@ process_fits <- left_join(process_fits, est_pinvalid, by = "sim")
 process_fits <- mutate_if(process_fits, is.numeric, ~ round(., 2))
 
 p <- ggplot(process_fits) +
-  geom_point(aes(sim, `mu_50%`)) +
-  geom_linerange(aes(x = sim, ymin = `mu_25%`, ymax = `mu_75%`)) +
+  geom_point(aes(sim, `mu_50%`, col = factor(incubation))) +
+  geom_linerange(
+    aes(
+      x = sim, ymin = `mu_25%`, ymax = `mu_75%`,
+      col = factor(incubation)
+    )
+  ) +
   geom_point(aes(sim, true_mean), shape = 4) +
   facet_grid(
     pinvalid ~ offset, scales = "free", labeller = label_both
   ) +
+  scale_color_discrete(name = "Mean Incubation") +
   ylab("Mean infectious period") +
   theme_minimal() +
   theme(
@@ -306,12 +312,16 @@ p <- ggplot(process_fits) +
 cowplot::save_plot(glue::glue("figures/{prefix}_inf_mu.png"), p)
 
 psd <- ggplot(process_fits) +
-  geom_point(aes(sim, `sd_50%`)) +
-  geom_linerange(aes(x = sim, ymin = `sd_25%`, ymax = `sd_75%`)) +
+  geom_point(aes(sim, `sd_50%`, col = factor(incubation))) +
+  geom_linerange(
+    aes(x = sim, ymin = `sd_25%`, ymax = `sd_75%`,
+        col = factor(incubation))
+  ) +
   geom_point(aes(sim, true_sd), shape = 4) +
   facet_grid(
     pinvalid ~ offset, scales = "free", labeller = label_both
   ) +
+  scale_color_discrete(name = "Mean Incubation") +
   ylab("SD infectious period") +
   theme_minimal() +
   theme(
@@ -322,13 +332,17 @@ psd <- ggplot(process_fits) +
 cowplot::save_plot(glue::glue("figures/{prefix}_inf_sd.png"), psd)
 
 ppinv <- ggplot(process_fits) +
-  geom_point(aes(sim, `pinvalid_50%`)) +
-  geom_linerange(aes(x = sim, ymin = `pinvalid_25%`, ymax = `pinvalid_75%`)) +
+  geom_point(aes(sim, `pinvalid_50%`, col = factor(incubation))) +
+  geom_linerange(
+    aes(x = sim, ymin = `pinvalid_25%`, ymax = `pinvalid_75%`,
+        col = factor(incubation))
+  ) +
   geom_point(aes(sim, pinvalid), shape = 4) +
   facet_grid(
     pinvalid ~ offset, scales = "free", labeller = label_both
   ) +
   ylab("pinvalid") +
+  scale_color_discrete(name = "Mean Incubation") +
   theme_minimal() +
   theme(
     legend.position = "top", axis.text.x = element_blank(),
@@ -453,3 +467,9 @@ psi <- ggplot(process_fits) +
   )
 cowplot::save_plot(glue::glue("figures/{prefix}_inf_si.png"), psi)
 
+
+
+x <- select(process_fits, `mu_2.5%`, `mu_50%`, `mu_97.5%`, true_mean, true_sd, incubation, isolation, pinvalid, offset)
+
+ggplot(x) +
+  ggpmisc::geom_table()
