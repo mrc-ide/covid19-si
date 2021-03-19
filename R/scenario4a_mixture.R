@@ -1,4 +1,4 @@
-prefix <- "4a_mix_with_normalisation_sim"
+prefix <- "4a_mix_with_stress_test_sim"
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
@@ -6,6 +6,7 @@ param_grid <- expand.grid(
   params_iso = "iso_par1",
   params_offset = c("offset1", "offset2"),
   params_pinvalid = c("pinvalid1", "pinvalid2"),
+  params_beta = "beta1",
   stringsAsFactors = FALSE
 )
 
@@ -47,6 +48,12 @@ params_pinv <- map(
   param_grid$params_pinv, function(params_pinv) params_check[[params_pinv]]
 )
 
+params_beta <- map(
+  param_grid$params_beta, function(params_beta) params_check[[params_beta]]
+)
+
+
+
 ## unconditional
 uncdtnl_data <- pmap(
   list(
@@ -63,26 +70,10 @@ uncdtnl_data <- pmap(
   }
 )
 
-## with -ve nu
-unconditional_data <- pmap(
-  list(
-   dat = uncdtnl_data,
-   params_offset = params_offsets_all
-  ),
-  function(dat, params_offset) {
-    toss <- runif(nrow(dat), 0, 1)
-    for(i in 1:(nrow(dat))){
-      if(toss[i] < 0.02) {
-        dat$nu[i] <- runif(1, params_offset, 0)
-      }
-    }
-    dat[,]
-  }
-)
 
 ## conditional
 simulated_data <- map(
-  unconditional_data,
+  uncdtnl_data,
   function(sim_data) {
     sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]
     ## Make sure we have at least 200 rows.
@@ -139,6 +130,36 @@ mixed <- pmap(
   }
 )
 
+## with -ve nu
+mixed <- pmap(
+  list(
+   dat = mixed,
+   params_offset = params_offsets_all
+  ),
+  function(dat, params_offset) {
+    toss <- runif(nrow(dat), 0, 1)
+    for(i in 1:(nrow(dat))){
+      if(toss[i] < 0.02) {
+        dat$nu[i] <- runif(1, params_offset, 0)
+      }
+    }
+    dat[,]
+  }
+)
+
+## Sample with recall
+mixed <- pmap(
+  list(
+   dat = mixed,
+   param_beta = params_beta
+  ),
+  function(dat, param_beta) {
+    precall <- exp(-param_beta * abs(dat$si - dat$nu))
+    idx <- sample(1:nrow(dat), nrow(dat), precall, replace = TRUE)
+    dat[idx,]
+  }
+)
+
 sampled <- pmap(
   list(sim_data = mixed,
        params_offset = params_offsets_all
@@ -159,7 +180,7 @@ walk2(mixed, outfiles, function(x, y) saveRDS(x, y))
 
 figs <- pmap(
   list(
-    x = unconditional_data, y = simulated_data, z = sampled,
+    x = uncdtnl_data, y = simulated_data, z = sampled,
     index = index
   ),
   function(x, y, z, index){
@@ -212,9 +233,9 @@ fits <- pmap(
         si_vec = si_vec,
         first_valid_nu = 1
       ),
-      chains = 2, iter = 1000,
+      chains = 2, iter = 2000,
       seed = 42,
-      verbose = TRUE
+      verbose = FALSE
       ## control = list(adapt_delta = 0.99)
     )
     outfile <- glue::glue("stanfits/{prefix}_{index}.rds")
