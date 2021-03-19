@@ -1,6 +1,6 @@
 library(context)
 root <- "20210319"
-packages <- c("rstan", "dplyr","purrr", "ggplot2", "epitrix")
+packages <- c("rstan", "dplyr","purrr", "ggplot2", "epitrix", "glue")
 source_files <- c("global.R", "utils.R")
 ctx <-context_save(
   root, packages = packages, sources = source_files
@@ -163,7 +163,7 @@ sampled <- pmap(
   }
 )
 
-outfiles <- glue::glue("data/{prefix}_{seq_along(sampled)}data.rds")
+outfiles <- glue::glue("data/{prefix}_{seq_along(sampled)}_data.rds")
 walk2(sampled, outfiles, function(x, y) saveRDS(x, y))
 
 obj <- didehpc::queue_didehpc(ctx)
@@ -176,7 +176,7 @@ grp <- obj$lapply(
                sim_data <- sampled[[i]]
                si_vec <- seq(params_offset + 0.5, max_valid_si, 1)
                width <- 0.1
-               sim_data <- arrange(sim_data, nu)
+               sim_data <- dplyr::arrange(sim_data, nu)
                fit_4a <- stan(
                  file = "scenario4a_mixture.stan",
                  data = list(
