@@ -10,7 +10,7 @@ param_grid <- expand.grid(
 )
 
 
-index <- 1:nrow(param_grid)
+index <- 1
 param_grid <- param_grid[index, ]
 
 params_inf_all <- pmap(
@@ -246,23 +246,29 @@ process_fits <- pmap_dfr(
 )
 
 process_fits$true_mean <- map_dbl(
-  params[param_grid$params_inf], function(x) x$mean_inf
+  params_check[param_grid$params_inf], function(x) x$mean_inf
 )
 
 process_fits$true_sd <- map_dbl(
-  params[param_grid$params_inf], function(x) x$sd_inf
+  params_check[param_grid$params_inf], function(x) x$sd_inf
 )
 
 process_fits$incubation <- map_dbl(
-  params[param_grid$params_inc], function(x) x$mean_inc
+  params_check[param_grid$params_inc],
+  function(x) {
+    epitrix::gamma_shapescale2mucv(x$shape, x$scale)[["mu"]]
+  }
 )
 
 process_fits$isolation <- map_dbl(
-  params[param_grid$params_iso], function(x) x$mean_iso
+  params_check[param_grid$params_iso],
+  function(x) {
+    epitrix::gamma_shapescale2mucv(x$shape, x$scale)[["mu"]]
+  }
 )
 
-process_fits$pinvalid <- unlist(params[param_grid$params_pinv])
-process_fits$offset <- unlist(params[param_grid$params_offset])
+process_fits$pinvalid <- unlist(params_check[param_grid$params_pinv])
+process_fits$offset <- unlist(params_check[param_grid$params_offset])
 
 est_pinvalid <- map_dfr(
   fits,
@@ -446,17 +452,3 @@ psi <- ggplot(process_fits) +
     axis.title.y = element_blank(), legend.title = element_blank()
   )
 cowplot::save_plot(glue::glue("figures/{prefix}_inf_si.png"), psi)
-
-
-
-### Plot uncondtional, conditional simulated data
-#### unconditional ->
-
-pmap(
-  list(
-    x = conditional, y = simulated_data, z = mixed
-  ),
-  function(x, y, z) {
-
-  }
-)
