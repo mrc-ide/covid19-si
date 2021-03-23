@@ -289,71 +289,8 @@ process_fits <- left_join(process_fits, est_pinvalid, by = "sim")
 
 process_fits <- mutate_if(process_fits, is.numeric, ~ round(., 2))
 
-saveRDS(process_fits, glue::glue('{prefix}processed_fits.rds'))
+saveRDS(process_fits, glue::glue('stanfits/{prefix}processed_fits.rds'))
 
-
-p <- ggplot(process_fits) +
-  geom_point(aes(sim, `mu_50%`, col = factor(incubation))) +
-  geom_linerange(
-    aes(
-      x = sim, ymin = `mu_25%`, ymax = `mu_75%`,
-      col = factor(incubation)
-    )
-  ) +
-  geom_point(aes(sim, true_mean), shape = 4) +
-  facet_grid(
-    pinvalid ~ offset, scales = "free", labeller = label_both
-  ) +
-  scale_color_discrete(name = "Mean Incubation") +
-  ylab("Mean infectious period") +
-  theme_minimal() +
-  theme(
-    legend.position = "top", axis.text.x = element_blank(),
-    axis.title.y = element_blank()
-  )
-
-cowplot::save_plot(glue::glue("figures/{prefix}_inf_mu.png"), p)
-
-psd <- ggplot(process_fits) +
-  geom_point(aes(sim, `sd_50%`, col = factor(incubation))) +
-  geom_linerange(
-    aes(x = sim, ymin = `sd_25%`, ymax = `sd_75%`,
-        col = factor(incubation))
-  ) +
-  geom_point(aes(sim, true_sd), shape = 4) +
-  facet_grid(
-    pinvalid ~ offset, scales = "free", labeller = label_both
-  ) +
-  scale_color_discrete(name = "Mean Incubation") +
-  ylab("SD infectious period") +
-  theme_minimal() +
-  theme(
-    legend.position = "top", axis.text.x = element_blank(),
-    axis.title.y = element_blank()
-  )
-
-cowplot::save_plot(glue::glue("figures/{prefix}_inf_sd.png"), psd)
-
-ppinv <- ggplot(process_fits) +
-  geom_point(aes(sim, `pinvalid_50%`, col = factor(incubation))) +
-  geom_linerange(
-    aes(x = sim, ymin = `pinvalid_25%`, ymax = `pinvalid_75%`,
-        col = factor(incubation))
-  ) +
-  geom_point(aes(sim, pinvalid), shape = 4) +
-  facet_grid(
-    pinvalid ~ offset, scales = "free", labeller = label_both
-  ) +
-  ylab("pinvalid") +
-  scale_color_discrete(name = "Mean Incubation") +
-  theme_minimal() +
-  theme(
-    legend.position = "top", axis.text.x = element_blank(),
-    axis.title.y = element_blank()
-  ) +
-  ylim(0, 0.5)
-
-cowplot::save_plot(glue::glue("figures/{prefix}_inf_pinv.png"), ppinv)
 ######### Posterior SI Distribution
 params_inf_post <- map(
   fits, function(fit) {
@@ -415,64 +352,5 @@ sampled <- map(
   }
 )
 
-outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}data.rds")
-training <- map(outfiles, readRDS)
-
-
-compare_si <- map2_dfr(
-  training, sampled,
-  function(x, y) {
-    x$si <- round(x$si)
-    y$nu <- round(x$nu)
-    trng_si <- quantile_as_df(x$si)
-    trng_si$param <- "training"
-    post_si <- quantile_as_df(y$si)
-    post_si$param <- "posterior"
-    rbind(trng_si, post_si) %>%
-      pivot_wider(
-      names_from = c("param", "var"), values_from = "val"
-    )
-  }, .id = "sim"
-)
-
-process_fits <- left_join(process_fits, compare_si, by = "sim")
-process_fits <- arrange(process_fits, `training_50%`)
-process_fits$sim <- factor(process_fits$sim, process_fits$sim)
-
-psi <- ggplot(process_fits) +
-  geom_point(aes(sim, `training_50%`, col = "red")) +
-  geom_linerange(
-    aes(
-      x = sim, ymin = `training_25%`, ymax = `training_75%`,
-      col = "red")
-  ) +
-  geom_point(
-    aes(sim, `posterior_50%`, col = "blue"),
-    position = position_nudge(x = 0.5)
-  ) +
-  geom_linerange(
-    aes(
-      x = sim, ymin = `posterior_25%`, ymax = `posterior_75%`,
-      col = "blue"), position = position_nudge(x = 0.5)
-  ) +
-  scale_color_identity(
-    breaks = c("red", "blue"), labels = c("Training", "Posterior"),
-    guide = "legend"
-  ) +
-  facet_grid(
-    pinvalid ~ offset, scales = "free", labeller = label_both
-  ) +
-  ylab("Serial Interval") +
-  theme_minimal() +
-  theme(
-    legend.position = "top", axis.text.x = element_blank(),
-    axis.title.y = element_blank(), legend.title = element_blank()
-  )
-cowplot::save_plot(glue::glue("figures/{prefix}_inf_si.png"), psi)
-
-
-
-x <- select(process_fits, `mu_2.5%`, `mu_50%`, `mu_97.5%`, true_mean, true_sd, incubation, isolation, pinvalid, offset)
-
-ggplot(x) +
-  ggpmisc::geom_table()
+outfiles <- glue::glue("stanfits/{prefix}_{seq_along(mixed)}posterior.rds")
+walk2(mixed, outfiles, saveRDS)
