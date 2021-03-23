@@ -1,4 +1,6 @@
-prefix <- "4a_mix_with_stress_test_sim"
+prefix <- "4a_mix_with_stress_test_misspec_long_sim"
+
+misspec_offset <- -7
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
@@ -11,7 +13,7 @@ param_grid <- expand.grid(
 )
 
 
-index <- 1
+index <- 1:nrow(param_grid)
 param_grid <- param_grid[index, ]
 
 params_inf_all <- pmap(
@@ -203,7 +205,7 @@ figs <- pmap(
 fits <- pmap(
   list(
     params_inc = params_inc_all,
-    params_offset = params_offsets_all,
+    params_offset = misspec_offset,
     params_iso = params_iso_all,
     sim_data = sampled,
     index = index
