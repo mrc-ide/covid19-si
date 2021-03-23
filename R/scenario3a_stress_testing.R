@@ -289,6 +289,9 @@ process_fits <- left_join(process_fits, est_pinvalid, by = "sim")
 
 process_fits <- mutate_if(process_fits, is.numeric, ~ round(., 2))
 
+saveRDS(process_fits, glue::glue('{prefix}processed_fits.rds'))
+
+
 p <- ggplot(process_fits) +
   geom_point(aes(sim, `mu_50%`, col = factor(incubation))) +
   geom_linerange(
