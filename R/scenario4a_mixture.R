@@ -258,7 +258,7 @@ fits <- pmap(
 process_fits <- pmap_dfr(
   list(
     fit = fits,
-    offset = params_offsets_all),
+    offset = misspec_offset),
   function(fit, offset) {
     samples <- rstan::extract(fit)
     out <- mu_sd_posterior_distr(samples, max_shed, offset)
@@ -377,7 +377,7 @@ posterior_si <- pmap(
     params_inf = params_inf_post,
     params_inc = params_inc_all,
     params_iso = params_iso_all,
-    params_offset = params_offsets_all
+    params_offset = misspec_offset
   ),
   function(params_inf, params_inc, params_iso, params_offset) {
     sim_data <- better_simulate_si(
