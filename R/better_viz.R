@@ -1,5 +1,5 @@
-prefix <- "3a_mix_stress_testing_sim"
-process_fits <- readRDS('stanfits/{prefix}_processed_fits.rds')
+prefix <- "4a_mix_with_stress_test_sim"
+process_fits <- readRDS(glue::glue('stanfits/{prefix}_processed_fits.rds'))
 
 ######################### Plot 1. Just the parameters that are input
 x <- process_fits[, c('sim', 'incubation', 'isolation', 'offset')]
@@ -51,12 +51,12 @@ pest <- ggplot(y) +
 
 p <- ptable + pest + plot_layout(ncol = 2, widths = c(0.5, 1))
 
-cowplot::save_plot(glue::glue("figures/{prefix}all_vars.pdf"), p)
+cowplot::save_plot(glue::glue("figures/{prefix}all_vars.png"), p)
 
-outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}data.rds")
+outfiles <- glue::glue("data/{prefix}_{levels(x$sim)}data.rds")
 training <- map(outfiles, readRDS)
 
-outfiles <- glue::glue("stanfits/{prefix}_{seq_along(mixed)}posterior.rds")
+outfiles <- glue::glue("stanfits/{prefix}_{levels(x$sim)}_posterior.rds")
 posterior <- map(outfiles, readRDS)
 
 plots <- map2(
@@ -89,4 +89,4 @@ p <- wrap_plots(
 ) &
   theme(legend.position = 'top')
 ## cowplot defaults don't look good in this case.
-ggsave(glue::glue("figures/{prefix}all_si.pdf"), p)
+ggsave(glue::glue("figures/{prefix}all_si.png"), p)

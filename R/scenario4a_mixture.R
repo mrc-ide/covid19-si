@@ -184,7 +184,7 @@ sampled <- pmap(
   }
 )
 
-outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}data.rds")
+outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}_data.rds")
 walk2(sampled, outfiles, function(x, y) saveRDS(x, y))
 
 figs <- pmap(
