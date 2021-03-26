@@ -9,7 +9,7 @@ ctx <-context_save(
   root, packages = packages, sources = source_files
 )
 context::context_log_start()
-
+misspec_offset <- -7
 obj <- didehpc::queue_didehpc(ctx)
 grp <- obj$lapply(
              index, function(i) {
@@ -27,7 +27,7 @@ grp <- obj$lapply(
                    si = sim_data$si,
                    nu = sim_data$nu,
                    max_shed = max_shed,
-                   offset1 = params_offset,
+                   offset1 = misspec_offset,
                    alpha2 = params_inc[["shape"]],
                    beta2 = 1 / params_inc[["scale"]],
                    alpha_invalid = alpha_invalid,
@@ -50,6 +50,3 @@ grp <- obj$lapply(
                fit_4a
              }
            )
-
-tb <- obj$task_bundle_get('gelatinous_grayreefshark')
-t <- obj$task_get('809f5b043acc1cbecd06f343800a9025')
