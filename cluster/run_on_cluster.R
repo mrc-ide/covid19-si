@@ -2,11 +2,12 @@ library(context)
 rstan_options(auto_write = FALSE)
 # config <- didehpc::didehpc_config(cluster = 'fi--didemrchnb')
 options(didehpc.cluster = 'fi--didemrchnb')
-root <- "context"
+root <- "4a_misspec_long"
 packages <- c("rstan", "dplyr","purrr", "ggplot2", "epitrix", "glue")
-source_files <- c("global2.R", "utils.R", "simulate2.R")
+source_files <- c("global2.R", "utils.R", "simulate_4a_stess_testing.R")
 ctx <-context_save(
-  root, packages = packages, sources = source_files
+  root, packages = packages, sources = source_files,
+  package_sources = provisionr::package_sources(local = "BH_1.75.0-0.zip")
 )
 context::context_log_start()
 misspec_offset <- -7
