@@ -1,25 +1,41 @@
-prefix <- "4a_mix_with_stress_test_sim"
+prefix <- "4a_mix"
 process_fits <- readRDS(glue::glue('stanfits/{prefix}_processed_fits.rds'))
 
 ######################### Plot 1. Just the parameters that are input
 x <- process_fits[, c('sim', 'incubation', 'isolation', 'offset')]
 x <- tidyr::gather(x, var, val, -sim)
-x$sim <- factor(x$sim, levels = 1:16, ordered = TRUE)
+nsims <- length(unique(x$sim))
+x$sim <- factor(x$sim, levels = seq_len(nsims), ordered = TRUE)
 
-ptable <- ggplot(x) +
-  geom_text(aes(1, sim, label = val)) +
-  facet_wrap(~var, ncol = 3) +
-  theme_minimal() +
-  theme(
-    axis.title = element_blank(), axis.ticks.x = element_blank(),
-    axis.text.x = element_blank()
-  ) +
-  theme(
-    panel.spacing = unit(.05, "lines"),
-    panel.border = element_rect(
-      color = "black", fill = NA, size = 1
-    ),
-    strip.background = element_rect(color = "black", size = 1))
+## For a grid with large number of rows, we want to split them
+## over multiple pages. nrow_page is the number of rows in a single
+## page.
+nrow_page <- 18
+## This will always be 3, for the three variables we have.
+ncol_page <- 3
+## Make sure nrow_page is a divisor of npages
+npages <- nsims / nrow_page
+
+ptables <- map(
+  1:npages, function(page) {
+   ggplot(x) +
+     geom_text(aes(1, 0.5, label = val), size = 3) +
+     ggforce::facet_grid_paginate(
+       sim~var, nrow = nrow_page, ncol = ncol_page, page = page, switch = "y"
+       ) +
+     ylim(0, 1) +
+     theme_minimal() +
+     theme(
+       axis.title = element_blank(), axis.ticks = element_blank(),
+       axis.text = element_blank(),
+       panel.spacing = unit(.1, "lines"),
+       panel.border = element_rect(
+      color = "black", fill = NA, size = 0.5
+      ),
+      strip.background = element_rect(color = "black", size = 1)
+     )
+  }
+)
 
 
 ######################### Plot 2. Estimated parameters
@@ -33,60 +49,88 @@ y <- tidyr::gather(y, var, val, -sim)
 y <- tidyr::separate(y, col = "var", into = c("var", "qntl"), sep = "_")
 y$qntl[is.na(y$qntl)] <- "true_val"
 y <- tidyr::spread(y, qntl, val)
-y$sim <- factor(y$sim, levels = 1:16, ordered = TRUE)
+y$sim <- factor(y$sim, levels = seq_len(nsims), ordered = TRUE)
 
-pest <- ggplot(y) +
-  geom_point(aes(`50%`,sim)) +
-  geom_linerange(aes(xmin = `25%`, xmax = `75%`, y = sim)) +
-  geom_point(aes(`true`, sim), shape = 4) +
-  facet_wrap(~var, ncol = 3, scales = 'free_x') +
-  scale_y_discrete(position = "right") +
-  theme_minimal() +
-  theme(axis.title = element_blank()) +
-  theme(panel.spacing = unit(.1, "lines"),
-        panel.border = element_rect(
-          color = "black", fill = NA, size = 1
-        ),
-        strip.background = element_rect(color = "black", size = 1))
+y$ylevel <- 0.5 ##as.integer(y$sim) + 0.5
 
-p <- ptable + pest + plot_layout(ncol = 2, widths = c(0.5, 1))
+pest <- map(
+  seq_len(npages),
+  function(page) {
+    ggplot(y) +
+      geom_point(aes(`50%`, ylevel)) +
+      geom_linerange(aes(xmin = `25%`, xmax = `75%`, y = ylevel)) +
+      geom_point(aes(`true`, ylevel), shape = 4) +
+      ggforce::facet_grid_paginate(
+        sim~var, nrow = 18, ncol = ncol_page, page = page,
+        scales = 'free_x'
+        ) +
+      ylim(0, 1) +
+      theme_minimal() +
+      theme(
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        panel.spacing = unit(.1, "lines"),
+        panel.border = element_rect(color = "black", fill = NA, size = 1),
+        strip.background = element_rect(color = "black", size = 1)
+      )
+  }
+)
 
-cowplot::save_plot(glue::glue("figures/{prefix}all_vars.png"), p)
+plots <- map2(
+  ptables, pest, function(p1, p2) {
+   p <- wrap_plots(p1, p2, ncol = 2, widths = c(0.5, 1))
+   p
+  }
+)
 
-outfiles <- glue::glue("data/{prefix}_{levels(x$sim)}data.rds")
+iwalk(plots, function(p, i) {
+  ggsave(glue::glue("figures/{prefix}_all_vars_{i}.png"), p)
+})
+
+
+
+outfiles <- glue::glue("data/{prefix}_{levels(x$sim)}_data.rds")
 training <- map(outfiles, readRDS)
 
 outfiles <- glue::glue("stanfits/{prefix}_{levels(x$sim)}_posterior.rds")
 posterior <- map(outfiles, readRDS)
 
-plots <- map2(
-  training, posterior, function(trng, post) {
-    ggplot() +
+training <- dplyr::bind_rows(training, .id = "sim")
+posterior <- dplyr::bind_rows(posterior, .id = "sim")
+training$category <- "Training"
+posterior$category <- "Posterior"
+x <- rbind(training, posterior)
+
+x$sim <- factor(x$sim, levels = seq_len(nsims), ordered = TRUE)
+
+nrow_page <- 9
+ncol_page <- 4
+npages <- nsims / (nrow_page * ncol_page)
+
+walk(
+  seq_len(npages), function(page) {
+    p <- ggplot(x) +
       geom_density(
-        aes(trng$si, fill = 'red'),
+        aes(si, fill = category),
         col = NA, alpha = 0.3
       ) +
       geom_density(
-        aes(post$si, fill = 'blue'),
+        aes(si, fill = category),
         col = NA, alpha = 0.3
       ) +
-      scale_fill_identity(
-        breaks = c('red', 'blue'), labels = c('Training', 'Posterior'),
-        guide = 'legend'
-      ) +
+      ggforce::facet_wrap_paginate(~sim, nrow = nrow_page, ncol = ncol_page, page = page, scales = "free_y") +
       theme_minimal() +
       theme(
         legend.position = 'top', legend.title = element_blank(),
         axis.title.x = element_blank()
       )
+    ggsave(glue::glue("figures/{prefix}_all_si_{page}.png"), p)
   }
 )
 
 
 
-p <- wrap_plots(
-  plots, ncol = 4, nrow = 4, guides = 'collect', byrow = TRUE
-) &
-  theme(legend.position = 'top')
-## cowplot defaults don't look good in this case.
-ggsave(glue::glue("figures/{prefix}all_si.png"), p)
+
+
+
+

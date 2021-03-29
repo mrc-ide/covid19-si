@@ -4,8 +4,8 @@ param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
   params_inc = c("inc_par1", "inc_par2"),
   params_iso = c("iso_par1", "iso_par2"),
-  params_offset = c("offset1", "offset2"),
-  params_pinvalid = c("pinvalid1", "pinvalid2"),
+  params_offset = c("offset1", "offset2", "offset3"),
+  params_pinvalid = c("pinvalid1", "pinvalid2", "pinvalid3"),
   params_beta = "recall1",
   stringsAsFactors = FALSE
 )
@@ -256,12 +256,6 @@ fits <- pmap(
 ## infiles <- glue::glue("stanfits/{prefix}_{index}.rds")
 ## fits <- map(infiles, readRDS)
 
-## debugging
-## checked that constant for full model with recall = 0 is the same as
-## constant for s4.
-## normalising_constant(y_vec, 5, 21, -2, 0, 9.52381, 15.47619, 9, 1 / 0.6666, 0.1, 21, -2)
-## s4_normalising_constant(5, 21, -2, 9.52381, 15.47619, 9, 1 / 0.6666, 21, 0.1)
-
 process_fits <- pmap_dfr(
   list(
     fit = fits,
@@ -284,16 +278,18 @@ process_fits$true_sd <- map_dbl(
 )
 
 process_fits$incubation <- map_dbl(
-  params[param_grid$params_inc],
+  param_grid$params_inc,
   function(x) {
-    epitrix::gamma_shapescale2mucv(x$shape, x$scale)[["mu"]]
+    out <- params[[x]]
+    out[[1]]
   }
 )
 
 process_fits$isolation <- map_dbl(
-  params[param_grid$params_iso],
+  param_grid$params_iso,
   function(x) {
-    epitrix::gamma_shapescale2mucv(x$shape, x$scale)[["mu"]]
+    out <- params[[x]]
+    out[[1]]
   }
 )
 
@@ -319,54 +315,11 @@ process_fits <- left_join(process_fits, est_pinvalid, by = "sim")
 
 process_fits <- mutate_if(process_fits, is.numeric, ~ round(., 2))
 
-p <- ggplot(process_fits) +
-  geom_point(aes(sim, `mu_50%`)) +
-  geom_linerange(aes(x = sim, ymin = `mu_25%`, ymax = `mu_75%`)) +
-  geom_point(aes(sim, true_mean), shape = 4) +
-  facet_grid(
-    pinvalid ~ offset, scales = "free", labeller = label_both
-  ) +
-  ylab("Mean infectious period") +
-  theme_minimal() +
-  theme(
-    legend.position = "top", axis.text.x = element_blank(),
-    axis.title.y = element_blank()
-  )
+saveRDS(
+  process_fits, glue::glue("stanfits/{prefix}_processed_fits.rds")
+)
 
-cowplot::save_plot(glue::glue("figures/{prefix}_inf_mu.png"), p)
 
-psd <- ggplot(process_fits) +
-  geom_point(aes(sim, `sd_50%`)) +
-  geom_linerange(aes(x = sim, ymin = `sd_25%`, ymax = `sd_75%`)) +
-  geom_point(aes(sim, true_sd), shape = 4) +
-  facet_grid(
-    pinvalid ~ offset, scales = "free", labeller = label_both
-  ) +
-  ylab("SD infectious period") +
-  theme_minimal() +
-  theme(
-    legend.position = "top", axis.text.x = element_blank(),
-    axis.title.y = element_blank()
-  )
-
-cowplot::save_plot(glue::glue("figures/{prefix}_inf_sd.png"), psd)
-
-ppinv <- ggplot(process_fits) +
-  geom_point(aes(sim, `pinvalid_50%`)) +
-  geom_linerange(aes(x = sim, ymin = `pinvalid_25%`, ymax = `pinvalid_75%`)) +
-  geom_point(aes(sim, pinvalid), shape = 4) +
-  facet_grid(
-    pinvalid ~ offset, scales = "free", labeller = label_both
-  ) +
-  ylab("pinvalid") +
-  theme_minimal() +
-  theme(
-    legend.position = "top", axis.text.x = element_blank(),
-    axis.title.y = element_blank()
-  ) +
-  ylim(0, 0.5)
-
-cowplot::save_plot(glue::glue("figures/{prefix}_inf_pinv.png"), ppinv)
 ######### Posterior SI Distribution
 params_inf_post <- map(
   fits, function(fit) {
@@ -428,57 +381,5 @@ sampled <- map(
   }
 )
 
-outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}data.rds")
-training <- map(outfiles, readRDS)
-
-
-compare_si <- map2_dfr(
-  training, sampled,
-  function(x, y) {
-    x$si <- round(x$si)
-    y$nu <- round(x$nu)
-    trng_si <- quantile_as_df(x$si)
-    trng_si$param <- "training"
-    post_si <- quantile_as_df(y$si)
-    post_si$param <- "posterior"
-    rbind(trng_si, post_si) %>%
-      pivot_wider(
-      names_from = c("param", "var"), values_from = "val"
-    )
-  }, .id = "sim"
-)
-
-process_fits <- left_join(process_fits, compare_si, by = "sim")
-process_fits <- arrange(process_fits, `training_50%`)
-process_fits$sim <- factor(process_fits$sim, process_fits$sim)
-
-psi <- ggplot(process_fits) +
-  geom_point(aes(sim, `training_50%`, col = "red")) +
-  geom_linerange(
-    aes(
-      x = sim, ymin = `training_25%`, ymax = `training_75%`,
-      col = "red")
-  ) +
-  geom_point(
-    aes(sim, `posterior_50%`, col = "blue"),
-    position = position_nudge(x = 0.5)
-  ) +
-  geom_linerange(
-    aes(
-      x = sim, ymin = `posterior_25%`, ymax = `posterior_75%`,
-      col = "blue"), position = position_nudge(x = 0.5)
-  ) +
-  scale_color_identity(
-    breaks = c("red", "blue"), labels = c("Training", "Posterior"),
-    guide = "legend"
-  ) +
-  facet_grid(
-    pinvalid ~ offset, scales = "free", labeller = label_both
-  ) +
-  ylab("Serial Interval") +
-  theme_minimal() +
-  theme(
-    legend.position = "top", axis.text.x = element_blank(),
-    axis.title.y = element_blank(), legend.title = element_blank()
-  )
-cowplot::save_plot(glue::glue("figures/{prefix}_inf_si.png"), psi)
+outfiles <- glue::glue("stanfits/{prefix}_{seq_along(sampled)}_posterior.rds")
+walk2(sampled, outfiles, function(x, y) saveRDS(x, y))
