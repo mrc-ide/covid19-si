@@ -1,4 +1,4 @@
-prefix <- "4a_mix_with_stress_test_sim"
+prefix <- "4a_mix_misspec_sim_long"
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
@@ -175,7 +175,7 @@ sampled <- pmap(
   }
 )
 
-outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}_data.rds")
+outfiles <- glue::glue("data/{prefix}_{seq_along(sampled)}_data.rds")
 walk2(sampled, outfiles, function(x, y) saveRDS(x, y))
 
 figs <- pmap(

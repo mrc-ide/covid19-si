@@ -1,4 +1,4 @@
-prefix <- "4a_mix"
+prefix <- "4a_mix_misspec_sim_long"
 process_fits <- readRDS(glue::glue('stanfits/{prefix}_processed_fits.rds'))
 
 ######################### Plot 1. Just the parameters that are input
@@ -10,7 +10,7 @@ x$sim <- factor(x$sim, levels = seq_len(nsims), ordered = TRUE)
 ## For a grid with large number of rows, we want to split them
 ## over multiple pages. nrow_page is the number of rows in a single
 ## page.
-nrow_page <- 18
+nrow_page <- 16
 ## This will always be 3, for the three variables we have.
 ncol_page <- 3
 ## Make sure nrow_page is a divisor of npages
@@ -20,8 +20,8 @@ ptables <- map(
   1:npages, function(page) {
    ggplot(x) +
      geom_text(aes(1, 0.5, label = val), size = 3) +
-     ggforce::facet_grid_paginate(
-       sim~var, nrow = nrow_page, ncol = ncol_page, page = page, switch = "y"
+     facet_grid(
+       sim~var, switch = "y"
        ) +
      ylim(0, 1) +
      theme_minimal() +
@@ -60,8 +60,8 @@ pest <- map(
       geom_point(aes(`50%`, ylevel)) +
       geom_linerange(aes(xmin = `25%`, xmax = `75%`, y = ylevel)) +
       geom_point(aes(`true`, ylevel), shape = 4) +
-      ggforce::facet_grid_paginate(
-        sim~var, nrow = 18, ncol = ncol_page, page = page,
+      facet_grid(
+        sim~var,
         scales = 'free_x'
         ) +
       ylim(0, 1) +
@@ -78,7 +78,8 @@ pest <- map(
 
 plots <- map2(
   ptables, pest, function(p1, p2) {
-   p <- wrap_plots(p1, p2, ncol = 2, widths = c(0.5, 1))
+    p <- wrap_plots(p1, p2, ncol = 2, widths = c(0.5, 1)) &
+       theme(strip.placement = NULL)
    p
   }
 )
@@ -103,7 +104,7 @@ x <- rbind(training, posterior)
 
 x$sim <- factor(x$sim, levels = seq_len(nsims), ordered = TRUE)
 
-nrow_page <- 9
+nrow_page <- 4
 ncol_page <- 4
 npages <- nsims / (nrow_page * ncol_page)
 
@@ -118,7 +119,7 @@ walk(
         aes(si, fill = category),
         col = NA, alpha = 0.3
       ) +
-      ggforce::facet_wrap_paginate(~sim, nrow = nrow_page, ncol = ncol_page, page = page, scales = "free_y") +
+      ggforce::facet_wrap_paginate(~sim, nrow = NULL, ncol = ncol_page, page = page, scales = "free_y") +
       theme_minimal() +
       theme(
         legend.position = 'top', legend.title = element_blank(),
