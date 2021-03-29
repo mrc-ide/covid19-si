@@ -39,7 +39,6 @@ model{
   // Priors suggested by Neil
   a ~ normal(4.28, 0.74);
   b ~ normal(1.44, 0.12);
-  c ~ 
   pinvalid ~ beta(4, 10);
   // Since this model doesn't need nu, we set nu to be a value larger
   // than max_shed so that the division by F(nu) never takes place.
@@ -50,13 +49,9 @@ model{
   for (n in 1:N) {
     invalid = invalid_lpdf(si[n] | min_invalid_si, max_invalid_si,
                            alpha_invalid, beta_invalid);
-    if (si[n] > offset1) {
-      valid = scenario3a_lpdf(si[n] | max_shed, a, b, c, tmax, 
-                              alpha2, beta2, width);
-      valid = valid - log(denominator_valid);      
-      target += log_mix(pinvalid, invalid, valid);    
-    } else {
-      target += invalid + log(pinvalid);
-    }
+    valid = scenario3a_lpdf(si[n] | max_shed, a, b, c, tmax, 
+                            alpha2, beta2, width);
+    valid = valid - log(denominator_valid);      
+    target += log_mix(pinvalid, invalid, valid);    
   }
 }

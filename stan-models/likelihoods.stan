@@ -110,18 +110,6 @@ functions{
         }
       }
     }
-    // Transposing because row_vector is special in Stan in that
-    // I can take the row and divide it by F(nu) and assign it back.
-    // Cannot do the same to a column.
-    pdf_mat_t = pdf_mat';
-    for (row in first_valid_nu:num_nu) {
-      if(nu_vec[row] < max_shed) {
-        nu_shifted = nu_vec[row] - offset1;
-        // pdf_mat is on the natural scale, not log scale
-        pdf_mat_t[row] = pdf_mat_t[row] / beta_cdf(nu_shifted / max_shed_shifted, alpha1, beta1);
-      }
-    }
-    pdf_mat = pdf_mat_t';
     return(pdf_mat);
   }
   
