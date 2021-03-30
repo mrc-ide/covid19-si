@@ -1,4 +1,4 @@
-prefix <- "4a_mix_misspec_sim_long"
+prefix <- "3a_mix_stress_testing_sim"
 process_fits <- readRDS(glue::glue('stanfits/{prefix}_processed_fits.rds'))
 
 ######################### Plot 1. Just the parameters that are input
@@ -90,7 +90,8 @@ iwalk(plots, function(p, i) {
 
 
 
-outfiles <- glue::glue("data/{prefix}_{levels(x$sim)}_data.rds")
+##outfiles <- glue::glue("data/{prefix}_{levels(x$sim)}data.rds")
+outfiles <- glue::glue("data/{prefix}_{seq_along(sampled)}_data.rds")
 training <- map(outfiles, readRDS)
 
 outfiles <- glue::glue("stanfits/{prefix}_{levels(x$sim)}_posterior.rds")
