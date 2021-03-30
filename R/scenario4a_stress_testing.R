@@ -1,4 +1,4 @@
-prefix <- "4a_mix_misspec_sim_long"
+prefix <- "4a_mix_misspec_sim_short"
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
@@ -250,7 +250,8 @@ fits <- pmap(
 process_fits <- pmap_dfr(
   list(
     fit = fits,
-    offset = params_offsets_all),
+    offset = params_offsets_all
+  ),
   function(fit, offset) {
     samples <- rstan::extract(fit)
     out <- mu_sd_posterior_distr(samples, max_shed, offset)
