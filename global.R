@@ -77,7 +77,7 @@ params_check <- list(
 )
 
 ## Sanity tests for Neil's distribution implementation
-rstan::expose_stan_functions("stan-models/likelihoods.stan")
+## rstan::expose_stan_functions("stan-models/likelihoods.stan")
 ## Assume c = 1
 ## ## a = 0, b = 1, should be 0
 ## nf_lpdf(0, 1, 1, 10, 5)
