@@ -18,7 +18,7 @@ data{
   // a small amount to avoid boundary issues.
   real si_vec[M];  
   int first_valid_nu;
-  real tmax;
+  //real tmax;
 }
 parameters{
   // simplex[2] theta;
@@ -26,8 +26,7 @@ parameters{
   real <lower = 0> a;
   real <lower = 0> b;
   real <lower = 0, upper = 1> c;
-  
-    
+  real <lower = -20, upper = 10> tmax;
 }
 model{
   real valid;

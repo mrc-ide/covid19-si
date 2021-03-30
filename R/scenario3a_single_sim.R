@@ -43,10 +43,10 @@ fits_3a <- stan(
     width = 0.1,
     M = length(si_vec),
     si_vec = si_vec,
-    first_valid_nu = 1,
-    tmax = 0
+    first_valid_nu = 1
+    ##tmax = 0
   ),
-  chains = 2, iter = 1000,
+  chains = 2, iter = 2000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
@@ -57,7 +57,7 @@ idx <- which.max(out[["lp__"]])
 best_params <- map(out, function(x) x[[idx]])
 
 taus <- seq(-20, 40, 0.5)
-p <- map_dbl(taus, function(t) nf_pdf(t, best_params$a, best_params$b, best_params$c))
+p <- map_dbl(taus, function(t) nf_pdf(t, best_params$a, best_params$b, best_params$c, best_params$tmax))
 sampled <- sample(taus, 1e4, replace = TRUE, prob = p)
 
 
@@ -77,7 +77,7 @@ mixed <- c(
 
 p <- ggplot() +
   geom_density(aes(mixed, fill = "red"), alpha = 0.3, col = NA) +
-  geom_density(aes( data_offset$si, fill = "blue"), alpha = 0.3, col = NA) +
+  geom_histogram(aes(data_offset$si, y = ..density.., fill = "blue"), alpha = 0.3, col = NA) +
   scale_fill_identity(
     breaks = c("red", "blue"), labels = c("Posterior SI", "Data"),
     guide = "legend"
