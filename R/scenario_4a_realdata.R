@@ -3,7 +3,9 @@
 # select assumed parameters (from list in global) #
 ###################################################
 
-params_offset <- params_real$offset3
+#params_offset <- params_real$offset3
+#params_offset <- -6
+params_offset <- -11
 params_inc <- params_real$inc_par2
 max_shed <- params_real$maxshed3
 
@@ -20,7 +22,7 @@ real_data <- data%>%
 
 real_data <- real_data[order(real_data$nu),]
 
-first_valid_nu <- match(params_offset + 1, real_data$nu)
+first_valid_nu <- match(params_offset + 2, real_data$nu) #changed to 2 for params_offset = 11 bc no nu = 10
 
 
 ######################
@@ -28,7 +30,7 @@ first_valid_nu <- match(params_offset + 1, real_data$nu)
 ######################
 si_vec <- seq(params_offset + 1, max_si)
 
-fit_4a_real_beta <- stan(
+fit_4a_real_beta_11 <- stan(
   file = here::here("stan-models/scenario4a_mixture.stan"),
   data = list(
     N = length(real_data$si),
@@ -51,6 +53,7 @@ fit_4a_real_beta <- stan(
     pinvalid = 0.05
   ),
   seed = 42,
+  chains = 2,
   verbose = TRUE
 )
 
@@ -58,14 +61,14 @@ fit_4a_real_beta <- stan(
 # check mcmc diagnostics #
 ##########################
 
-diagnos <- ggmcmc(ggs(fit_4a_real_beta), here::here("4a_real_beta.pdf"))
-saveRDS(fit_4a_real_beta, file = "fit_4a_04032021.rds")
+diagnos <- ggmcmc(ggs(fit_4a_real_beta), here::here("4a_real_beta11.pdf"))
+saveRDS(fit_4a_real_beta_11, file = "fit_4a_11.rds")
 fit_4a_real_beta <- readRDS("fit_4a_03032021.rds")
 
 ################
 # extract fits #
 ################
-fitted_params_4a_real_beta <- rstan::extract(fit_4a_real_beta)
+fitted_params_4a_real_beta <- rstan::extract(fit_4a_real_beta_11)
 
   # best fits
 max_index <- which.max(fitted_params_4a_real_beta$lp__)
@@ -96,7 +99,8 @@ p_inf <- ggplot() +
     breaks = c("red")
   ) +
   xlab("delay from symptoms to transmission (days)")+
-  theme_minimal()
+  theme_minimal()+
+  theme(axis.text=element_text(size=15))
 
 p_presymp3 <- sum(shifted_inf>0) / length(shifted_inf)
 
@@ -152,7 +156,8 @@ psi <- ggplot() +
   ) +
   theme_minimal() +
   xlab("Serial Interval") +
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank())+
+  theme(axis.text=element_text(size=15))
 
 ###########
 # 95% CrI #
