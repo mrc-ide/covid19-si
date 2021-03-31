@@ -46,7 +46,7 @@ fit_4a_real_recall <- stan(
     width = width,
     M = length(si_vec),
     si_vec = si_vec,
-    first_valid_nu =  first_valid_nu,
+    first_valid_nu =  first_valid_nu
   ),
   seed = 42,
   chains = 2,
