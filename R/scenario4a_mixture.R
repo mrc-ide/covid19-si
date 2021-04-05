@@ -242,7 +242,7 @@ fits <- pmap(
         si_vec = si_vec,
         first_valid_nu = 1
       ),
-      chains = 1, iter = 100,
+      chains = 2, iter = 2000,
       seed = 42,
       verbose = FALSE
       ## control = list(adapt_delta = 0.99)
