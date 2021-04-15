@@ -5,10 +5,6 @@ nf_pdf <- function(t, a = 0.5, b = 0.5, c = 0.1, tmax = 0) {
   (numerator / (growing + failing))^c
 }
 
-
-
-# run scenario 3 on the cowling data
-
 # offset - must be a negative number!
 offset <- -20
 
@@ -25,8 +21,11 @@ data_offset <- data %>%
 # fit the model
 si_vec <- seq(-20, 40, 1)
 
+## Make sure data are arranged in order of nu
+data_offset <- arrange(data_offset, nu)
+
 fits_4a <- stan(
-  file = here::here("stan-models/scenario4a_mixture.stan"),
+  file = here::here("stan-models/scenario4a_mixture_nf.stan"),
   data = list(
     N = nrow(data_offset),
     si = data_offset$si,
@@ -34,10 +33,6 @@ fits_4a <- stan(
     max_shed = 21,
     alpha2 = params_real$inc_par2[["shape"]],
     beta2 = 1 / params_real$inc_par2[["scale"]],
-    alpha_invalid = 1,
-    beta_invalid = 1,
-    max_valid_si = 40,
-    min_valid_si = -20,
     max_invalid_si = 40,
     min_invalid_si = -20,
     width = 1,

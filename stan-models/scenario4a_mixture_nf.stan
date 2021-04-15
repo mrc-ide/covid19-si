@@ -38,7 +38,7 @@ model{
                        recall, alpha2, beta2, width, first_valid_nu);
   for (n in 1:N) {
       invalid = invalid_lpdf(si[n] | min_invalid_si, max_invalid_si);
-      valid = scenario4a_lpdf(si[n] | nu[n], max_shed, a, b, c, tmax, 
+      valid = validnf_lpdf(si[n] | nu[n], max_shed, a, b, c, tmax, 
                               recall, alpha2, beta2, width);
       denominator_valid = sum(col(pdf_mat, n));
       valid = valid - log(denominator_valid);
