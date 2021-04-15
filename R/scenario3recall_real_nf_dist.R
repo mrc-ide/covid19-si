@@ -29,6 +29,7 @@ fit <- stan(
   data = list(
     N = nrow(data_offset),
     si = data_offset$si,
+    nu = data_offset$nu,
     max_shed = 21,
     alpha2 = params_real$inc_par2[["shape"]],
     beta2 = 1 / params_real$inc_par2[["scale"]],
@@ -40,7 +41,7 @@ fit <- stan(
     first_valid_nu = 1
     ##tmax = 0
   ),
-  ##chains = 1, iter = 2000,
+  chains = 1, iter = 2000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
@@ -57,33 +58,16 @@ p <- map_dbl(
     nf_pdf(t, best_params$a, best_params$b, best_params$c, best_params$tmax)
   }
 )
-## Lots more because we will lose many after filtering
-sampled <- sample(taus, 1e5, replace = TRUE, prob = p)
 
-## Don't allow infection post isolation
-## Isolation – fitted to real data.
-## $shape [1] 1.259434
-## $scale [1] 4.087185
-iso_times <- rgamma(1e5, shape = 1.259434, scale = 4.087185)
-conditional <- sampled[sampled < iso_times]
+sampled <- sample(taus, 1e4, replace = TRUE, prob = p)
 
 p <- ggplot() +
-  geom_density(aes(sampled, fill = "red"), alpha = 0.3, col = NA) +
-  geom_density(
-    aes(conditional, fill = "blue"), alpha = 0.3, col = NA
-  ) +
-  scale_fill_identity(
-    breaks = c("red", "blue"),
-    labels = c("Unconditional", "Conditional"),
-    guide = "legend"
-  ) +
+  geom_density(aes(sampled), fill = "red", alpha = 0.3, col = NA) +
+  geom_vline(xintercept = best_params$tmax, linetype = "dashed") +
   xlab("Infectious Profile") +
-  theme_minimal() +
-  theme(legend.position = "top", legend.title = element_blank())
+  theme_minimal()
 
-cowplot::save_plot("figures/cowling_nf_distr_4a_inf_profile.png", p)
-## Now get a reasonable number of samples
-conditional <- sample(conditional, 1e4, replace = TRUE)
+cowplot::save_plot("figures/cowling_nf_distr_3arecall_inf_profile.png", p)
 
 inc_times <- rgamma(
   1e4,
@@ -91,7 +75,7 @@ inc_times <- rgamma(
   scale = params_real$inc_par2[["scale"]]
 )
 
-si_posterior <- conditional + inc_times
+si_posterior <- sampled + inc_times
 
 invalid_si <- runif(1e4, -20, 40)
 
@@ -102,6 +86,9 @@ valid <- which(toss > best_params$pinvalid)
 mixed <- c(
   si_posterior[valid], invalid_si[!valid]
 )
+
+## Sample with recall
+precall <- exp()
 
 p <- ggplot() +
   geom_density(aes(mixed, fill = "red"), alpha = 0.3, col = NA) +
