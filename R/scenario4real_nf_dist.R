@@ -58,12 +58,41 @@ p <- map_dbl(
     nf_pdf(t, best_params$a, best_params$b, best_params$c, best_params$tmax)
   }
 )
-sampled <- sample(taus, 1e4, replace = TRUE, prob = p)
+## Lots more because we will lose many after filtering
+sampled <- sample(taus, 1e5, replace = TRUE, prob = p)
 
+## Don't allow infection post isolation
+## Isolation – fitted to real data.
+## $shape [1] 1.259434
+## $scale [1] 4.087185
+iso_times <- rgamma(1e5, shape = 1.259434, scale = 4.087185)
+conditional <- sampled[sampled < iso_times]
 
-inc_times <- rgamma(1e4, shape = params_real$inc_par2[["shape"]], scale = params_real$inc_par2[["scale"]])
+p <- ggplot() +
+  geom_density(aes(sampled, fill = "red"), alpha = 0.3, col = NA) +
+  geom_density(
+    aes(conditional, fill = "blue"), alpha = 0.3, col = NA
+  ) +
+  scale_fill_identity(
+    breaks = c("red", "blue"),
+    labels = c("Unconditional", "Conditional"),
+    guide = "legend"
+  ) +
+  xlab("Infectious Profile") +
+  theme_minimal() +
+  theme(legend.position = "top", legend.title = element_blank())
 
-si_posterior <- sampled + inc_times
+cowplot::save_plot("figures/cowling_nf_distr_4a_inf_profile.png", p)
+## Now get a reasonable number of samples
+conditional <- sample(conditional, 1e4, replace = TRUE)
+
+inc_times <- rgamma(
+  1e4,
+  shape = params_real$inc_par2[["shape"]],
+  scale = params_real$inc_par2[["scale"]]
+)
+
+si_posterior <- conditional + inc_times
 
 invalid_si <- runif(1e4, -20, 40)
 
@@ -77,7 +106,10 @@ mixed <- c(
 
 p <- ggplot() +
   geom_density(aes(mixed, fill = "red"), alpha = 0.3, col = NA) +
-  geom_histogram(aes(data_offset$si, y = ..density.., fill = "blue"), alpha = 0.3, col = NA) +
+  geom_histogram(
+    aes(data_offset$si, y = ..density.., fill = "blue"),
+    alpha = 0.3, col = NA
+  ) +
   scale_fill_identity(
     breaks = c("red", "blue"), labels = c("Posterior SI", "Data"),
     guide = "legend"
