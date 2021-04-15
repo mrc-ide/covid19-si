@@ -40,13 +40,13 @@ fits_4a <- stan(
     min_valid_si = -20,
     max_invalid_si = 40,
     min_invalid_si = -20,
-    width = 0.1,
+    width = 1,
     M = length(si_vec),
     si_vec = si_vec,
     first_valid_nu = 1
     ##tmax = 0
   ),
-  chains = 2, iter = 2000,
+  chains = 1, iter = 2000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
@@ -57,7 +57,12 @@ idx <- which.max(out[["lp__"]])
 best_params <- map(out, function(x) x[[idx]])
 
 taus <- seq(-20, 40, 0.5)
-p <- map_dbl(taus, function(t) nf_pdf(t, best_params$a, best_params$b, best_params$c, best_params$tmax))
+p <- map_dbl(
+  taus,
+  function(t) {
+    nf_pdf(t, best_params$a, best_params$b, best_params$c, best_params$tmax)
+  }
+)
 sampled <- sample(taus, 1e4, replace = TRUE, prob = p)
 
 
@@ -87,4 +92,4 @@ p <- ggplot() +
   theme(legend.position = "top", legend.title = element_blank())
 
 
-cowplot::save_plot("figures/cowling_nf_distr.png", p)
+cowplot::save_plot("figures/cowling_nf_distr_4a.png", p)

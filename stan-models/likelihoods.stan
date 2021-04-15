@@ -9,7 +9,7 @@ functions{
     return out;
   }
   
-  real nf_lcdf(real nu, real a, real b, real c, real tmax) {
+  real nf_cdf(real nu, real a, real b, real c, real tmax) {
     real s = -20;
     real out = 0;
     
@@ -17,7 +17,7 @@ functions{
     out = out + exp(nf_lpdf(s | a, b, c, tmax));
     s = s + 1;
     }
-    out = log(out);
+    //out = log(out);
     return(out);
   }
 
@@ -66,7 +66,7 @@ functions{
     }
     out = log(out);
     if(nu < max_shed) {
-      out = out - nf_lcdf(nu | a, b, c, tmax);
+      out = out - log(nf_cdf(nu, a, b, c, tmax));
     }
     return out;
   }
@@ -151,7 +151,7 @@ functions{
     
     pdf_mat_t = pdf_mat';
     for (row in first_valid_nu:num_nu) {
-        pdf_mat_t[row] = pdf_mat_t[row] / exp(nf_lcdf(nu_vec[row] | a, b, c, tmax));
+      pdf_mat_t[row] = pdf_mat_t[row] / nf_cdf(nu_vec[row], a, b, c, tmax);
       }
     pdf_mat = pdf_mat_t';
     return(pdf_mat);
@@ -163,7 +163,7 @@ functions{
                        real beta1,   
                        real alpha2,    
                        real beta2,
-                       real width) {   
+                       real width) {
 
     // out = 0;
     // for i in 0:x
@@ -323,7 +323,7 @@ functions{
   //   return denominator;
   // }
 
-// x : SI
+  // x : SI
   // nu: Delay from symptom onset to isolation
   // max_shed: Maximum possible time of infection of secondary case
   // offset1: Minimum possible time of infection of secondary case
