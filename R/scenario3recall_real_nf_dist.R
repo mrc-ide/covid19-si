@@ -88,16 +88,25 @@ mixed <- c(
 )
 
 ## Sample with recall
-precall <- exp()
+iso_times <- rgamma(length(mixed), shape = 1.259434, scale = 4.087185)
+precall <- exp(-best_params$recall * abs(mixed - iso_times))
+
+with_recall <- sample(
+  mixed, 1e4, replace = TRUE, prob = precall
+)
 
 p <- ggplot() +
   geom_density(aes(mixed, fill = "red"), alpha = 0.3, col = NA) +
+  geom_density(
+    aes(with_recall, fill = "green"), alpha = 0.3, col = NA
+  ) +
   geom_histogram(
     aes(data_offset$si, y = ..density.., fill = "blue"),
     alpha = 0.3, col = NA
   ) +
   scale_fill_identity(
-    breaks = c("red", "blue"), labels = c("Posterior SI", "Data"),
+    breaks = c("red", "blue", "green"),
+    labels = c("Posterior SI", "Data", "With recall"),
     guide = "legend"
   ) +
   xlab("") +
@@ -105,4 +114,4 @@ p <- ggplot() +
   theme(legend.position = "top", legend.title = element_blank())
 
 
-cowplot::save_plot("figures/cowling_nf_distr_4a.png", p)
+cowplot::save_plot("figures/cowling_nf_distr_3arecall.png", p)
