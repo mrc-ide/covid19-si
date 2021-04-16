@@ -4,6 +4,7 @@ data{
   real si[N]; // Serial Interval 
   real nu[N]; // Time of isolation
   real max_shed;
+  real offset1;  
   real <lower = 0> alpha2; // incubation period parameter
   real <lower = 0> beta2; // incubation period parameter
   real <lower = 0> max_invalid_si;
@@ -35,7 +36,7 @@ model{
                               alpha2, beta2, first_valid_nu, width);
   for (n in 1:N) {
     invalid = invalid_lpdf(si[n] | min_invalid_si, max_invalid_si);
-    if (si[n] > offset1) {
+    if ((si[n] > offset1) && (nu[n] > offset1)) {
       valid = valid_beta_lpdf(si[n] | nu[n], max_shed, offset1, 
                               recall, alpha1, beta1,
                               alpha2, beta2, width);
