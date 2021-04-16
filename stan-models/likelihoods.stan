@@ -72,9 +72,9 @@ functions{
 
     // fill the fist valid column
     for (row in 1:num_si) {
-      pdf_mat[row, first_valid_nu] = valid_beta_lpdf(si_vec[row]| nu_vec[first_valid_nu], max_shed, 
+      pdf_mat[row, first_valid_nu] = exp(valid_beta_lpdf(si_vec[row]| nu_vec[first_valid_nu], max_shed, 
                                                      offset1, recall, alpha1, beta1, alpha2,
-                                                     beta2, width);
+                                                         beta2, width));
       
     }
     for (row in 1:num_si) {
@@ -85,9 +85,9 @@ functions{
           // in the same row but from an earlier column
           pdf_mat[row, col] = pdf_mat[row, col - 1];
         } else {
-          pdf_mat[row, col] = valid_beta_lpdf(si_vec[row]| nu_vec[col], max_shed, 
+          pdf_mat[row, col] = exp(valid_beta_lpdf(si_vec[row]| nu_vec[col], max_shed, 
                                               offset1, recall, alpha1, beta1, alpha2,
-                                              beta2, width);
+                                                  beta2, width));
       
         }
       }

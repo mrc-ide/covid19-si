@@ -47,6 +47,7 @@ fit_3a_real <- stan(
     si_vec = si_vec,
     first_valid_nu = 1
   ),
+  ##chains = 1, iter = 100,
   seed = 42,
   verbose = TRUE
 )
