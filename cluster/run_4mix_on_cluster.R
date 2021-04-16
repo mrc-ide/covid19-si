@@ -2,15 +2,16 @@ library(context)
 rstan_options(auto_write = FALSE)
 # config <- didehpc::didehpc_config(cluster = 'fi--didemrchnb')
 options(didehpc.cluster = 'fi--didemrchnb')
-root <- "4a_misspec_long"
+root <- "4a_mixture"
 packages <- c("rstan", "dplyr","purrr", "ggplot2", "epitrix", "glue")
-source_files <- c("global2.R", "utils.R", "simulate_4a_stess_testing.R")
+source_files <- c("global2.R", "utils.R", "scenario4a_cluster.R")
 ctx <-context_save(
   root, packages = packages, sources = source_files,
   package_sources = provisionr::package_sources(local = "BH_1.75.0-0.zip")
-)
+  )
+
 context::context_log_start()
-misspec_offset <- -7
+
 obj <- didehpc::queue_didehpc(ctx)
 grp <- obj$lapply(
              index, function(i) {
@@ -28,7 +29,7 @@ grp <- obj$lapply(
                    si = sim_data$si,
                    nu = sim_data$nu,
                    max_shed = max_shed,
-                   offset1 = misspec_offset,
+                   offset1 = params_offset,
                    alpha2 = params_inc[["shape"]],
                    beta2 = 1 / params_inc[["scale"]],
                    alpha_invalid = alpha_invalid,
@@ -46,8 +47,9 @@ grp <- obj$lapply(
                  seed = 42,
                  verbose = TRUE
                )
-               # outfile <- glue::glue("{prefix}_{index}.rds")
-               # saveRDS(fit_4a, outfile)
                fit_4a
              }
            )
+
+tb <- obj$task_bundle_get('pseudomedical_swallowtailbutterfly')
+t <- obj$task_get('251f7692e0fa235fa827a8c46f2d6c70')

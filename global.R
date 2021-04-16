@@ -8,6 +8,8 @@ library(epitrix)
 library(purrr)
 library(sbcrs)
 library(matrixStats)
+library(patchwork)
+library(ggforce)
 source("R/utils.R")
 source("R/scenario_3a_mix_utils.R")
 source("R/scenario_4a_mix_utils.R")
@@ -40,7 +42,7 @@ params <- list(
   pinvalid1 = 0,
   pinvalid2 = 0.05,
   pinvalid3 = 0.2,
-  recall1 = 0.1,
+  recall1 = 0,
   recall2 = 0.5,
   recall3 = 1
 )
@@ -74,3 +76,14 @@ params_check <- list(
   beta1 = 0,
   iso_par1 = list(shape = 1, scale = 5)
 )
+
+## Sanity tests for Neil's distribution implementation
+## rstan::expose_stan_functions("stan-models/likelihoods.stan")
+## Assume c = 1
+## ## a = 0, b = 1, should be 0
+## nf_lpdf(0, 1, 1, 10, 5)
+## ## a = 1, b = 0, should be 0
+## nf_lpdf(1, 0, 1, 10, 5)
+## a = b, should be log(1/cosh(a * (t - tmax)))
+## nf_lpdf(1, 1, 1, 10, 5)
+## 1 / cosh(10 - 5)
