@@ -59,8 +59,9 @@ functions{
   // Similarly si_vec
   // nus are running across columns and SIs are running down rows
   matrix pdf_matrix_recall(real[] nu_vec, real[] si_vec, real max_shed, 
-                    real offset1, real alpha1, real beta1, real alpha2, 
-                           real beta2, real width, int first_valid_nu, real recall, real width) {
+                           real offset1, real recall,
+                           real alpha1, real beta1, 
+                           real alpha2, real beta2, int first_valid_nu, real width) {
 
     int num_nu = size(nu_vec);
     int num_si = size(si_vec);
