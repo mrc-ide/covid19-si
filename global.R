@@ -73,3 +73,14 @@ params_check <- list(
   pinvalid2 = 0.2,
   iso_par1 = list(shape = 1, scale = 5)
 )
+
+## Sanity tests for Neil's distribution implementation
+## rstan::expose_stan_functions("stan-models/likelihoods.stan")
+## Assume c = 1
+## ## a = 0, b = 1, should be 0
+## nf_lpdf(0, 1, 1, 10, 5)
+## ## a = 1, b = 0, should be 0
+## nf_lpdf(1, 0, 1, 10, 5)
+## a = b, should be log(1/cosh(a * (t - tmax)))
+## nf_lpdf(1, 1, 1, 10, 5)
+## 1 / cosh(10 - 5)
