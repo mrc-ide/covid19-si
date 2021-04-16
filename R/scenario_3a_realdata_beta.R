@@ -61,22 +61,22 @@ diagnos <- ggmcmc(
   ggs(fit_3a_real), here::here("figures/3a_real.pdf")
 )
 
-saveRDS(fit_3a_real, file = "fit_3a_05032021.rds")
+saveRDS(
+  fit_3a_real,
+  file = glue::glue("stanfits/fit_3a_{Sys.Date()}.rds")
+)
 
 ################
 # extract fits #
 ################
 
 fitted_params_3a_real <- rstan::extract(fit_3a_real)
-saveRDS(fitted_params_3a_real14, file = "fitted_params_3a_real14.rds")
-
-fitted_params_3a_real <- readRDS("fit_3a_05032021.rds")
-fitted_params_3a_real <- rstan::extract(fitted_params_3a_real)
-
-  # best fits
-max_index <- which(fitted_params_3a_real$lp__==max(fitted_params_3a_real$lp__))
-params_inf_max <- list(shape1 = fitted_params_3a_real$alpha1[max_index],
-                       shape2 = fitted_params_3a_real$beta1[max_index])
+### best fits
+max_index <- which.max(fitted_params_3a_real$lp__)
+params_inf_max <- list(
+  shape1 = fitted_params_3a_real$alpha1[max_index],
+  shape2 = fitted_params_3a_real$beta1[max_index]
+)
 p_invalid_max <- fitted_params_3a_real$pinvalid[max_index]
 
 ##################
@@ -85,14 +85,17 @@ p_invalid_max <- fitted_params_3a_real$pinvalid[max_index]
 
   # plot the best fitting infectious profile
 shifted_inf <- ((max_shed-params_offset) *
-        rbeta(
-          n = 100000,
-          shape1 = params_inf_max$shape1,
-          shape2 = params_inf_max$shape2
-        ))+params_offset
+                rbeta(
+                  n = 100000,
+                  shape1 = params_inf_max$shape1,
+                  shape2 = params_inf_max$shape2
+                )) + params_offset
 
 p_inf <- ggplot() +
-  geom_density(aes(shifted_inf, fill = "green"), alpha = 0.3) +
+  geom_density(
+    aes(shifted_inf, fill = "green"), alpha = 0.3,
+    col = NA
+  ) +
   scale_fill_identity(
     guide = "legend",
     labels = c("Posterior"),
@@ -101,12 +104,12 @@ p_inf <- ggplot() +
   xlab("delay from symptoms to transmission (days)")+
   theme_minimal()
 
-p_presymp3 <- sum(shifted_inf>0) / length(shifted_inf)
+p_presymp3 <- sum(shifted_inf > 0) / length(shifted_inf)
   # plot the resulting SI of best fitting parameters
 si_post <- (simulate_3a_mix(params_inc = params_inc, params_inf = params_inf_max,
-                              params_iso = list(shape = 1, scale = 1), offset = params_offset, max_shed,
-                              pinvalid = p_invalid_max, nsim = 5000000, alpha_invalid,
-                              beta_invalid, min_si = min(real_data$si), max_si = max(real_data$si)))
+                            params_iso = list(shape = 1, scale = 1), offset = params_offset, max_shed,
+                            pinvalid = p_invalid_max, nsim = 5000000, alpha_invalid,
+                            beta_invalid, min_si = min(real_data$si), max_si = max(real_data$si)))
 # note - in the above, params_iso will not be used and can be any value
 
 si_post_iv <- si_post$simulated_si$si
@@ -140,7 +143,11 @@ psi <- ggplot() +
   ) +
   theme_minimal() +
   xlab("Serial Interval") +
-  theme(legend.title = element_blank())
+  theme(
+    legend.title = element_blank(),
+    legend.position = "top"
+  )
+
 
 ###########
 # 95% CrI #
