@@ -1,12 +1,13 @@
-prefix <- "full_model"
+prefix <- "3a_mix_stress_testing_misspec_long_sim_"
+
+misspec_offset <- -7
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
   params_inc = c("inc_par1", "inc_par2"),
-  params_iso = c("iso_par1", "iso_par2"),
-  params_offset = c("offset1", "offset2", "offset3"),
-  params_pinvalid = c("pinvalid1", "pinvalid2", "pinvalid3"),
-  params_beta = c("recall1", "recall2", "recall3"),
+  params_iso = "iso_par1",
+  params_offset = c("offset1", "offset2"),
+  params_pinvalid = c("pinvalid1", "pinvalid2"),
   stringsAsFactors = FALSE
 )
 
@@ -20,8 +21,8 @@ params_inf_all <- pmap(
     params_offset = param_grid$params_offset
   ),
   function(params_inf, params_offset) {
-    out <- params[[params_inf]]
-    offset <- params[[params_offset]]
+    out <- params_check[[params_inf]]
+    offset <- params_check[[params_offset]]
     beta_muvar2shape1shape2(
       (out$mean_inf - offset) / (max_shed - offset),
       out$sd_inf^2 / (max_shed - offset)^2
@@ -31,37 +32,23 @@ params_inf_all <- pmap(
 
 params_inc_all <- map(
   param_grid$params_inc,
-  function(params_inc) {
-    out <- params[[params_inc]]
-    epitrix::gamma_mucv2shapescale(
-      mu = out[[1]], cv = out[[2]] / out[[1]]
-    )
-  }
+  function(params_inc) params_check[[params_inc]]
 )
 
 params_iso_all <- map(
   param_grid$params_iso,
-  function(params_iso) {
-    out <- params[[params_iso]]
-    epitrix::gamma_mucv2shapescale(
-      mu = out[[1]], cv = out[[2]] / out[[1]]
-    )
-  }
+  function(params_iso) params_check[[params_iso]]
 )
+
 params_offsets_all <- map(
   param_grid$params_offset,
-  function(params_offset) params[[params_offset]]
+  function(params_offset) params_check[[params_offset]]
 )
 
 params_pinv <- map(
-  param_grid$params_pinv, function(params_pinv) params[[params_pinv]]
+  param_grid$params_pinv,
+  function(params_pinv) params_check[[params_pinv]]
 )
-
-params_beta <- map(
-  param_grid$params_beta, function(params_beta) params[[params_beta]]
-)
-
-
 
 ## unconditional
 uncdtnl_data <- pmap(
@@ -72,24 +59,38 @@ uncdtnl_data <- pmap(
     params_offset = params_offsets_all
   ),
   function(params_inf, params_inc, params_iso, params_offset) {
+    ## ok to use nsim_post_filter here as we won't filter
     better_simulate_si(
       params_inc, params_inf, params_iso, params_offset, max_shed,
-      nsim_pre_filter
+      nsim_post_filter
     )
   }
 )
 
-
-## conditional
-simulated_data <- map(
-  uncdtnl_data,
-  function(sim_data) {
-    sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]
-    ## Make sure we have at least 200 rows.
-    idx <- sample(nrow(sim_data), nsim_post_filter, replace = TRUE)
-    sim_data[idx, ]
+## with -ve nu
+simulated_data <- pmap(
+  list(
+    dat = uncdtnl_data,
+    params_offset = params_offsets_all
+  ),
+  function(dat, params_offset) {
+    toss <- runif(nrow(dat), 0, 1)
+    idx <- toss < 0.02
+    dat$nu[idx] <- runif(length(which(idx)), params_offset, 0)
+    dat
   }
 )
+
+## conditional
+## simulated_data <- map(
+##   unconditional_data,
+##   function(sim_data) {
+##     sim_data <- sim_data[sim_data$t_1 <= sim_data$nu, ]
+##     ## Make sure we have at least 200 rows.
+##     idx <- sample(nrow(sim_data), nsim_post_filter, replace = TRUE)
+##     sim_data[idx, ]
+##   }
+## )
 
 invalid_si <- map(
   params_iso_all,
@@ -97,7 +98,7 @@ invalid_si <- map(
     invalid_si <- rbeta(
       nsim_post_filter, shape1 = alpha_invalid, shape2 = beta_invalid
     )
-
+    
     invalid_iso <- rgamma(
       nsim_post_filter, shape = params_iso$shape, scale = params_iso$scale
     )
@@ -128,7 +129,7 @@ mixed <- pmap(
     params_pinv = param_grid$params_pinv
   ),
   function(valid, invalid, params_pinv) {
-    pinvalid <- params[[params_pinv]]
+    pinvalid <- params_check[[params_pinv]]
     toss <- runif(nrow(valid))
     valid$type <- "valid"
     invalid$type <- "invalid"
@@ -139,40 +140,10 @@ mixed <- pmap(
   }
 )
 
-## with -ve nu
-mixed <- pmap(
-  list(
-   dat = mixed,
-   params_offset = params_offsets_all
-  ),
-  function(dat, params_offset) {
-    toss <- runif(nrow(dat), 0, 1)
-    for(i in 1:(nrow(dat))){
-      if(toss[i] < 0.02) {
-        dat$nu[i] <- runif(1, params_offset, 0)
-      }
-    }
-    dat[,]
-  }
-)
-
-## Sample with recall
-mixed <- pmap(
-  list(
-   dat = mixed,
-   param_beta = params_beta
-  ),
-  function(dat, param_beta) {
-    precall <- exp(-param_beta * abs(dat$si - dat$nu))
-    idx <- sample(1:nrow(dat), nrow(dat), precall, replace = TRUE)
-    dat[idx,]
-  }
-)
-
 sampled <- pmap(
   list(sim_data = mixed,
        params_offset = params_offsets_all
-    ),
+  ),
   function(sim_data, params_offset) {
     ## Round for consistency with real data
     sim_data$si <- round(sim_data$si)
@@ -184,35 +155,41 @@ sampled <- pmap(
   }
 )
 
-outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}_data.rds")
-walk2(sampled, outfiles, function(x, y) saveRDS(x, y))
+outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}data.rds")
+walk2(mixed, outfiles, function(x, y) saveRDS(x, y))
 
 figs <- pmap(
-  list(
-    x = uncdtnl_data, y = simulated_data, z = sampled,
-    index = index
-  ),
+  list(x = sampled, y = simulated_data, z = mixed, index = index),
   function(x, y, z, index){
     p <- ggplot() +
       geom_density(aes(x$si, fill = "red"), col = NA, alpha = 0.3) +
       geom_density(aes(y$si, fill = "blue"), col = NA, alpha = 0.3) +
       geom_density(aes(z$si, fill = "green"), col = NA, alpha = 0.3) +
       scale_fill_identity(
-        breaks = c("red", "blue", "green"),
-        labels = c("Conditional on nu", "Unconditional", "Sampled"),
+        breaks = c("red","blue", "green"),
+        labels = c("Sampled", "Unconditional", "Mixed"),
         guide = "legend"
       ) +
+      theme_minimal() +
       theme(legend.position = "top", legend.title = element_blank())
-    ggsave(glue::glue("figures/{prefix}_{index}_simulated.png"))
-
+    ggsave(glue::glue("figures/{prefix}{index}_simulated.png"), p)
   }
 )
 
+iwalk(
+  sampled, function(smpld, index) {
+    p <- ggplot() +
+      geom_histogram(aes(smpld$nu), binwidth = 1) +
+      xlab("Delay from onset to isolation") +
+      theme_minimal()
+    cowplot::save_plot(glue::glue("figures/{prefix}{index}_nu.png"), p)
+  }
+)
 
 fits <- pmap(
   list(
     params_inc = params_inc_all,
-    params_offset = params_offsets_all,
+    params_offset = misspec_offset,
     params_iso = params_iso_all,
     sim_data = sampled,
     index = index
@@ -221,8 +198,8 @@ fits <- pmap(
     si_vec <- seq(params_offset + 0.5, max_valid_si, 1)
     width <- 0.1
     sim_data <- arrange(sim_data, nu)
-    fit_4a <- stan(
-      file = here::here("stan-models/full_model.stan"),
+    fit_3a <- stan(
+      file = here::here("stan-models/scenario3a_mixture_general.stan"),
       data = list(
         N = length(sim_data$si),
         si = sim_data$si,
@@ -242,14 +219,14 @@ fits <- pmap(
         si_vec = si_vec,
         first_valid_nu = 1
       ),
-      chains = 2, iter = 2000,
+      chains = 2, iter = 3000,
       seed = 42,
-      verbose = FALSE
+      verbose = TRUE
       ## control = list(adapt_delta = 0.99)
     )
     outfile <- glue::glue("stanfits/{prefix}_{index}.rds")
-    saveRDS(fit_4a, outfile)
-    fit_4a
+    saveRDS(fit_3a, outfile)
+    fit_3a
   }
 )
 ## index <- 1:nrow(param_grid)
@@ -259,7 +236,8 @@ fits <- pmap(
 process_fits <- pmap_dfr(
   list(
     fit = fits,
-    offset = params_offsets_all),
+    offset = misspec_offset
+  ),
   function(fit, offset) {
     samples <- rstan::extract(fit)
     out <- mu_sd_posterior_distr(samples, max_shed, offset)
@@ -270,32 +248,29 @@ process_fits <- pmap_dfr(
 )
 
 process_fits$true_mean <- map_dbl(
-  params[param_grid$params_inf], function(x) x$mean_inf
+  params_check[param_grid$params_inf], function(x) x$mean_inf
 )
 
 process_fits$true_sd <- map_dbl(
-  params[param_grid$params_inf], function(x) x$sd_inf
+  params_check[param_grid$params_inf], function(x) x$sd_inf
 )
 
 process_fits$incubation <- map_dbl(
-  param_grid$params_inc,
+  params_check[param_grid$params_inc],
   function(x) {
-    out <- params[[x]]
-    out[[1]]
+    epitrix::gamma_shapescale2mucv(x$shape, x$scale)[["mu"]]
   }
 )
 
 process_fits$isolation <- map_dbl(
-  param_grid$params_iso,
+  params_check[param_grid$params_iso],
   function(x) {
-    out <- params[[x]]
-    out[[1]]
+    epitrix::gamma_shapescale2mucv(x$shape, x$scale)[["mu"]]
   }
 )
 
-process_fits$pinvalid <- unlist(params[param_grid$params_pinv])
-process_fits$offset <- unlist(params[param_grid$params_offset])
-process_fits$recall <- unlist(params[param_grid$params_beta])
+process_fits$pinvalid <- unlist(params_check[param_grid$params_pinv])
+process_fits$offset <- unlist(params_check[param_grid$params_offset])
 
 est_pinvalid <- map_dfr(
   fits,
@@ -314,31 +289,70 @@ est_pinvalid <- map_dfr(
 
 process_fits <- left_join(process_fits, est_pinvalid, by = "sim")
 
-est_recall <- map_dfr(
-  fits,
-  function(fit) {
-    samples <- rstan::extract(fit)
-    out <- quantile_as_df(samples[["recall"]])
-    idx <- which.max(samples[["lp__"]])
-    best <- samples[["recall"]][idx]
-    out <- rbind(out, data.frame(var = "best", val = best))
-    out$param <- "recall"
-    pivot_wider(
-      out, names_from = c("param", "var"), values_from = "val"
-    )
-  }, .id = "sim"
-)
-
-process_fits <- left_join(process_fits, est_recall, by = "sim")
-
-
 process_fits <- mutate_if(process_fits, is.numeric, ~ round(., 2))
 
-saveRDS(
-  process_fits, glue::glue("stanfits/{prefix}_processed_fits.rds")
-)
+p <- ggplot(process_fits) +
+  geom_point(aes(sim, `mu_50%`, col = factor(incubation))) +
+  geom_linerange(
+    aes(
+      x = sim, ymin = `mu_25%`, ymax = `mu_75%`,
+      col = factor(incubation)
+    )
+  ) +
+  geom_point(aes(sim, true_mean), shape = 4) +
+  facet_grid(
+    pinvalid ~ offset, scales = "free", labeller = label_both
+  ) +
+  scale_color_discrete(name = "Mean Incubation") +
+  ylab("Mean infectious period") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.y = element_blank()
+  )
 
+cowplot::save_plot(glue::glue("figures/{prefix}_inf_mu.png"), p)
 
+psd <- ggplot(process_fits) +
+  geom_point(aes(sim, `sd_50%`, col = factor(incubation))) +
+  geom_linerange(
+    aes(x = sim, ymin = `sd_25%`, ymax = `sd_75%`,
+        col = factor(incubation))
+  ) +
+  geom_point(aes(sim, true_sd), shape = 4) +
+  facet_grid(
+    pinvalid ~ offset, scales = "free", labeller = label_both
+  ) +
+  scale_color_discrete(name = "Mean Incubation") +
+  ylab("SD infectious period") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.y = element_blank()
+  )
+
+cowplot::save_plot(glue::glue("figures/{prefix}_inf_sd.png"), psd)
+
+ppinv <- ggplot(process_fits) +
+  geom_point(aes(sim, `pinvalid_50%`, col = factor(incubation))) +
+  geom_linerange(
+    aes(x = sim, ymin = `pinvalid_25%`, ymax = `pinvalid_75%`,
+        col = factor(incubation))
+  ) +
+  geom_point(aes(sim, pinvalid), shape = 4) +
+  facet_grid(
+    pinvalid ~ offset, scales = "free", labeller = label_both
+  ) +
+  ylab("pinvalid") +
+  scale_color_discrete(name = "Mean Incubation") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.y = element_blank()
+  ) +
+  ylim(0, 0.5)
+
+cowplot::save_plot(glue::glue("figures/{prefix}_inf_pinv.png"), ppinv)
 ######### Posterior SI Distribution
 params_inf_post <- map(
   fits, function(fit) {
@@ -356,7 +370,7 @@ posterior_si <- pmap(
     params_inf = params_inf_post,
     params_inc = params_inc_all,
     params_iso = params_iso_all,
-    params_offset = params_offsets_all
+    params_offset = misspec_offset
   ),
   function(params_inf, params_inc, params_iso, params_offset) {
     sim_data <- better_simulate_si(
@@ -375,21 +389,16 @@ mixed <- pmap(
   list(
     valid = posterior_si,
     invalid = invalid_remapped,
-    pinvalid = process_fits$pinvalid_best,
-    recall = process_fits$recall_best
+    pinvalid = process_fits$pinvalid_best
   ),
-  function(valid, invalid, pinvalid, recall) {
+  function(valid, invalid, pinvalid) {
     toss <- runif(nrow(valid))
     valid$type <- "valid"
     invalid$type <- "invalid"
-    out <- rbind(
+    rbind(
       valid[toss > pinvalid , c("si", "nu", "type")],
       invalid[toss <= pinvalid ,c("si", "nu", "type")]
     )
-    precall <- exp(-recall * abs(out$si - out$nu))
-    idx <- sample(1:nrow(out), nrow(out), precall, replace = TRUE)
-    out[idx, ]
-
   }
 )
 
@@ -405,5 +414,65 @@ sampled <- map(
   }
 )
 
-outfiles <- glue::glue("stanfits/{prefix}_{seq_along(sampled)}_posterior.rds")
-walk2(sampled, outfiles, function(x, y) saveRDS(x, y))
+outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}data.rds")
+training <- map(outfiles, readRDS)
+
+
+compare_si <- map2_dfr(
+  training, sampled,
+  function(x, y) {
+    x$si <- round(x$si)
+    y$nu <- round(x$nu)
+    trng_si <- quantile_as_df(x$si)
+    trng_si$param <- "training"
+    post_si <- quantile_as_df(y$si)
+    post_si$param <- "posterior"
+    rbind(trng_si, post_si) %>%
+      pivot_wider(
+        names_from = c("param", "var"), values_from = "val"
+      )
+  }, .id = "sim"
+)
+
+process_fits <- left_join(process_fits, compare_si, by = "sim")
+process_fits <- arrange(process_fits, `training_50%`)
+process_fits$sim <- factor(process_fits$sim, process_fits$sim)
+
+psi <- ggplot(process_fits) +
+  geom_point(aes(sim, `training_50%`, col = "red")) +
+  geom_linerange(
+    aes(
+      x = sim, ymin = `training_25%`, ymax = `training_75%`,
+      col = "red")
+  ) +
+  geom_point(
+    aes(sim, `posterior_50%`, col = "blue"),
+    position = position_nudge(x = 0.5)
+  ) +
+  geom_linerange(
+    aes(
+      x = sim, ymin = `posterior_25%`, ymax = `posterior_75%`,
+      col = "blue"), position = position_nudge(x = 0.5)
+  ) +
+  scale_color_identity(
+    breaks = c("red", "blue"), labels = c("Training", "Posterior"),
+    guide = "legend"
+  ) +
+  facet_grid(
+    pinvalid ~ offset, scales = "free", labeller = label_both
+  ) +
+  ylab("Serial Interval") +
+  theme_minimal() +
+  theme(
+    legend.position = "top", axis.text.x = element_blank(),
+    axis.title.y = element_blank(), legend.title = element_blank()
+  )
+cowplot::save_plot(glue::glue("figures/{prefix}_inf_si.png"), psi)
+
+
+
+x <- select(process_fits, `mu_2.5%`, `mu_50%`, `mu_97.5%`, true_mean, true_sd, incubation, isolation, pinvalid, offset)
+
+ggplot(x) +
+  ggpmisc::geom_table()
+
