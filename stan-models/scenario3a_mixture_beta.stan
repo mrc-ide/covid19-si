@@ -38,10 +38,15 @@ model{
   denominator_valid = sum(col(pdf_mat, 1));
   for (n in 1:N) {
     invalid = invalid_lpdf(si[n]|min_invalid_si, max_invalid_si);
-    valid = valid_beta_lpdf(si[n] |dummy[1], max_shed, offset1, 
-                            recall, alpha1, beta1,
-                            alpha2, beta2, width);
-    valid = valid - log(denominator_valid);      
-    target += log_mix(pinvalid, invalid, valid);    
+    if (si[n] > offset1) {
+      valid = valid_beta_lpdf(si[n] |dummy[1], max_shed, offset1, 
+                              recall, alpha1, beta1,
+                              alpha2, beta2, width);
+      valid = valid - log(denominator_valid);      
+      target += log_mix(pinvalid, invalid, valid);          
+    } else {
+      target += log(pinvalid) + invalid + log(1 - pinvalid);
+    }
+
   }
 }
