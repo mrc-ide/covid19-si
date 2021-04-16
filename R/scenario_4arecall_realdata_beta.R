@@ -31,7 +31,7 @@ first_valid_nu <- match(params_offset + 2, real_data$nu) #changed to 2 for param
 si_vec <- seq(params_offset + 1, max_si)
 
 fit_4a_real_beta_11 <- stan(
-  file = here::here("stan-models/scenario4a_mixture_beta.stan"),
+  file = here::here("stan-models/scenario4arecall_mixture_beta.stan"),
   data = list(
     N = length(real_data$si),
     si = real_data$si,
@@ -47,6 +47,7 @@ fit_4a_real_beta_11 <- stan(
     si_vec = si_vec,
     first_valid_nu =  first_valid_nu
   ),
+  chains = 1, iter = 100,
   seed = 42,
   verbose = TRUE
 )
