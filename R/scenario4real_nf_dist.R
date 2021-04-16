@@ -25,7 +25,7 @@ si_vec <- seq(-20, 40, 1)
 data_offset <- arrange(data_offset, nu)
 
 fits_4a <- stan(
-  file = here::here("stan-models/scenario4a_mixture_nf.stan"),
+  file = here::here("stan-models/scenario4arecall_mixture_nf.stan"),
   data = list(
     N = nrow(data_offset),
     si = data_offset$si,
@@ -41,7 +41,7 @@ fits_4a <- stan(
     first_valid_nu = 1
     ##tmax = 0
   ),
-  chains = 1, iter = 2000,
+  chains = 1, iter = 500,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )

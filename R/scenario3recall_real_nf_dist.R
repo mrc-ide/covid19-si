@@ -41,7 +41,7 @@ fit <- stan(
     first_valid_nu = 1
     ##tmax = 0
   ),
-  chains = 1, iter = 2000,
+  chains = 1, iter = 800,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
