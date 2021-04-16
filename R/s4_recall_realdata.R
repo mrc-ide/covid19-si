@@ -1,10 +1,7 @@
-# s4 + mixture REAL DATA
+# s4 + mixture REAL DATA + RECALL BIAS
 ###################################################
 # select assumed parameters (from list in global) #
 ###################################################
-
-#params_offset <- params_real$offset3
-#params_offset <- -6
 params_offset <- -11
 params_inc <- params_real$inc_par2
 max_shed <- params_real$maxshed3
@@ -30,8 +27,8 @@ first_valid_nu <- match(params_offset + 2, real_data$nu) #changed to 2 for param
 ######################
 si_vec <- seq(params_offset + 1, max_si)
 
-fit_4a_real_beta_11 <- stan(
-  file = here::here("stan-models/scenario4a_mixture.stan"),
+fit_4a_real_recall <- stan(
+  file = here::here("stan-models/full_model.stan"),
   data = list(
     N = length(real_data$si),
     si = real_data$si,
@@ -49,8 +46,7 @@ fit_4a_real_beta_11 <- stan(
     width = width,
     M = length(si_vec),
     si_vec = si_vec,
-    first_valid_nu =  first_valid_nu,
-    pinvalid = 0.05
+    first_valid_nu =  first_valid_nu
   ),
   seed = 42,
   chains = 2,
@@ -70,7 +66,7 @@ fit_4a_real_beta <- readRDS("fit_4a_03032021.rds")
 ################
 fitted_params_4a_real_beta <- rstan::extract(fit_4a_real_beta_11)
 
-  # best fits
+# best fits
 max_index <- which.max(fitted_params_4a_real_beta$lp__)
 params_inf_max <- list(
   shape1 = fitted_params_4a_real_beta$alpha1[max_index],
@@ -83,13 +79,13 @@ p_invalid_max <- fitted_params_4a_real_beta$pinvalid[max_index]
 # plot best fits #
 ##################
 
-  # plot the best fitting infectious profile
+# plot the best fitting infectious profile
 shifted_inf <- ((max_shed-params_offset) *
-        rbeta(
-          n = 100000,
-          shape1 = params_inf_max$shape1,
-          shape2 = params_inf_max$shape2
-        )) + params_offset
+                  rbeta(
+                    n = 100000,
+                    shape1 = params_inf_max$shape1,
+                    shape2 = params_inf_max$shape2
+                  )) + params_offset
 
 p_inf <- ggplot() +
   geom_density(aes(shifted_inf, fill = "green"), alpha = 0.3) +
@@ -109,7 +105,7 @@ mean_delay <- mean(real_data$nu[real_data$nu > params_offset])
 sd_delay <- sd(real_data$nu[real_data$nu > params_offset])
 iso_params_obs <- epitrix::gamma_mucv2shapescale(mean_delay,
                                                  sd_delay / mean_delay
-                                                 )
+)
 
 ### plot the resulting SI of best fitting parameters
 posterior_si <- better_simulate_si(
@@ -121,7 +117,7 @@ posterior_si <- posterior_si[posterior_si$t_1 <= posterior_si$nu, ]
 ### plot with invalid serial intervals
 posterior_tot_si <- simulate_4a_mix(params_inc, params_inf_max, iso_params_obs,
                                     params_offset, max_shed, p_invalid_max, nsim_pre_filter,
-                                                alpha_invalid, beta_invalid, min_invalid_si, max_si)
+                                    alpha_invalid, beta_invalid, min_invalid_si, max_si)
 posterior_all_si <- posterior_tot_si$simulated_si
 posterior_uncon_si <- posterior_tot_si$unconditional
 

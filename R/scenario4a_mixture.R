@@ -1,4 +1,4 @@
-prefix <- "4a_mix"
+prefix <- "full_model"
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
@@ -6,7 +6,7 @@ param_grid <- expand.grid(
   params_iso = c("iso_par1", "iso_par2"),
   params_offset = c("offset1", "offset2", "offset3"),
   params_pinvalid = c("pinvalid1", "pinvalid2", "pinvalid3"),
-  params_beta = "recall1",
+  params_beta = c("recall1", "recall2", "recall3"),
   stringsAsFactors = FALSE
 )
 
@@ -203,7 +203,7 @@ figs <- pmap(
         guide = "legend"
       ) +
       theme(legend.position = "top", legend.title = element_blank())
-    ggsave(glue::glue("figures/{prefix}{index}_simulated.png"))
+    ggsave(glue::glue("figures/{prefix}_{index}_simulated.png"))
 
   }
 )
@@ -222,7 +222,7 @@ fits <- pmap(
     width <- 0.1
     sim_data <- arrange(sim_data, nu)
     fit_4a <- stan(
-      file = here::here("stan-models/scenario4a_mixture.stan"),
+      file = here::here("stan-models/full_model.stan"),
       data = list(
         N = length(sim_data$si),
         si = sim_data$si,
@@ -295,6 +295,7 @@ process_fits$isolation <- map_dbl(
 
 process_fits$pinvalid <- unlist(params[param_grid$params_pinv])
 process_fits$offset <- unlist(params[param_grid$params_offset])
+process_fits$recall <- unlist(params[param_grid$params_beta])
 
 est_pinvalid <- map_dfr(
   fits,
@@ -312,6 +313,24 @@ est_pinvalid <- map_dfr(
 )
 
 process_fits <- left_join(process_fits, est_pinvalid, by = "sim")
+
+est_recall <- map_dfr(
+  fits,
+  function(fit) {
+    samples <- rstan::extract(fit)
+    out <- quantile_as_df(samples[["recall"]])
+    idx <- which.max(samples[["lp__"]])
+    best <- samples[["recall"]][idx]
+    out <- rbind(out, data.frame(var = "best", val = best))
+    out$param <- "recall"
+    pivot_wider(
+      out, names_from = c("param", "var"), values_from = "val"
+    )
+  }, .id = "sim"
+)
+
+process_fits <- left_join(process_fits, est_recall, by = "sim")
+
 
 process_fits <- mutate_if(process_fits, is.numeric, ~ round(., 2))
 
@@ -356,16 +375,21 @@ mixed <- pmap(
   list(
     valid = posterior_si,
     invalid = invalid_remapped,
-    pinvalid = process_fits$pinvalid_best
+    pinvalid = process_fits$pinvalid_best,
+    recall = process_fits$recall_best
   ),
-  function(valid, invalid, pinvalid) {
+  function(valid, invalid, pinvalid, recall) {
     toss <- runif(nrow(valid))
     valid$type <- "valid"
     invalid$type <- "invalid"
-    rbind(
+    out <- rbind(
       valid[toss > pinvalid , c("si", "nu", "type")],
       invalid[toss <= pinvalid ,c("si", "nu", "type")]
     )
+    precall <- exp(-recall * abs(out$si - out$nu))
+    idx <- sample(1:nrow(out), nrow(out), precall, replace = TRUE)
+    out[idx, ]
+
   }
 )
 

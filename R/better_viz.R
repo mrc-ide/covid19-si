@@ -1,4 +1,4 @@
-prefix <- "3a_mix_stress_testing_sim"
+prefix <- "full_model"
 process_fits <- readRDS(glue::glue('stanfits/{prefix}_processed_fits.rds'))
 
 ######################### Plot 1. Just the parameters that are input
@@ -10,7 +10,7 @@ x$sim <- factor(x$sim, levels = seq_len(nsims), ordered = TRUE)
 ## For a grid with large number of rows, we want to split them
 ## over multiple pages. nrow_page is the number of rows in a single
 ## page.
-nrow_page <- 16
+nrow_page <- 12
 ## This will always be 3, for the three variables we have.
 ncol_page <- 3
 ## Make sure nrow_page is a divisor of npages
@@ -20,9 +20,10 @@ ptables <- map(
   1:npages, function(page) {
    ggplot(x) +
      geom_text(aes(1, 0.5, label = val), size = 3) +
-     facet_grid(
-       sim~var, switch = "y"
-       ) +
+      ggforce::facet_grid_paginate(
+                 sim~var, scales = 'free_x', page = page, nrow = nrow_page, ncol = 4,
+                 switch = "y"
+        ) +
      ylim(0, 1) +
      theme_minimal() +
      theme(
@@ -41,9 +42,10 @@ ptables <- map(
 ######################### Plot 2. Estimated parameters
 y <- select(
   process_fits, sim, `mu_2.5%`:`mu_97.5%`, `sd_2.5%`:`sd_97.5%`,
-  `pinvalid_2.5%`:`pinvalid_97.5%`,
-  mu_true = true_mean, sd_true = true_sd, pinvalid_true = pinvalid
-  )
+  `pinvalid_2.5%`:`pinvalid_97.5%`, `recall_2.5%`:`recall_97.5%`,
+  mu_true = true_mean, sd_true = true_sd, pinvalid_true = pinvalid,
+  recall_true = recall
+)
 ####### Reorganise, should have set-up like this in the first place!!
 y <- tidyr::gather(y, var, val, -sim)
 y <- tidyr::separate(y, col = "var", into = c("var", "qntl"), sep = "_")
@@ -60,9 +62,8 @@ pest <- map(
       geom_point(aes(`50%`, ylevel)) +
       geom_linerange(aes(xmin = `25%`, xmax = `75%`, y = ylevel)) +
       geom_point(aes(`true`, ylevel), shape = 4) +
-      facet_grid(
-        sim~var,
-        scales = 'free_x'
+      ggforce::facet_grid_paginate(
+        sim~var, scales = 'free_x', page = page, nrow = nrow_page, ncol = 4
         ) +
       ylim(0, 1) +
       theme_minimal() +
@@ -106,7 +107,7 @@ x <- rbind(training, posterior)
 x$sim <- factor(x$sim, levels = seq_len(nsims), ordered = TRUE)
 
 nrow_page <- 4
-ncol_page <- 4
+ncol_page <- 3
 npages <- nsims / (nrow_page * ncol_page)
 
 walk(
@@ -114,13 +115,9 @@ walk(
     p <- ggplot(x) +
       geom_density(
         aes(si, fill = category),
-        col = NA, alpha = 0.3
+        col = NA, alpha = 0.4
       ) +
-      geom_density(
-        aes(si, fill = category),
-        col = NA, alpha = 0.3
-      ) +
-      ggforce::facet_wrap_paginate(~sim, nrow = NULL, ncol = ncol_page, page = page, scales = "free_y") +
+      ggforce::facet_wrap_paginate(~sim, nrow = nrow_page, ncol = ncol_page, page = page, scales = "free_y") +
       theme_minimal() +
       theme(
         legend.position = 'top', legend.title = element_blank(),
