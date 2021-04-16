@@ -2,7 +2,7 @@ library(context)
 rstan_options(auto_write = FALSE)
 # config <- didehpc::didehpc_config(cluster = 'fi--didemrchnb')
 options(didehpc.cluster = 'fi--didemrchnb')
-root <- "full-model"
+root <- "4a_mixture"
 packages <- c("rstan", "dplyr","purrr", "ggplot2", "epitrix", "glue")
 source_files <- c("global2.R", "utils.R", "scenario4a_cluster.R")
 ctx <-context_save(
@@ -23,7 +23,7 @@ grp <- obj$lapply(
                width <- 0.1
                sim_data <- dplyr::arrange(sim_data, nu)
                fit_4a <- stan(
-                 file = "full_model.stan",
+                 file = "scenario4a_mixture.stan",
                  data = list(
                    N = length(sim_data$si),
                    si = sim_data$si,

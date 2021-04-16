@@ -42,7 +42,7 @@ params <- list(
   pinvalid1 = 0,
   pinvalid2 = 0.05,
   pinvalid3 = 0.2,
-  recall1 = 0.1,
+  recall1 = 0,
   recall2 = 0.5,
   recall3 = 1
 )
@@ -73,6 +73,7 @@ params_check <- list(
   offset2 = -6,
   pinvalid1 = 0.05,
   pinvalid2 = 0.2,
+  beta1 = 0,
   iso_par1 = list(shape = 1, scale = 5)
 )
 

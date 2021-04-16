@@ -1,14 +1,12 @@
-source("global2.R")
-source("utils.R")
-prefix <- "4a_mix_with_stress_test_sim"
+prefix <- "4a_mix"
 
 param_grid <- expand.grid(
   params_inf = c("inf_par1", "inf_par2"),
   params_inc = c("inc_par1", "inc_par2"),
-  params_iso = "iso_par1",
-  params_offset = c("offset1", "offset2"),
-  params_pinvalid = c("pinvalid1", "pinvalid2"),
-  params_beta = "beta1",
+  params_iso = c("iso_par1", "iso_par2"),
+  params_offset = c("offset1", "offset2", "offset3"),
+  params_pinvalid = c("pinvalid1", "pinvalid2", "pinvalid3"),
+  params_beta = "recall1",
   stringsAsFactors = FALSE
 )
 
@@ -22,8 +20,8 @@ params_inf_all <- pmap(
     params_offset = param_grid$params_offset
   ),
   function(params_inf, params_offset) {
-    out <- params_check[[params_inf]]
-    offset <- params_check[[params_offset]]
+    out <- params[[params_inf]]
+    offset <- params[[params_offset]]
     beta_muvar2shape1shape2(
       (out$mean_inf - offset) / (max_shed - offset),
       out$sd_inf^2 / (max_shed - offset)^2
@@ -33,25 +31,34 @@ params_inf_all <- pmap(
 
 params_inc_all <- map(
   param_grid$params_inc,
-  function(params_inc) params_check[[params_inc]]
+  function(params_inc) {
+    out <- params[[params_inc]]
+    epitrix::gamma_mucv2shapescale(
+      mu = out[[1]], cv = out[[2]] / out[[1]]
+    )
+  }
 )
 
 params_iso_all <- map(
   param_grid$params_iso,
-  function(params_iso) params_check[[params_iso]]
+  function(params_iso) {
+    out <- params[[params_iso]]
+    epitrix::gamma_mucv2shapescale(
+      mu = out[[1]], cv = out[[2]] / out[[1]]
+    )
+  }
 )
-
 params_offsets_all <- map(
   param_grid$params_offset,
-  function(params_offset) params_check[[params_offset]]
+  function(params_offset) params[[params_offset]]
 )
 
 params_pinv <- map(
-  param_grid$params_pinv, function(params_pinv) params_check[[params_pinv]]
+  param_grid$params_pinv, function(params_pinv) params[[params_pinv]]
 )
 
 params_beta <- map(
-  param_grid$params_beta, function(params_beta) params_check[[params_beta]]
+  param_grid$params_beta, function(params_beta) params[[params_beta]]
 )
 
 
@@ -121,7 +128,7 @@ mixed <- pmap(
     params_pinv = param_grid$params_pinv
   ),
   function(valid, invalid, params_pinv) {
-    pinvalid <- params_check[[params_pinv]]
+    pinvalid <- params[[params_pinv]]
     toss <- runif(nrow(valid))
     valid$type <- "valid"
     invalid$type <- "invalid"
@@ -177,5 +184,5 @@ sampled <- pmap(
   }
 )
 
-outfiles <- glue::glue("{prefix}_{seq_along(mixed)}data.rds")
-walk2(mixed, outfiles, function(x, y) saveRDS(x, y))
+outfiles <- glue::glue("data/{prefix}_{seq_along(mixed)}_data.rds")
+walk2(sampled, outfiles, function(x, y) saveRDS(x, y))
