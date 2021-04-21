@@ -23,3 +23,20 @@ ggplot(data)+
 ggplot(data%>%filter(infector_returned_fromOtherCity == "imported"))+
   geom_point(aes(x = delay_import, y = infector_onsetDate))+
   geom_abline(slope = 1, intercept = 0)
+
+## Relationship betweem importation and delay to isolation
+ggplot(data, aes(x = onset_first_iso, y = si, col = infector_returned_fromOtherCity)) +
+  geom_point() +
+  theme(legend.position = "top")
+
+
+ggplot(data, aes(x = onset_first_iso, fill = infector_returned_fromOtherCity)) +
+  geom_histogram(position = "dodge") +
+  theme(legend.position = "top")
+
+## Assume NAs are local
+
+data$infector_returned_fromOtherCity[is.na(data$infector_returned_fromOtherCity)] <- "local"
+ggplot(data, aes(x = onset_first_iso, fill = infector_returned_fromOtherCity)) +
+  geom_histogram(position = "dodge") +
+  theme(legend.position = "top")
