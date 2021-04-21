@@ -11,8 +11,10 @@ ggplot(data)+
   geom_boxplot(aes(x = infector_returned_fromOtherCity, y = si))
 
 # relationship between SI and importation (days)
-ggplot(data%>%filter(infector_returned_fromOtherCity == "imported"))+
-  geom_point(aes(x = delay_import, y = si))#+
+ggplot(data%>%filter(infector_returned_fromOtherCity == "imported"), aes(x = delay_import, y = si))+
+  geom_point()+
+  geom_smooth(method='lm')
+  #+
   #geom_abline(slope = 1, intercept = 0)
 
 # relationship between importation (Y/N) and time
