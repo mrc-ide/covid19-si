@@ -25,3 +25,8 @@ ggplot(data)+
 ggplot(data%>%filter(infector_returned_fromOtherCity == "imported"))+
   geom_point(aes(x = delay_import, y = infector_onsetDate))+
   geom_abline(slope = 1, intercept = 0)
+
+#comparing delay to isolation in imported versus local index cases
+data %>%
+  group_by(infector_returned_fromOtherCity) %>%
+  dplyr::summarize(Mean = mean(onset_first_iso, na.rm=TRUE))
