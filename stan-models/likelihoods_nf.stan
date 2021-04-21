@@ -88,4 +88,65 @@ functions{
     }
     return(pdf_mat);
   }
+
+  // Accounting for possible left truncation of data
+  // For a case imported at time min_shed, any infections prior to
+  // min_shed will not be observed
+  real validnf_with_left_bias_lpdf(real x, real nu, real max_shed, real min_shed,
+                                   real a, real b, real c, real tmax, real recall, 
+                                   real alpha2, real beta2, real width) {
+
+    real out;
+    real inf_density;
+    real inc_density;
+    real ulim;
+    real s = min_shed;
+    
+    if (x > max_shed) ulim = max_shed;
+    else ulim = x;
+    if(ulim > nu) ulim = nu;
+    out = 0;
+    while (s < ulim) {
+      inf_density =  nf_lpdf(s | a, b, c, tmax);
+      inc_density = gamma_lpdf(x - s|alpha2, beta2);
+      out = out + (exp(inf_density + inc_density) * width);
+      s = s + width;
+    }
+    out = log(out) - recall * fabs(x - nu);
+    return out;
+  }
+
+  // Returns an array where the first dimension indexes time to isolation,
+  // second dimension indexes 
+  // time to importation since symptom onset and third dimentions indexes SIs
+  // Each cell contains the pdf on natural scale for given nu, rho, si.
+  real[, ,] pdf_matrix_with_left_bias(real[] nu_vec, real[] si_vec, real[] min_shed_vec,
+                                      real max_shed, real a, real b,
+                                      real c, real tmax, real recall, 
+                                      real alpha2, real beta2,
+                                      real width) {
+
+    int num_nu = size(nu_vec);
+    int num_si = size(si_vec);
+    int num_rho = size(min_shed_vec);
+    real out[num_nu, num_rho, num_si];
+    real nu;
+    real rho;
+    real si;
+    
+    for (nu_index in 1:num_nu) {
+      nu = nu_vec[nu_index];
+      for (rho_index in 1:num_rho) {
+        rho = min_shed_vec[rho_index];
+        for (si_index in 1:num_si) {
+          si = si_vec[si_index];
+          out[nu_index, rho_index, si_index] =
+            exp(validnf_with_left_bias_lpdf(si| nu, max_shed, rho, a,
+                                            b, c, tmax, recall, alpha2,
+                                            beta2, width));
+        }
+      }
+    }
+    return(out);
+  }
 }
