@@ -113,7 +113,7 @@ functions{
       s = s + width;
     }
     out = log(out) - recall * fabs(x - nu);
-    return out;
+    return(out);
   }
 
   // Returns an array where the first dimension indexes time to isolation,
