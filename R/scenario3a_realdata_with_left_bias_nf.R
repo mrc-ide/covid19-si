@@ -26,7 +26,7 @@ real_data <- data %>%
 real_data <- real_data[order(real_data$nu),]
 
 
-
+saveRDS(real_data, "data/cowling_data_with_rho.rds")
 
 ###################################################
 # select assumed parameters (from list in global) #
@@ -58,7 +58,7 @@ fit_3a_real <- stan(
     M = length(si_vec),
     si_vec = si_vec
   ),
-  chains = 1, iter = 100,
+  chains = 2, iter = 2000,
   seed = 42,
   verbose = TRUE
 )
