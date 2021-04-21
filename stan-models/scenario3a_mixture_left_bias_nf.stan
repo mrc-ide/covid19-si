@@ -42,10 +42,12 @@ model{
                                       recall, alpha2, beta2, width);
   for (n in 1:N) {
     denominator_valid = sum(pdf_mat[1, n, ]);
+    print("denominator_valid = ", denominator_valid);
     invalid = invalid_lpdf(si[n]|min_invalid_si, max_invalid_si);
     valid = validnf_with_left_bias_lpdf(si[n] |dummy[1], max_shed,
                                         rho[n], a, b, c, tmax, 
                                         recall, alpha2, beta2, width);
+    print("valid = ", valid);
     valid = valid - log(denominator_valid);      
     target += log_mix(pinvalid, invalid, valid);    
   }
