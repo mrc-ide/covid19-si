@@ -3,7 +3,7 @@
 ############################
 
 #functions
-
+      # density function for NF distribution
       dnf <- function(t, a = 0.5, b = 0.5, c = 0.1, tmax = 0) {
           numerator <- a + b
           growing <- a * exp(b * (t - tmax))
@@ -11,12 +11,13 @@
           (numerator / (growing + failing))^c
       }
       
+      # random sample from NF distribution
       rnf <- function(n, taus = seq(-20, 40, 0.1), a = 0.5, b = 0.5, c = 0.1, tmax = 0) {
           p <- map_dbl(taus, function(t) dnf(t, a, b, c, tmax))
           sampled <- sample(taus, n, replace = TRUE, prob = p)
       }
         
-        #a. extract fitted parameters
+      # extract fitted parameters
       table1_fun <- function(fit){
           tab1 <- as.data.frame(rstan::summary(fit)$summary)
           fit <- rstan::extract(fit)
@@ -29,7 +30,7 @@
           return(tab1)
       }
         
-        #b. fitted parameters --> sampled distributions
+      # fitted parameters --> sampled TOST and SI distributions
       sample_dist_fun <- function(tab1, taus = seq(-20, 40, 0.1), n = 1e5, fit,
                                     shape_inc = params_real$inc_par2[["shape"]],
                                     scale_inc = params_real$inc_par2[["scale"]]){
@@ -84,7 +85,7 @@
           
       }
         
-        #c. sampled distributions --> summary statistics
+      # sampled TOST distribution --> summary statistics
       TOST_summary_func <- function(sample){
           mean <- mean(sample)
           sd <- sd(sample)
@@ -101,6 +102,7 @@
                    u_quantile_inf = upper))
       }
       
+      # put summary stats from SI and TOST into a table (for a single model)
       table2_fun <- function(samples){
         foo <- as.data.frame(apply(samples$TOST_post, 2, TOST_summary_func))
         CrI_2.5 <- apply(foo, 1, quantile, probs = 0.025)
@@ -123,6 +125,7 @@
         return(tab_2)
       }
       
+      # plot TOST
       TOST_fig_fun <- function(TOST){ 
         cutoff <- 0
         hist.y <- density(TOST, from = -20, to = 40) %$% 
@@ -142,6 +145,7 @@
         print(the.plot)
       }  
       
+      # plot to compare TOSTS
       TOSTcomp_fig_fun <- function(TOST3, TOST4){ 
 
         tost_df <- data.frame(id = 1:(length(TOST3)),
@@ -210,7 +214,7 @@
        return(pobs_SI = mixed) 
       }
       
-      
+      # plot estimated SI and data
       SI_fig_fun <- function(SI, data){
         p <-  ggplot() +
           geom_histogram(
@@ -240,6 +244,7 @@
         print(p) 
       }
       
+      # plot to compare "true" SI and expected SI alongside the data
       SIcomp_fig_fun <- function(SI1, SI2, data){
         p <-  ggplot() +
           geom_histogram(
@@ -277,3 +282,31 @@
         print(p) 
       }      
   
+      wrapper_single_model <- function(stanfit, data, mixture = T, recall = F, isol = F, n = 1e4){
+        
+        tab1 <- table1_fun(fit = stanfit)
+        
+        samples <- sample_dist_fun(tab1, fit = rstan::extract(stanfit))
+
+        tab2 <- table2_fun(samples)
+        
+        p1 <- TOST_fig_fun(samples$TOST_bestpars)
+        
+        SI <- samples$SI_bestpars$SI
+        
+        SI_conditional <- pred_observed_SI_fun(SI = samples$SI_bestpars,
+                                                data = data,
+                                                mixture = mixture,
+                                                recall = recall,
+                                                isol = isol,
+                                                tab1 = tab1,
+                                                n = n)
+        
+        p2 <- SIcomp_fig_fun(SI1 = SI, SI2 = SI_conditional, data = data)
+        
+        return(list(table1 = tab1,
+                    table2 = tab2,
+                    p1 = p1,
+                    p2 = p2))
+      }
+      
