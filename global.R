@@ -15,6 +15,7 @@ library(magrittr)
 source("R/utils.R")
 source("R/scenario_3a_mix_utils.R")
 source("R/scenario_4a_mix_utils.R")
+source("R/utils_process_fits.R")
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
