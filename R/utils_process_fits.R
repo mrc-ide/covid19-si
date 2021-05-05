@@ -199,14 +199,14 @@ expected_SI_fun <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin
   # nu <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
 
   # with isolation bias
-  if (isol == TRUE) {
+  if (isTRUE(isol)) {
     SI$nu <- nu
     SI <- SI %>% dplyr::filter(TOST < nu)
     SI <- sample_n(SI, n * 0.1, replace = TRUE)
   }
 
   # with recall bias
-  if (recall == TRUE) {
+  if (isTRUE(recall)) {
     recall_par <- tab1["recall", "best"]
   } else {
     recall_par <- 0
@@ -220,7 +220,7 @@ expected_SI_fun <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin
   )
 
   # with invalid SIs
-  if (mixture == TRUE) {
+  if (isTRUE(mixture)) {
     pinvalid <- tab1["pinvalid", "best"]
   } else {
     pinvalid <- 0

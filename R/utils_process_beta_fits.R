@@ -73,8 +73,67 @@ process_beta_fit <- function(pars, n = 1e4, samples,
 }
 
 
+cowling_data <- readRDS("data/cowling_data_clean.rds") %>%
+  mutate(si = as.numeric(si))%>%
+   dplyr::rename(nu = onset_first_iso)%>%
+   dplyr::filter(!is.na(nu))
+
+
+
+### S4 Mixture
 fit4mix <- readRDS("stanfits/release/scenario4a_mixture_beta.rds")
-fit4recall <- readRDS("stanfits/release/scenario4arecall_mixture_beta.rds")
 tab1_s4mix <- table1_fun(fit4mix)
+samples_s4 <- process_beta_fit(
+  tab1_s4mix, 1e4, rstan::extract(fit4mix), 21, -11
+)
+tab2_s4mix <- table2_fun(samples_s4)
+
+
+TOST4 <- samples_s4$TOST_bestpars
+p <- TOST_fig_fun(TOST4)
+SI4 <- samples_s4$SI_bestpars$SI
+
+
+SI4_con <- expected_SI_fun(
+  SI = samples_s4$SI_bestpars,
+  data = cowling_data,
+  mixture = TRUE,
+  recall = FALSE,
+  isol = TRUE,
+  tab1 = tab1_s4mix,
+  n = 1e4
+)
+
+p <- SIcomp_fig_fun(SI1 = SI4, SI2 = SI4_con, data = cowling_data)
+ggsave("figures/s4mixture_cowling_beta.png", p)
+
+
+### S4 Mixture and recall
+fit4recall <- readRDS(
+  "stanfits/release/scenario4arecall_mixture_beta.rds"
+)
 tab1_s4recall <- table1_fun(fit4recall)
-out <- process_beta_fit(tab1_s4mix, 1e4, rstan::extract(fit4mix), 21, -11)
+
+samples_s4recall <- process_beta_fit(
+  tab1_s4recall, 1e4, rstan::extract(fit4recall), 21, -11
+)
+tab2_s4recall <- table2_fun(samples_s4recall)
+
+
+TOST4 <- samples_s4recall$TOST_bestpars
+p <- TOST_fig_fun(TOST4)
+SI4recall <- samples_s4recall$SI_bestpars$SI
+
+
+SI4recall_con <- expected_SI_fun(
+  SI = samples_s4recall$SI_bestpars,
+  data = cowling_data,
+  mixture = TRUE,
+  recall = TRUE,
+  isol = TRUE,
+  tab1 = tab1_s4recall,
+  n = 1e4
+)
+
+p <- SIcomp_fig_fun(SI1 = SI4recall, SI2 = SI4recall_con, data = cowling_data)
+ggsave("figures/s4recall_cowling_beta.png", p)
