@@ -3,7 +3,7 @@ sample_inf_profile <- function(n, alpha1, beta1, max_shed, offset) {
   ((max_shed - offset) * inf_times) + offset
 }
 
-sample_si <- function(n = 1e4,
+unconditional_si <- function(n = 1e4,
                       inf_samples,
                       shape_inc = params_real$inc_par2[["shape"]],
                       scale_inc = params_real$inc_par2[["scale"]]
@@ -25,6 +25,55 @@ sample_si <- function(n = 1e4,
     )
 
   inc_mat + inf_samples
+}
+
+## Simulate serial interval distribution given nu
+conditional_si <- function(nu, inf_times,
+                           shape_inc = params_real$inc_par2[["shape"]],
+                           scale_inc = params_real$inc_par2[["scale"]],
+                           nsim) {
+
+  filtered <- inf_times[inf_times <= nu]
+  if (length(filtered) == 0) return(NULL)
+  inf_times <- sample(filtered, nsim, replace = TRUE)
+  inc_times <-  rgamma(n = nsim, shape = shape_inc, scale = scale_inc)
+  inf_times + inc_times
+}
+
+## obs is observed data with column nu
+## processed_fit is the output of process_beta_fit
+beta_fit_si_all <- function(obs, processed_fit) {
+  nu_freq <- janitor::tabyl(obs$nu)
+  colnames(nu_freq)[1] <- "nu"
+  si_given_nu <- map(
+    nu_freq$nu, function(nu) {
+      conditional_si(
+        nu = nu, inf_times = processed_fit$TOST_bestpars, nsim = 1e4
+      )
+    }
+  )
+  names(si_given_nu) <- nu_freq$nu
+  si_given_nu
+}
+## si_given_nu is the output of beta_fit_si_all, a list of conditional
+## SIs for each nu in the data
+beta_fit_si_pooled <- function(obs, si_given_nu) {
+  ## Under some -ve nus, we have 0 possible SIs, we wil filter them out
+  ## here.
+  si_given_nu <- keep(si_given_nu, function(x) !is.null(x))
+  ## Renormalise weights over this smaller set of nus
+  nu_freq <- janitor::tabyl(obs$nu[obs$nu %in% as.numeric(names(si_given_nu))])
+  ## Now sample from this list.
+  nu_weights <- sample(
+    names(si_given_nu), nsim, replace = TRUE, prob = nu_freq$percent
+  )
+  nu_weights <- janitor::tabyl(nu_weights)
+  si <- map2(
+    si_given_nu, nu_weights$n, function(x, size) {
+      sample(x, size)
+    }
+  )
+  unname(unlist(si))
 }
 
 process_beta_fit <- function(pars, n = 1e4, samples,
@@ -54,9 +103,9 @@ process_beta_fit <- function(pars, n = 1e4, samples,
   }
 
   ## Serial Interval
-  SI_best <- sample_si(n, TOST_bestpars)
-  SI_mean <- sample_si(n, TOST_meanpars)
-  SI_post <- sample_si(n, TOST_post)
+  SI_best <- unconditional_si(n, TOST_bestpars)
+  SI_mean <- unconditional_si(n, TOST_meanpars)
+  SI_post <- unconditional_si(n, TOST_post)
 
   list(
     TOST_bestpars = TOST_bestpars,
@@ -104,7 +153,7 @@ SI4_con <- expected_SI_fun(
   n = 1e4
 )
 
-p <- SIcomp_fig_fun(SI1 = SI4, SI2 = SI4_con, data = cowling_data)
+p <- SIcomp_fig_fun(SI1 = SI4, SI2 = si, data = cowling_data)
 ggsave("figures/s4mixture_cowling_beta.png", p)
 
 
