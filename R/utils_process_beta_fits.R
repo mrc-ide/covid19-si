@@ -128,6 +128,21 @@ cowling_data <- readRDS("data/cowling_data_clean.rds") %>%
    dplyr::filter(!is.na(nu))
 
 
+### S3 Mixture
+fit3mix <- readRDS("stanfits/release/scenario3a_mixture_beta.rds")
+tab1_s3mix <- table1_fun(fit3mix)
+samples_s3 <- process_beta_fit(
+  tab1_s3mix, 1e4, rstan::extract(fit3mix), 21, -3
+)
+tab2_s3mix <- table2_fun(samples_s3)
+TOST3 <- samples_s3$TOST_bestpars
+p <- TOST_fig_fun(TOST3)
+SI3 <- samples_s3$SI_bestpars$SI
+p <- SI_fig_fun(SI3, cowling_data)
+cowplot::save_plot("figures/scenario3a_mixture_beta_si.png", p)
+
+
+
 
 ### S4 Mixture
 fit4mix <- readRDS("stanfits/release/scenario4a_mixture_beta.rds")
@@ -136,24 +151,30 @@ samples_s4 <- process_beta_fit(
   tab1_s4mix, 1e4, rstan::extract(fit4mix), 21, -11
 )
 tab2_s4mix <- table2_fun(samples_s4)
-
-
 TOST4 <- samples_s4$TOST_bestpars
 p <- TOST_fig_fun(TOST4)
-SI4 <- samples_s4$SI_bestpars$SI
+
+s4_si_all <- beta_fit_si_all(cowling_data, samples_s4)
+s4_si_qntls <- map_dfr(s4_si_all, quantile, .id = "nu")
+s4_si_qntls$nu <- as.numeric(s4_si_qntls$nu)
 
 
-SI4_con <- expected_SI_fun(
-  SI = samples_s4$SI_bestpars,
-  data = cowling_data,
-  mixture = TRUE,
-  recall = FALSE,
-  isol = TRUE,
-  tab1 = tab1_s4mix,
-  n = 1e4
+psi_given_nu <- ggplot(s4_si_qntls) +
+  geom_linerange(aes(y = nu, xmin = `25%`, xmax = `75%`)) +
+  geom_point(aes(y = nu, x = `50%`)) +
+  xlab("Serial Interval (Median and IQR)") +
+  ylab("Time from symptom onset to isolation") +
+  theme_minimal()
+
+ggsave("figures/s4mixture_si_given_nu_beta.png", psi_given_nu)
+
+s4_si_pooled <- beta_fit_si_pooled(cowling_data, s4_si_all)
+
+p <- SIcomp_fig_fun(
+  SI1 = samples_s4$SI_bestpar$SI, SI2 = s4_si_pooled,
+  data = cowling_data
 )
 
-p <- SIcomp_fig_fun(SI1 = SI4, SI2 = si, data = cowling_data)
 ggsave("figures/s4mixture_cowling_beta.png", p)
 
 

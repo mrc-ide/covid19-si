@@ -263,7 +263,11 @@ SI_fig_fun <- function(SI, data) {
     ) +
     theme_minimal() +
     xlab("Serial Interval (days)") +
-    annotate(geom = "text", x = mean(SI), y = 0.095, color = "red", label = paste(" mean:\n", round(mean(SI), 1), " days", sep = ""), hjust = -0.1) +
+    annotate(
+      geom = "text", x = mean(SI), y = 0.095, color = "red",
+      label = paste(" mean:\n", round(mean(SI), 1), " days", sep = ""),
+      hjust = -0.1
+    ) +
     theme(legend.title = element_blank()) +
     theme(legend.position = "bottom")
   print(p)
