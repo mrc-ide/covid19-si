@@ -4,7 +4,7 @@ infile <- glue::glue("stan-models/{prefix}.stan")
 params_inc <- params_real$inc_par2
 si_vec <- seq(-20, max_valid_si)
 
-fits_3a <- stan(
+fit_3a <- stan(
   file = here::here(infile),
   data = list(
     N = nrow(cowling_data),
@@ -19,3 +19,6 @@ fits_3a <- stan(
   verbose = TRUE
 )
 
+ggmcmc(
+  ggs(fit_3a), glue::glue("checks/{prefix}_check.pdf")
+)
