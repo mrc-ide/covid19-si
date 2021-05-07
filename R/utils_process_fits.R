@@ -11,28 +11,17 @@ dnf <- function(t, a = 0.5, b = 0.5, c = 0.1, tmax = 0) {
   (numerator / (growing + failing))^c
 }
 
-        tost_df <- data.frame(id = 1:(length(TOST3)),
-                              No = TOST3,
-                              Yes = TOST4)
-        tost_df <- reshape2::melt(tost_df, id.vars = "id")
-        tost_df <- tost_df%>%
-          mutate(presymp = value<0)
-        p <- ggplot(data = tost_df
-               )+
-          geom_density(aes(value, group = variable, fill = presymp), size = 1
-                       )+
-          xlab("TOST (days)")+
-          theme_minimal()+
-          labs(colour = "corrected\nisolation bias")+
-          geom_vline(xintercept = 0, lty = 2)
-        
-        print(p)
-      }
-      
+# random sample from NF distribution
+rnf <- function(n, taus = seq(-20, 40, 0.1), a = 0.5, b = 0.5, c = 0.1, tmax = 0) {
+  p <- map_dbl(taus, function(t) dnf(t, a, b, c, tmax))
+  sample(taus, n, replace = TRUE, prob = p)
+}
+
+
       # predicted observed SIs (under assumed biases)
       # currently assumes recall and isolation biases only affect valid SIs
       expected_SI_fun <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20){
-        
+
         # fit.gamma <- fitdist(data$nu - tmin, distr = "gamma", method = "mle")
         # nu_shifted <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
         # nu <- nu_shifted + tmin
@@ -41,86 +30,86 @@ dnf <- function(t, a = 0.5, b = 0.5, c = 0.1, tmax = 0) {
         fit.gamma <- fitdist(data_nu$nu, distr = "gamma", method = "mle")
         nu <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
         SI$nu <- nu
-        
+
         # with isolation bias
         if(isol == TRUE) {
           SI <- SI%>%dplyr::filter(TOST<nu)
           SI <- sample_n(SI, n, replace = TRUE)
         }
-        
+
         # with recall bias
         if(recall == TRUE) {
           recall_par <- tab1["recall", "best"]
         } else recall_par <- 0
-        
+
         precall <- exp(-recall_par * abs(SI$SI - SI$nu))
-        
+
         with_recall <- sample(
           SI$SI, n, replace = TRUE, prob = precall
         )
-        
+
         # with invalid SIs
         if(mixture == TRUE) {
           pinvalid <- tab1["pinvalid", "best"]
         } else pinvalid <- 0
-        
+
         toss <- runif(n)
-        
-        valid <- which(toss > pinvalid)  
-      
+
+        valid <- which(toss > pinvalid)
+
         invalid_si <- runif(n, tmin, 40)
-        
+
         mixed <- c(
           SI$SI[valid], invalid_si[!valid]
-        ) 
-        
-       return(pobs_SI = mixed) 
+        )
+
+       return(pobs_SI = mixed)
       }
-      
+
       # sampling from empirical nu distribution instead
       expected_SI_fun_empiricnu <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20){
-        
+
         nu <- sample(data$nu, size = n, replace = TRUE)
         SI$nu <- nu
         # data_nu <- data%>%filter(nu>0)
         # fit.gamma <- fitdist(data_nu$nu, distr = "gamma", method = "mle")
-        # nu <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])  
-        
+        # nu <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
+
         # with isolation bias
         if(isol == TRUE) {
           SI <- SI%>%dplyr::filter(TOST<nu)
           SI <- sample_n(SI, n, replace = TRUE)
         }
-        
+
         # with recall bias
         if(recall == TRUE) {
           recall_par <- tab1["recall", "best"]
         } else recall_par <- 0
-        
+
         precall <- exp(-recall_par * abs(SI$SI - SI$nu))
-        
+
         with_recall <- sample(
           SI$SI, n, replace = TRUE, prob = precall
         )
-        
+
         # with invalid SIs
         if(mixture == TRUE) {
           pinvalid <- tab1["pinvalid", "best"]
         } else pinvalid <- 0
-        
+
         toss <- runif(n)
-        
-        valid <- which(toss > pinvalid)  
-        
+
+        valid <- which(toss > pinvalid)
+
         invalid_si <- runif(n, tmin, 40)
-        
+
         mixed <- c(
           SI$SI[valid], invalid_si[!valid]
-        ) 
-        
-        return(pobs_SI = mixed) 
+        )
+
+        return(pobs_SI = mixed)
       }
-      
+
       # plot estimated SI and data
       SI_fig_fun <- function(SI, data){
         p <-  ggplot() +
@@ -148,9 +137,9 @@ dnf <- function(t, a = 0.5, b = 0.5, c = 0.1, tmax = 0) {
           annotate(geom = 'text', x = mean(SI), y = 0.095, color = 'red', label = paste(" mean:\n",round(mean(SI), 1), " days", sep = ""), hjust = -0.1)+
           theme(legend.title = element_blank())+
           theme(legend.position="bottom")
-        print(p) 
+        print(p)
       }
-      
+
       # plot to compare "true" SI and expected SI alongside the data
       SIcomp_fig_fun <- function(SI1, SI2, data){
         p <-  ggplot() +
@@ -186,14 +175,9 @@ dnf <- function(t, a = 0.5, b = 0.5, c = 0.1, tmax = 0) {
           theme(legend.title = element_blank())+
           guides(fill = guide_legend(override.aes= list(alpha = c(0.8, 0.3,0.3))))+
           theme(legend.position="bottom")
-        print(p) 
-      }      
-  
-      wrapper_single_model <- function(stanfit, data, mixture = T, recall = F, isol = F, n = 1e4){
-        
-        tab1 <- table1_fun(fit = stanfit)
-        
-        samples <- sample_dist_fun(tab1, fit = rstan::extract(stanfit))
+        print(p)
+      }
+
 
 # extract fitted parameters
 table1_fun <- function(fit) {

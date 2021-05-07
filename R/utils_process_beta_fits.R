@@ -155,11 +155,11 @@ TOST4 <- samples_s4$TOST_bestpars
 p <- TOST_fig_fun(TOST4)
 
 s4_si_all <- beta_fit_si_all(cowling_data, samples_s4)
-s4_si_qntls <- map_dfr(s4_si_all, quantile, .id = "nu")
-s4_si_qntls$nu <- as.numeric(s4_si_qntls$nu)
+s3_si_qntls <- map_dfr(si_all, quantile, .id = "nu")
+s3_si_qntls$nu <- as.numeric(s3_si_qntls$nu)
 
 
-psi_given_nu <- ggplot(s4_si_qntls) +
+psi_given_nu <- ggplot(s3_si_qntls) +
   geom_linerange(aes(y = nu, xmin = `25%`, xmax = `75%`)) +
   geom_point(aes(y = nu, x = `50%`)) +
   xlab("Serial Interval (Median and IQR)") +

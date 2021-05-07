@@ -2,7 +2,7 @@
 
 ## read in rds files
 
-fit3 <- readRDS("stanfits/release/scenario3a_mixture_nf.rds")
+fit3 <- readRDS("stanfits/release/scenario3a_mixture_nf_long_max_shed.rds")
 fit3_recall <- readRDS("stanfits/release/scenario3arecall_mixture_nf.rds")
 fit4 <- readRDS("stanfits/release/scenario4a_mixture_nf.rds")
 fit4_recall <- readRDS("stanfits/release/scenario4arecall_mixture_nf.rds")
@@ -43,7 +43,7 @@ fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_
                                   shape_inc = params_real$inc_par2[["shape"]],
                                   scale_inc = params_real$inc_par2[["scale"]])
 
- 
+
 ## table 2 - summary stats for sampled distributions
 
  tab2_s3mix <- table2_fun(samples_s3mix)
@@ -53,7 +53,7 @@ fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_
  tab2_s3recall <- table2_fun(samples_s3recall)
  tab2_s4recall <- table2_fun(samples_s4recall)
 
- 
+
 ## TOST plot
  TOST3mix <- samples_s3mix$TOST_bestpars
  TOST4mix <- samples_s4mix$TOST_bestpars
@@ -62,7 +62,7 @@ fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_
  TOST4mix_recall <- samples_s4mixrecall$TOST_bestpars
  TOST3mix_leftbias <- samples_s3mixleftbias$TOST_bestpars
  TOST3leftbias <- samples_s3leftbias$TOST_bestpars
- 
+
  p1 <- TOST_fig_fun(TOST3mix)
  p2 <- TOST_fig_fun(TOST4mix)
  p3 <- TOST_fig_fun(TOST3recall)
@@ -70,7 +70,7 @@ fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_
  p5 <- TOST_fig_fun(TOST4mix_recall)
  p6 <- TOST_fig_fun(TOST3mix_leftbias)
  p7 <- TOST_fig_fun(TOST3leftbias)
- 
+
 ## SI plot
  SI3mix <- samples_s3mix$SI_bestpars$SI
  SI4mix <- samples_s4mix$SI_bestpars$SI
@@ -79,22 +79,23 @@ fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_
  SI4mix_recall <- samples_s4mixrecall$SI_bestpars$SI
  SI3mix_leftbias <- samples_s3mixleftbias$SI_bestpars$SI
  SI3leftbias <- samples_s3leftbias$SI_bestpars$SI
- 
+
  library(fitdistrplus)
- 
+
  data <- readRDS("data/cowling_data_clean.rds")
  data <- data%>%
     mutate(si = as.numeric(si))%>%
     dplyr::rename(nu = onset_first_iso)%>%
     dplyr::filter(!is.na(nu))
- 
+
  SI3mix_con <- expected_SI_fun(SI = samples_s3mix$SI_bestpars,
-                                    data = data,
-                                    mixture = TRUE,
-                                    recall = FALSE,
-                                    isol = FALSE,
-                                    tab1 =  tab1_s3mix ,
-                                    n = 1e4)
+                               data = data,
+                               mixture = TRUE,
+                               recall = FALSE,
+                               isol = FALSE,
+                               tab1 =  tab1_s3mix ,
+                               n = 1e4
+                               )
  SI4mix_con <- expected_SI_fun(SI = samples_s4mix$SI_bestpars,
                                     data = data,
                                     mixture = TRUE,
@@ -116,7 +117,7 @@ fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_
                                isol = TRUE,
                                tab1 =  tab1_s4mix ,
                                n = 1e4)
- 
+
  SI3recall_con <- expected_SI_fun(SI = samples_s3recall$SI_bestpars,
                                        data = data,
                                        mixture = FALSE,
@@ -139,7 +140,7 @@ fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_
                                            tab1 = tab1_s4mixrecall,
                                            n = 1e4)
 
- p1 <- SIcomp_fig_fun(SI1 = SI3mix, SI2 = SI3mix_con, data = data)
+ p1 <- SIcomp_fig_fun(SI1 = SI3mix, SI2 = SI3mix, data = data)
  p2 <- SIcomp_fig_fun(SI1 = SI4mix, SI2 = SI4mix_con, data = data)
  p2_empiric_nu <- SIcomp_fig_fun(SI1 = SI4mix, SI2 = SI4mix_con_empiricnu, data = data)
  p2nu0 <-  SIcomp_fig_fun(SI1 = SI4mix, SI2 = SI4mix_con_nu0, data = data)
@@ -156,7 +157,7 @@ cowplot::save_plot(filename = "figures/s3mix.jpeg", p1, base_height = 5, base_as
 cowplot::save_plot(filename = "figures/s4mixrecall.jpeg", p4, base_height = 5, base_asp = 1)
 cowplot::save_plot(filename = "figures/s4recall.jpeg", p6, base_height = 5, base_asp = 1)
 cowplot::save_plot(filename = "figures/s3recall.jpeg", p5, base_height = 5, base_asp = 1)
- 
+
  SI4_con <- pred_observed_SI_fun(SI = samples_s4$SI_bestpars,
                                  data = data,
                                  mixture = TRUE,
