@@ -170,19 +170,19 @@
       # currently assumes recall and isolation biases only affect valid SIs
       expected_SI_fun <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20){
         
-        fit.gamma <- fitdist(data$nu - tmin, distr = "gamma", method = "mle")
-        nu_shifted <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
-        nu <- nu_shifted + tmin
-        
-        # data_nu <- data%>%filter(nu>0)
-        # fit.gamma <- fitdist(data_nu$nu, distr = "gamma", method = "mle")
-        # nu <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])  
+        # fit.gamma <- fitdist(data$nu - tmin, distr = "gamma", method = "mle")
+        # nu_shifted <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
+        # nu <- nu_shifted + tmin
+        # SI$nu <- nu
+        data_nu <- data%>%filter(nu>0)
+        fit.gamma <- fitdist(data_nu$nu, distr = "gamma", method = "mle")
+        nu <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
+        SI$nu <- nu
         
         # with isolation bias
         if(isol == TRUE) {
-          SI$nu <- nu
           SI <- SI%>%dplyr::filter(TOST<nu)
-          SI <- sample_n(SI, n*0.1, replace = TRUE)
+          SI <- sample_n(SI, n, replace = TRUE)
         }
         
         # with recall bias
@@ -193,7 +193,7 @@
         precall <- exp(-recall_par * abs(SI$SI - SI$nu))
         
         with_recall <- sample(
-          SI$SI, n*0.1, replace = TRUE, prob = precall
+          SI$SI, n, replace = TRUE, prob = precall
         )
         
         # with invalid SIs
@@ -201,17 +201,61 @@
           pinvalid <- tab1["pinvalid", "best"]
         } else pinvalid <- 0
         
-        toss <- runif(n*0.1)
+        toss <- runif(n)
         
         valid <- which(toss > pinvalid)  
       
-        invalid_si <- runif(n*0.1, tmin, 40)
+        invalid_si <- runif(n, tmin, 40)
         
         mixed <- c(
           SI$SI[valid], invalid_si[!valid]
         ) 
         
        return(pobs_SI = mixed) 
+      }
+      
+      # sampling from empirical nu distribution instead
+      expected_SI_fun_empiricnu <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20){
+        
+        nu <- sample(data$nu, size = n, replace = TRUE)
+        SI$nu <- nu
+        # data_nu <- data%>%filter(nu>0)
+        # fit.gamma <- fitdist(data_nu$nu, distr = "gamma", method = "mle")
+        # nu <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])  
+        
+        # with isolation bias
+        if(isol == TRUE) {
+          SI <- SI%>%dplyr::filter(TOST<nu)
+          SI <- sample_n(SI, n, replace = TRUE)
+        }
+        
+        # with recall bias
+        if(recall == TRUE) {
+          recall_par <- tab1["recall", "best"]
+        } else recall_par <- 0
+        
+        precall <- exp(-recall_par * abs(SI$SI - SI$nu))
+        
+        with_recall <- sample(
+          SI$SI, n, replace = TRUE, prob = precall
+        )
+        
+        # with invalid SIs
+        if(mixture == TRUE) {
+          pinvalid <- tab1["pinvalid", "best"]
+        } else pinvalid <- 0
+        
+        toss <- runif(n)
+        
+        valid <- which(toss > pinvalid)  
+        
+        invalid_si <- runif(n, tmin, 40)
+        
+        mixed <- c(
+          SI$SI[valid], invalid_si[!valid]
+        ) 
+        
+        return(pobs_SI = mixed) 
       }
       
       # plot estimated SI and data
