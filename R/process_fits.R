@@ -12,7 +12,7 @@ fit3_leftbias <- readRDS("stanfits/release/scenario3a_mixture_left_bias_nf.rds")
 fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_nf.stan.rds")
 
 ## processing fits --> tables and figures
- 
+
  tab1_s3mix <- table1_fun(fit3)
  tab1_s4mix <- table1_fun(fit4)
  tab1_s3mixrecall <- table1_fun(fit3_recall)
@@ -21,9 +21,9 @@ fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_
  tab1_s4recall <- table1_fun(fit4_nomix_recall)
  tab1_s3mixleftbias <- table1_fun(fit3_leftbias)
  tab1_s3leftbias <- table1_fun(fit3_nomix_leftbias)
- 
+
 ## sample distributions
- 
+
  samples_s3mix <- sample_dist_fun(tab1_s3mix, taus = seq(-20, 40, 0.1), n = 1e4, rstan::extract(fit3),
                              shape_inc = params_real$inc_par2[["shape"]],
                              scale_inc = params_real$inc_par2[["scale"]])
@@ -45,7 +45,7 @@ fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_
 
  
 ## table 2 - summary stats for sampled distributions
- 
+
  tab2_s3mix <- table2_fun(samples_s3mix)
  tab2_s4mix <- table2_fun(samples_s4mix)
  tab2_s3mixrecall <- table2_fun(samples_s3mixrecall)
@@ -168,18 +168,18 @@ cowplot::save_plot(filename = "figures/s3recall.jpeg", p5, base_height = 5, base
  TOST3_post <- samples_s3$TOST_post
  TOST3_post <- reshape2::melt(TOST3_post[,1:1000])
  p <- ggplot(TOST3_post)
- 
- 
+
+
  p <- ggplot()+
    geom_density(data = TOST3_post, aes(x = value, y = ..density.., group = variable), size = 1, colour = "grey", alpha = 0.3)+
    geom_density(aes(x = TOST3, y = ..density..), colour = "black")+
    theme_minimal()+
    xlab("TOST (days)")
- 
+
  q <- ggplot()+
    stat_ecdf(data = TOST3_post, aes(x = value, group = variable), size = 1, colour = "grey", alpha = 0.3)+
    stat_ecdf(aes(x = TOST3), colour = "black")+
    theme_minimal()+
    xlab("TOST (days)")
- 
- 
+
+
