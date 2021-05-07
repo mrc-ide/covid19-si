@@ -191,7 +191,7 @@ p <- TOST_fig_fun(TOST4)
 SI4recall <- samples_s4recall$SI_bestpars$SI
 
 
-SI4recall_con <- expected_SI_fun(
+SI4recall_con <- expected_SI(
   SI = samples_s4recall$SI_bestpars,
   data = cowling_data,
   mixture = TRUE,

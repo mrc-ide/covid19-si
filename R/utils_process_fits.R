@@ -20,7 +20,7 @@ rnf <- function(n, taus = seq(-20, 40, 0.1), a = 0.5, b = 0.5, c = 0.1, tmax = 0
 
       # predicted observed SIs (under assumed biases)
       # currently assumes recall and isolation biases only affect valid SIs
-      expected_SI_fun <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20){
+      expected_SI <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20){
 
         # fit.gamma <- fitdist(data$nu - tmin, distr = "gamma", method = "mle")
         # nu_shifted <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
@@ -67,7 +67,7 @@ rnf <- function(n, taus = seq(-20, 40, 0.1), a = 0.5, b = 0.5, c = 0.1, tmax = 0
       }
 
       # sampling from empirical nu distribution instead
-      expected_SI_fun_empiricnu <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20){
+      expected_SI_empiricnu <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20){
 
         nu <- sample(data$nu, size = n, replace = TRUE)
         SI$nu <- nu
@@ -351,7 +351,7 @@ TOSTcomp_fig_fun <- function(TOST3, TOST4) {
 
 # predicted observed SIs (under assumed biases)
 # currently assumes recall and isolation biases only affect valid SIs
-expected_SI_fun <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20) {
+expected_SI <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20) {
   fit.gamma <- fitdist(data$nu - tmin, distr = "gamma", method = "mle")
   nu_shifted <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
   nu <- nu_shifted + tmin

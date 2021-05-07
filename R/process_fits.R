@@ -88,7 +88,7 @@ fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_
     dplyr::rename(nu = onset_first_iso)%>%
     dplyr::filter(!is.na(nu))
 
- SI3mix_con <- expected_SI_fun(SI = samples_s3mix$SI_bestpars,
+ SI3mix_con <- expected_SI(SI = samples_s3mix$SI_bestpars,
                                data = data,
                                mixture = TRUE,
                                recall = FALSE,
@@ -96,21 +96,21 @@ fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_
                                tab1 =  tab1_s3mix ,
                                n = 1e4
                                )
- SI4mix_con <- expected_SI_fun(SI = samples_s4mix$SI_bestpars,
+ SI4mix_con <- expected_SI(SI = samples_s4mix$SI_bestpars,
                                     data = data,
                                     mixture = TRUE,
                                     recall = FALSE,
                                     isol = TRUE,
                                     tab1 =  tab1_s4mix ,
                                     n = 1e4)
- SI4mix_con_nu0 <- expected_SI_fun(SI = samples_s4mix$SI_bestpars,
+ SI4mix_con_nu0 <- expected_SI(SI = samples_s4mix$SI_bestpars,
                                data = data,
                                mixture = TRUE,
                                recall = FALSE,
                                isol = TRUE,
                                tab1 =  tab1_s4mix ,
                                n = 1e4)
- SI4mix_con_empiricnu <- expected_SI_fun_empiricnu(SI = samples_s4mix$SI_bestpars,
+ SI4mix_con_empiricnu <- expected_SI_empiricnu(SI = samples_s4mix$SI_bestpars,
                                data = data,
                                mixture = TRUE,
                                recall = FALSE,
@@ -118,21 +118,21 @@ fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_
                                tab1 =  tab1_s4mix ,
                                n = 1e4)
 
- SI3recall_con <- expected_SI_fun(SI = samples_s3recall$SI_bestpars,
+ SI3recall_con <- expected_SI(SI = samples_s3recall$SI_bestpars,
                                        data = data,
                                        mixture = FALSE,
                                        recall = TRUE,
                                        isol = FALSE,
                                        tab1 =  tab1_s3recall,
                                        n = 1e4)
- SI4recall_con <- expected_SI_fun(SI = samples_s4recall$SI_bestpars,
+ SI4recall_con <- expected_SI(SI = samples_s4recall$SI_bestpars,
                                        data = data,
                                        mixture = FALSE,
                                        recall = TRUE,
                                        isol = TRUE,
                                        tab1 = tab1_s4recall,
                                        n = 1e4)
- SI4mix_recall_con <- expected_SI_fun(SI = samples_s4mixrecall$SI_bestpars,
+ SI4mix_recall_con <- expected_SI(SI = samples_s4mixrecall$SI_bestpars,
                                            data = data,
                                            mixture = TRUE,
                                            recall = TRUE,
