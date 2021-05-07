@@ -122,10 +122,6 @@ process_beta_fit <- function(pars, n = 1e4, samples,
 }
 
 
-cowling_data <- readRDS("data/cowling_data_clean.rds") %>%
-  mutate(si = as.numeric(si))%>%
-   dplyr::rename(nu = onset_first_iso)%>%
-   dplyr::filter(!is.na(nu))
 
 
 ### S3 Mixture
