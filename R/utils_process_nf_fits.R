@@ -18,246 +18,213 @@ rnf <- function(n, taus = seq(-20, 40, 0.1), a = 0.5, b = 0.5, c = 0.1, tmax = 0
 }
 
 
-      # predicted observed SIs (under assumed biases)
-      # currently assumes recall and isolation biases only affect valid SIs
-      expected_SI <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20){
-
-        # fit.gamma <- fitdist(data$nu - tmin, distr = "gamma", method = "mle")
-        # nu_shifted <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
-        # nu <- nu_shifted + tmin
-        # SI$nu <- nu
-        data_nu <- data%>%filter(nu>0)
-        fit.gamma <- fitdist(data_nu$nu, distr = "gamma", method = "mle")
-        nu <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
-        SI$nu <- nu
-
-        # with isolation bias
-        if(isol == TRUE) {
-          SI <- SI%>%dplyr::filter(TOST<nu)
-          SI <- sample_n(SI, n, replace = TRUE)
-        }
-
-        # with recall bias
-        if(recall == TRUE) {
-          recall_par <- tab1["recall", "best"]
-        } else recall_par <- 0
-
-        precall <- exp(-recall_par * abs(SI$SI - SI$nu))
-
-        with_recall <- sample(
-          SI$SI, n, replace = TRUE, prob = precall
-        )
-
-        # with invalid SIs
-        if(mixture == TRUE) {
-          pinvalid <- tab1["pinvalid", "best"]
-        } else pinvalid <- 0
-
-        toss <- runif(n)
-
-        valid <- which(toss > pinvalid)
-
-        invalid_si <- runif(n, tmin, 40)
-
-        mixed <- c(
-          SI$SI[valid], invalid_si[!valid]
-        )
-
-       return(pobs_SI = mixed)
-      }
-
-      # sampling from empirical nu distribution instead
-      expected_SI_empiricnu <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20){
-
-        nu <- sample(data$nu, size = n, replace = TRUE)
-        SI$nu <- nu
-        # data_nu <- data%>%filter(nu>0)
-        # fit.gamma <- fitdist(data_nu$nu, distr = "gamma", method = "mle")
-        # nu <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
-
-        # with isolation bias
-        if(isol == TRUE) {
-          SI <- SI%>%dplyr::filter(TOST<nu)
-          SI <- sample_n(SI, n, replace = TRUE)
-        }
-
-        # with recall bias
-        if(recall == TRUE) {
-          recall_par <- tab1["recall", "best"]
-        } else recall_par <- 0
-
-        precall <- exp(-recall_par * abs(SI$SI - SI$nu))
-
-        with_recall <- sample(
-          SI$SI, n, replace = TRUE, prob = precall
-        )
-
-        # with invalid SIs
-        if(mixture == TRUE) {
-          pinvalid <- tab1["pinvalid", "best"]
-        } else pinvalid <- 0
-
-        toss <- runif(n)
-
-        valid <- which(toss > pinvalid)
-
-        invalid_si <- runif(n, tmin, 40)
-
-        mixed <- c(
-          SI$SI[valid], invalid_si[!valid]
-        )
-
-        return(pobs_SI = mixed)
-      }
-
-      # plot estimated SI and data
-      SI_fig_fun <- function(SI, data){
-        p <-  ggplot() +
-          geom_histogram(
-            data = data, aes(si, y = ..density.., fill = "gray77"),
-            alpha = 0.8,
-            binwidth = 1
-          ) +
-          geom_density(aes(SI, fill = "red"),
-                       alpha = 0.3, colour = NA
-          ) +
-          geom_vline(
-            xintercept = mean(data$si), col = "gray77", linetype = "dashed"
-          ) +
-          geom_vline(
-            xintercept = mean(SI), col = "red", linetype = "dashed"
-          ) +
-          scale_fill_identity(
-            guide = "legend",
-            labels = c("Data", "Posterior"),
-            breaks = c("gray77", "red")
-          ) +
-          theme_minimal() +
-          xlab("Serial Interval (days)") +
-          annotate(geom = 'text', x = mean(SI), y = 0.095, color = 'red', label = paste(" mean:\n",round(mean(SI), 1), " days", sep = ""), hjust = -0.1)+
-          theme(legend.title = element_blank())+
-          theme(legend.position="bottom")
-        print(p)
-      }
-
-      # plot to compare "true" SI and expected SI alongside the data
-      SIcomp_fig_fun <- function(SI1, SI2, data){
-        p <-  ggplot() +
-          geom_histogram(
-            data = data, aes(si, y = ..density.., fill = "gray77"),
-            alpha = 0.8,
-            binwidth = 1
-          ) +
-          geom_density(aes(SI1, fill = "red"),
-                       alpha = 0.3, colour = NA
-          ) +
-          geom_density(aes(SI2, fill = "blue"),
-                       alpha = 0.3, colour = NA
-          ) +
-          geom_vline(
-            xintercept = mean(data$si), col = "gray77", linetype = "dashed"
-          ) +
-          geom_vline(
-            xintercept = mean(SI1), col = "red", linetype = "dashed"
-          ) +
-          geom_vline(
-            xintercept = mean(SI2), col = "blue", linetype = "dashed"
-          ) +
-          scale_fill_identity(
-            guide = "legend",
-            labels = c("Data", "Posterior - True", "Posterior - Expected"),
-            breaks = c("gray77", "red", "blue")
-          ) +
-          theme_minimal() +
-          xlab("Serial Interval (days)") +
-          annotate(geom = 'text', x = mean(SI1), y = 0.085, color = 'red', label = paste(" mean:\n",round(mean(SI1), 1), " days", sep = ""), hjust = -0.1)+
-          annotate(geom = 'text', x = mean(SI1), y = 0.095, color = 'blue', label = paste(" mean:\n",round(mean(SI2), 1), " days", sep = ""), hjust = -0.1)+
-          theme(legend.title = element_blank())+
-          guides(fill = guide_legend(override.aes= list(alpha = c(0.8, 0.3,0.3))))+
-          theme(legend.position="bottom")
-        print(p)
-      }
-
-
-# extract fitted parameters
-table1_fun <- function(fit) {
-  tab1 <- as.data.frame(rstan::summary(fit)$summary)
-  fit <- rstan::extract(fit)
-
-  best_idx <- which.max(fit[["lp__"]])
-  best <- unlist(map(fit, function(x) x[[best_idx]]))
-  tab1 <- add_column(tab1, best = best, .after = 1)
-
-  tab1 <- round(tab1, 2)
-  return(tab1)
-}
-
-# fitted parameters --> sampled TOST and SI distributions
-sample_dist_fun <- function(tab1, taus = seq(-20, 40, 0.1), n = 1e5, fit,
-                            shape_inc = params_real$inc_par2[["shape"]],
-                            scale_inc = params_real$inc_par2[["scale"]]) {
+## Returns TOST for
+## (a) parameters with maximum posterior likelihood
+## (b) at the mean of the posterior distribution
+## (c) a distribution of distributions of TOST ; 1
+## distribution for each parameter in the posterior
+## distributions of a, b, c and tmax (sampled jointly).
+## tab1 is the output from fitted_params function
+estimated_TOST_nf <- function(tab1, taus = seq(-20, 40, 0.1),
+                              n = 1e5, fit) {
   # TOST
   best <- tab1$best
   names(best) <- rownames(tab1)
   TOST_bestpars <- rnf(
-    n = n,
-    taus = taus,
-    a = best["a"],
-    b = best["b"],
-    c = best["c"],
-    tmax = best["tmax"]
+    n = n, taus = taus, a = best["a"], b = best["b"],
+    c = best["c"], tmax = best["tmax"]
   )
 
-  mean <- tab1$mean
-  names(mean) <- rownames(tab1)
+  mu_params <- tab1$mean
+  names(mu_params) <- rownames(tab1)
   TOST_meanpars <- rnf(
     n = n,
     taus = taus,
-    a = mean["a"],
-    b = mean["b"],
-    c = mean["c"],
-    tmax = mean["tmax"]
+    a = mu_params["a"],
+    b = mu_params["b"],
+    c = mu_params["c"],
+    tmax = mu_params["tmax"]
   )
 
-  TOST_post <- matrix(
-    ncol = length(fit$a),
-    nrow = n
-  )
+  TOST_post <- matrix(nrow = n, ncol = length(fit$a))
   for (i in 1:(length(fit$a))) {
     TOST_post[, i] <- rnf(
-      n = n,
-      taus = taus,
-      a = fit$a[i],
-      b = fit$b[i],
-      c = fit$c[i],
-      tmax = fit$tmax[i]
+      n = n, taus = taus, a = fit$a[i], b = fit$b[i],
+      c = fit$c[i], tmax = fit$tmax[i]
     )
   }
 
   TOST_post <- as.data.frame(TOST_post)
 
-  # SI
-  inc_mat <- as.data.frame(matrix(rgamma(
-    shape = shape_inc,
-    scale = scale_inc,
-    n = n * length(fit$a)
-  ),
-  nrow = dim(TOST_post)[1],
-  ncol = dim(TOST_post)[2]
-  ))
-  SI_best <- inc_mat[, 1] + TOST_bestpars
-  SI_mean <- inc_mat[, 1] + TOST_meanpars
-  SI_post <- TOST_post + inc_mat
-
-  return(list(
+  list(
     TOST_bestpars = TOST_bestpars,
     TOST_meanpars = TOST_meanpars,
-    TOST_post = TOST_post,
-    SI_bestpars = data.frame(SI = SI_best, TOST = TOST_bestpars),
-    SI_meanpars = data.frame(SI = SI_mean, TOST = TOST_meanpars),
-    SI_post = SI_post
-  ))
+    TOST_post = TOST_post
+  )
 }
+
+
+## predicted observed SIs (under assumed biases)
+## currently assumes recall and isolation biases only affect valid SIs
+##
+## This function will then apply relevant biases to
+estimated_SI_nf <- function(obs, inf_times, mixture, recall,
+                            isol, tab1, nsim = 1e5, tmin = -20) {
+
+
+  # with isolation bias
+  if (isTRUE(isol)) {
+    x <- conditional_si_all(obs, inf_times, nsim)
+    si <- conditional_si_pooled(obs, x)
+  }
+
+  ## with recall bias
+  recall_par <- ifelse(recall, tab1["recall", "best"], 0)
+  precall <- exp(-recall_par * abs(SI$SI - SI$nu))
+
+  with_recall <- sample(
+    SI$SI, n,
+    replace = TRUE, prob = precall
+  )
+
+  # with invalid SIs
+  if (mixture == TRUE) {
+    pinvalid <- tab1["pinvalid", "best"]
+  } else {
+    pinvalid <- 0
+  }
+
+  toss <- runif(n)
+
+  valid <- which(toss > pinvalid)
+
+  invalid_si <- runif(n, tmin, 40)
+
+  mixed <- c(
+    SI$SI[valid], invalid_si[!valid]
+  )
+
+  return(pobs_SI = mixed)
+}
+
+# sampling from empirical nu distribution instead
+expected_SI_empiricnu <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -20) {
+  nu <- sample(data$nu, size = n, replace = TRUE)
+  SI$nu <- nu
+  # data_nu <- data%>%filter(nu>0)
+  # fit.gamma <- fitdist(data_nu$nu, distr = "gamma", method = "mle")
+  # nu <- rgamma(n = n, shape = fit.gamma$estimate["shape"], rate = fit.gamma$estimate["rate"])
+
+  # with isolation bias
+  if (isol == TRUE) {
+    SI <- SI %>% dplyr::filter(TOST < nu)
+    SI <- sample_n(SI, n, replace = TRUE)
+  }
+
+  # with recall bias
+  if (recall == TRUE) {
+    recall_par <- tab1["recall", "best"]
+  } else {
+    recall_par <- 0
+  }
+
+  precall <- exp(-recall_par * abs(SI$SI - SI$nu))
+
+  with_recall <- sample(
+    SI$SI, n,
+    replace = TRUE, prob = precall
+  )
+
+  # with invalid SIs
+  if (mixture == TRUE) {
+    pinvalid <- tab1["pinvalid", "best"]
+  } else {
+    pinvalid <- 0
+  }
+
+  toss <- runif(n)
+
+  valid <- which(toss > pinvalid)
+
+  invalid_si <- runif(n, tmin, 40)
+
+  mixed <- c(
+    SI$SI[valid], invalid_si[!valid]
+  )
+
+  return(pobs_SI = mixed)
+}
+
+# plot estimated SI and data
+SI_fig_fun <- function(SI, data) {
+  p <- ggplot() +
+    geom_histogram(
+      data = data, aes(si, y = ..density.., fill = "gray77"),
+      alpha = 0.8,
+      binwidth = 1
+    ) +
+    geom_density(aes(SI, fill = "red"),
+      alpha = 0.3, colour = NA
+    ) +
+    geom_vline(
+      xintercept = mean(data$si), col = "gray77", linetype = "dashed"
+    ) +
+    geom_vline(
+      xintercept = mean(SI), col = "red", linetype = "dashed"
+    ) +
+    scale_fill_identity(
+      guide = "legend",
+      labels = c("Data", "Posterior"),
+      breaks = c("gray77", "red")
+    ) +
+    theme_minimal() +
+    xlab("Serial Interval (days)") +
+    annotate(geom = "text", x = mean(SI), y = 0.095, color = "red", label = paste(" mean:\n", round(mean(SI), 1), " days", sep = ""), hjust = -0.1) +
+    theme(legend.title = element_blank()) +
+    theme(legend.position = "bottom")
+  print(p)
+}
+
+# plot to compare "true" SI and expected SI alongside the data
+SIcomp_fig_fun <- function(SI1, SI2, data) {
+  p <- ggplot() +
+    geom_histogram(
+      data = data, aes(si, y = ..density.., fill = "gray77"),
+      alpha = 0.8,
+      binwidth = 1
+    ) +
+    geom_density(aes(SI1, fill = "red"),
+      alpha = 0.3, colour = NA
+    ) +
+    geom_density(aes(SI2, fill = "blue"),
+      alpha = 0.3, colour = NA
+    ) +
+    geom_vline(
+      xintercept = mean(data$si), col = "gray77", linetype = "dashed"
+    ) +
+    geom_vline(
+      xintercept = mean(SI1), col = "red", linetype = "dashed"
+    ) +
+    geom_vline(
+      xintercept = mean(SI2), col = "blue", linetype = "dashed"
+    ) +
+    scale_fill_identity(
+      guide = "legend",
+      labels = c("Data", "Posterior - True", "Posterior - Expected"),
+      breaks = c("gray77", "red", "blue")
+    ) +
+    theme_minimal() +
+    xlab("Serial Interval (days)") +
+    annotate(geom = "text", x = mean(SI1), y = 0.085, color = "red", label = paste(" mean:\n", round(mean(SI1), 1), " days", sep = ""), hjust = -0.1) +
+    annotate(geom = "text", x = mean(SI1), y = 0.095, color = "blue", label = paste(" mean:\n", round(mean(SI2), 1), " days", sep = ""), hjust = -0.1) +
+    theme(legend.title = element_blank()) +
+    guides(fill = guide_legend(override.aes = list(alpha = c(0.8, 0.3, 0.3)))) +
+    theme(legend.position = "bottom")
+  print(p)
+}
+
+
+
 
 # sampled TOST distribution --> summary statistics
 TOST_summary_func <- function(sample) {

@@ -1,48 +1,53 @@
-
-
-## read in rds files
-
-fit3 <- readRDS("stanfits/release/scenario3a_mixture_nf_long_max_shed.rds")
-fit3_recall <- readRDS("stanfits/release/scenario3arecall_mixture_nf.rds")
+s3 <- readRDS("stanfits/")
+s3mixture <- readRDS("stanfits/release/scenario3a_mixture_nf_long_max_shed.rds")
+s3mixture_recall <- readRDS("stanfits/release/scenario3arecall_mixture_nf.rds")
 fit4 <- readRDS("stanfits/release/scenario4a_mixture_nf.rds")
 fit4_recall <- readRDS("stanfits/release/scenario4arecall_mixture_nf.rds")
-fit3_nomix_recall <- readRDS("stanfits/release/scenario3arecall_no_mixture_nf.rds")
+s3mixture_nomix_recall <- readRDS("stanfits/release/scenario3arecall_no_mixture_nf.rds")
 fit4_nomix_recall <- readRDS("stanfits/release/scenario4arecall_no_mixture_nf.rds")
-fit3_leftbias <- readRDS("stanfits/release/scenario3a_mixture_left_bias_nf.rds")
-fit3_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_nf.stan.rds")
+s3mixture_leftbias <- readRDS("stanfits/release/scenario3a_mixture_left_bias_nf.rds")
+s3mixture_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_nf.stan.rds")
 
 ## processing fits --> tables and figures
 
- tab1_s3mix <- table1_fun(fit3)
- tab1_s4mix <- table1_fun(fit4)
- tab1_s3mixrecall <- table1_fun(fit3_recall)
- tab1_s4mixrecall <- table1_fun(fit4_recall)
- tab1_s3recall <- table1_fun(fit3_nomix_recall)
- tab1_s4recall <- table1_fun(fit4_nomix_recall)
- tab1_s3mixleftbias <- table1_fun(fit3_leftbias)
- tab1_s3leftbias <- table1_fun(fit3_nomix_leftbias)
+tab1_s3mix <- fitted_params(s3mixture)
+tab1_s4mix <- fitted_params(fit4)
+tab1_s3mixrecall <- fitted_params(s3mixture_recall)
+tab1_s4mixrecall <- fitted_params(fit4_recall)
+tab1_s3recall <- fitted_params(s3mixture_nomix_recall)
+tab1_s4recall <- fitted_params(fit4_nomix_recall)
+tab1_s3mixleftbias <- fitted_params(s3mixture_leftbias)
+tab1_s3leftbias <- fitted_params(s3mixture_nomix_leftbias)
 
-## sample distributions
+## sample TOST distributions
+samples_s3mix <- estimated_TOST_nf(
+  tab1_s3mix, taus = seq(-20, 40, 0.1), n = 1e4,
+  rstan::extract(s3mixture)
+)
 
- samples_s3mix <- sample_dist_fun(tab1_s3mix, taus = seq(-20, 40, 0.1), n = 1e4, rstan::extract(fit3),
-                             shape_inc = params_real$inc_par2[["shape"]],
-                             scale_inc = params_real$inc_par2[["scale"]])
- samples_s4mix <- sample_dist_fun(tab1_s4mix, taus = seq(-20, 40, 0.1), n = 1e4, rstan::extract(fit4),
-                                  shape_inc = params_real$inc_par2[["shape"]],
-                                  scale_inc = params_real$inc_par2[["scale"]])
- samples_s3mixrecall <- sample_dist_fun(tab1_s3mixrecall, taus = seq(-20, 40, 0.1), n = 1e4, rstan::extract(fit3_recall),
-                                  shape_inc = params_real$inc_par2[["shape"]],
-                                  scale_inc = params_real$inc_par2[["scale"]])
- samples_s4mixrecall <- sample_dist_fun(tab1_s4mixrecall, taus = seq(-20, 40, 0.1), n = 1e4, rstan::extract(fit4_recall),
-                                  shape_inc = params_real$inc_par2[["shape"]],
-                                  scale_inc = params_real$inc_par2[["scale"]])
- samples_s3recall <- sample_dist_fun(tab1_s3recall, taus = seq(-20, 40, 0.1), n = 1e4, rstan::extract(fit3_nomix_recall),
-                                  shape_inc = params_real$inc_par2[["shape"]],
-                                  scale_inc = params_real$inc_par2[["scale"]])
- samples_s4recall <- sample_dist_fun(tab1_s4recall, taus = seq(-20, 40, 0.1), n = 1e4, rstan::extract(fit4_nomix_recall),
-                                  shape_inc = params_real$inc_par2[["shape"]],
-                                  scale_inc = params_real$inc_par2[["scale"]])
+samples_s4mix <- estimated_TOST_nf(
+  tab1_s4mix, taus = seq(-20, 40, 0.1), n = 1e4,
+  rstan::extract(fit4)
+)
 
+samples_s3mixrecall <- estimated_TOST_nf(
+  tab1_s3mixrecall, taus = seq(-20, 40, 0.1), n = 1e4,
+  rstan::extract(s3mixture_recall)
+)
+samples_s4mixrecall <- estimated_TOST_nf(
+  tab1_s4mixrecall, taus = seq(-20, 40, 0.1), n = 1e4,
+  rstan::extract(fit4_recall))
+
+samples_s3recall <- estimated_TOST_nf(
+  tab1_s3recall, taus = seq(-20, 40, 0.1), n = 1e4,
+  rstan::extract(s3mixture_nomix_recall)
+)
+samples_s4recall <- estimated_TOST_nf(
+  tab1_s4recall, taus = seq(-20, 40, 0.1), n = 1e4,
+  rstan::extract(fit4_nomix_recall)
+)
+
+### Sample SI distributions
 
 ## table 2 - summary stats for sampled distributions
 
