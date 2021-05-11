@@ -185,7 +185,7 @@ SIcomp_fig_fun <- function(SI1, SI2, data) {
 
 
 # sampled TOST distribution --> summary statistics
-TOST_summary_func <- function(sample) {
+TOST_summary <- function(sample) {
   mean <- mean(sample)
   sd <- sd(sample)
   ppresymp <- 100 * sum(sample < 0) / length(sample)
@@ -193,30 +193,30 @@ TOST_summary_func <- function(sample) {
   lower <- quantile(sample, 0.01)
   upper <- quantile(sample, 0.99)
 
-  return(c(
+  c(
     mean_inf = mean,
     sd_inf = sd,
     presymp_inf = ppresymp,
     after10_inf = p10days,
     l_quantile_inf = lower,
     u_quantile_inf = upper
-  ))
+  )
 }
 
 # put summary stats from SI and TOST into a table (for a single model)
-table2_fun <- function(samples) {
-  foo <- as.data.frame(apply(samples$TOST_post, 2, TOST_summary_func))
+tost_si_summary <- function(tost_samples,si_samples) {
+  foo <- as.data.frame(apply(samples$TOST_post, 2, TOST_summary))
   CrI_2.5 <- apply(foo, 1, quantile, probs = 0.025)
   CrI_97.5 <- apply(foo, 1, quantile, probs = 0.975)
 
   tab2 <- data.frame(
-    best_pars = TOST_summary_func(samples$TOST_bestpars),
-    mean_pars = TOST_summary_func(samples$TOST_meanpars),
+    best_pars = TOST_summary(samples$TOST_bestpars),
+    mean_pars = TOST_summary(samples$TOST_meanpars),
     CrI_2.5 = CrI_2.5,
     CrI_97.5 = CrI_97.5
   )
   mean_si <- c(
-    mean(samples$SI_bestpars$SI), mean(samples$SI_meanpars$SI),
+    mean(si_samples), mean(samples$SI_meanpars$SI),
     quantile(colMeans(samples$SI_post), probs = c(0.025, 0.975))
   )
   median_si <- c(
@@ -403,7 +403,7 @@ wrapper_single_model <- function(stanfit, data, mixture = T, recall = F, isol = 
 
   samples <- sample_dist_fun(tab1, fit = rstan::extract(stanfit))
 
-  tab2 <- table2_fun(samples)
+  tab2 <- tost_si_summary(samples)
 
   p1 <- TOST_fig_fun(samples$TOST_bestpars)
 

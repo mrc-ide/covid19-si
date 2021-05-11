@@ -84,9 +84,12 @@ conditional_si_pooled <- function(obs, si_given_nu, nsim) {
     names(si_given_nu), nsim, replace = TRUE, prob = nu_freq$percent
   )
   nu_weights <- janitor::tabyl(nu_weights)
-
+  ## Some nus may never be sampled because they are
+  ## infrequent. So we only combines SIs for nu that
+  ## are sampled
+  idx <- which(as.numeric(names(si_given_nu)) %in% nu_weights$nu_weights)
   map2(
-    si_given_nu, nu_weights$n, function(x, size) {
+    si_given_nu[idx], nu_weights$n, function(x, size) {
       sample(x, size)
     }
   )

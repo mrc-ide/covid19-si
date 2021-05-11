@@ -60,12 +60,12 @@ si_s3 <- estimated_SI(
 
 ## table 2 - summary stats for sampled distributions
 
- tab2_s3mix <- table2_fun(samples_s3mix)
- tab2_s4mix <- table2_fun(samples_s4mix)
- tab2_s3mixrecall <- table2_fun(samples_s3mixrecall)
- tab2_s4mixrecall <- table2_fun(samples_s4mixrecall)
- tab2_s3recall <- table2_fun(samples_s3recall)
- tab2_s4recall <- table2_fun(samples_s4recall)
+ tab2_s3mix <- tost_si_summary(samples_s3mix)
+ tab2_s4mix <- tost_si_summary(samples_s4mix)
+ tab2_s3mixrecall <- tost_si_summary(samples_s3mixrecall)
+ tab2_s4mixrecall <- tost_si_summary(samples_s4mixrecall)
+ tab2_s3recall <- tost_si_summary(samples_s3recall)
+ tab2_s4recall <- tost_si_summary(samples_s4recall)
 
 
 ## TOST plot

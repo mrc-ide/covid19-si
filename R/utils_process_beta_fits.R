@@ -57,7 +57,7 @@ tab1_s3mix <- fitted_params(fit3mix)
 samples_s3 <- process_beta_fit(
   tab1_s3mix, 1e4, rstan::extract(fit3mix), 21, -3
 )
-tab2_s3mix <- table2_fun(samples_s3)
+tab2_s3mix <- tost_si_summary(samples_s3)
 TOST3 <- samples_s3$TOST_bestpars
 p <- TOST_fig_fun(TOST3)
 SI3 <- samples_s3$SI_bestpars$SI
@@ -73,7 +73,7 @@ tab1_s4mix <- fitted_params(fit4mix)
 samples_s4 <- process_beta_fit(
   tab1_s4mix, 1e4, rstan::extract(fit4mix), 21, -11
 )
-tab2_s4mix <- table2_fun(samples_s4)
+tab2_s4mix <- tost_si_summary(samples_s4)
 TOST4 <- samples_s4$TOST_bestpars
 p <- TOST_fig_fun(TOST4)
 
@@ -110,7 +110,7 @@ tab1_s4recall <- fitted_params(fit4recall)
 samples_s4recall <- process_beta_fit(
   tab1_s4recall, 1e4, rstan::extract(fit4recall), 21, -11
 )
-tab2_s4recall <- table2_fun(samples_s4recall)
+tab2_s4recall <- tost_si_summary(samples_s4recall)
 
 
 TOST4 <- samples_s4recall$TOST_bestpars
