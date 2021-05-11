@@ -1,4 +1,4 @@
-s3 <- readRDS("stanfits/")
+s3 <- readRDS("stanfits/scenario3a_nf_fit.rds")
 s3mixture <- readRDS("stanfits/release/scenario3a_mixture_nf_long_max_shed.rds")
 s3mixture_recall <- readRDS("stanfits/release/scenario3arecall_mixture_nf.rds")
 fit4 <- readRDS("stanfits/release/scenario4a_mixture_nf.rds")
@@ -9,7 +9,7 @@ s3mixture_leftbias <- readRDS("stanfits/release/scenario3a_mixture_left_bias_nf.
 s3mixture_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_nf.stan.rds")
 
 ## processing fits --> tables and figures
-
+tab1_s3 <- fitted_params(s3)
 tab1_s3mix <- fitted_params(s3mixture)
 tab1_s4mix <- fitted_params(fit4)
 tab1_s3mixrecall <- fitted_params(s3mixture_recall)
@@ -20,6 +20,11 @@ tab1_s3mixleftbias <- fitted_params(s3mixture_leftbias)
 tab1_s3leftbias <- fitted_params(s3mixture_nomix_leftbias)
 
 ## sample TOST distributions
+samples_s3 <- estimated_TOST_nf(
+  tab1_s3, taus = seq(-20, 40, 0.1), n = 1e4,
+  rstan::extract(s3)
+)
+
 samples_s3mix <- estimated_TOST_nf(
   tab1_s3mix, taus = seq(-20, 40, 0.1), n = 1e4,
   rstan::extract(s3mixture)

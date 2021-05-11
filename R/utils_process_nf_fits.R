@@ -71,40 +71,41 @@ estimated_TOST_nf <- function(tab1, taus = seq(-20, 40, 0.1),
 estimated_SI_nf <- function(obs, inf_times, mixture, recall,
                             isol, tab1, nsim = 1e5, tmin = -20) {
 
-
+  ## First simulate unconditional SI and then apply biases
+  un_si <- unconditional_si(inf_times)
   # with isolation bias
   if (isTRUE(isol)) {
-    x <- conditional_si_all(obs, inf_times, nsim)
-    si <- conditional_si_pooled(obs, x)
+    with_iso <- conditional_si_all(obs, inf_times, nsim)
+    with_iso <- map(with_iso, function(x) x[["si"]])
   }
 
   ## with recall bias
   recall_par <- ifelse(recall, tab1["recall", "best"], 0)
-  precall <- exp(-recall_par * abs(SI$SI - SI$nu))
 
-  with_recall <- sample(
-    SI$SI, n,
-    replace = TRUE, prob = precall
+  with_recall <- imap(
+    with_iso, function(si, nu) {
+      nu <- as.numeric(nu)
+      precall <- exp(-recall_par * abs(si - nu))
+      ## Keep the same list structure
+      list(
+        si = sample(si, size = nsim, replace = TRUE, prob = precall)
+      )
+    }
   )
-
-  # with invalid SIs
-  if (mixture == TRUE) {
-    pinvalid <- tab1["pinvalid", "best"]
-  } else {
-    pinvalid <- 0
-  }
-
-  toss <- runif(n)
-
+  ## Now pool, this is still a named list with names being nu values
+  si <- conditional_si_pooled(obs, with_recall)
+  pooled_si <- unname(unlist(si))
+  ## Mixture
+  pinvalid <- ifelse(mixture, tab1["pinvalid", "best"], 0)
+  toss <- runif(nsim)
   valid <- which(toss > pinvalid)
+  invalid_si <- runif(nsim, tmin, 40)
 
-  invalid_si <- runif(n, tmin, 40)
+  mixed <- c(pooled_si[valid], invalid_si[!valid])
 
-  mixed <- c(
-    SI$SI[valid], invalid_si[!valid]
+  list(
+    unconditional = un_si, conditional = mixed
   )
-
-  return(pobs_SI = mixed)
 }
 
 # sampling from empirical nu distribution instead
