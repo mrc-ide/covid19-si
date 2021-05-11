@@ -53,7 +53,10 @@ samples_s4recall <- estimated_TOST_nf(
 )
 
 ### Sample SI distributions
-
+si_s3 <- estimated_SI(
+  cowling_data, samples_s3$TOST_bestpars, mixture = FALSE,
+  recall = FALSE, isol = FALSE, tab1 = tab1_s3
+)
 
 ## table 2 - summary stats for sampled distributions
 
