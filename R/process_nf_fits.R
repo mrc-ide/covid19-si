@@ -91,21 +91,22 @@ tab2_s4recall <- tost_si_summary(samples_s4recall)
 
 
 ## TOST plot
- TOST3mix <- samples_s3mix$TOST_bestpars
- TOST4mix <- samples_s4mix$TOST_bestpars
- TOST3recall <- samples_s3recall$TOST_bestpars
- TOST4recall <- samples_s4recall$TOST_bestpars
- TOST4mix_recall <- samples_s4mixrecall$TOST_bestpars
- TOST3mix_leftbias <- samples_s3mixleftbias$TOST_bestpars
- TOST3leftbias <- samples_s3leftbias$TOST_bestpars
+TOST3 <- samples_s3$TOST_bestpars
+TOST3mix <- samples_s3mix$TOST_bestpars
+TOST4mix <- samples_s4mix$TOST_bestpars
+TOST3recall <- samples_s3recall$TOST_bestpars
+TOST4recall <- samples_s4recall$TOST_bestpars
+TOST4mix_recall <- samples_s4mixrecall$TOST_bestpars
+TOST3mix_leftbias <- samples_s3mixleftbias$TOST_bestpars
+TOST3leftbias <- samples_s3leftbias$TOST_bestpars
 
- p1 <- TOST_fig_fun(TOST3mix)
- p2 <- TOST_fig_fun(TOST4mix)
- p3 <- TOST_fig_fun(TOST3recall)
- p4 <- TOST_fig_fun(TOST4recall)
- p5 <- TOST_fig_fun(TOST4mix_recall)
- p6 <- TOST_fig_fun(TOST3mix_leftbias)
- p7 <- TOST_fig_fun(TOST3leftbias)
+ p1 <- TOST_figure(TOST3)
+ p2 <- TOST_figure(TOST4mix)
+ p3 <- TOST_figure(TOST3recall)
+ p4 <- TOST_figure(TOST4recall)
+ p5 <- TOST_figure(TOST4mix_recall)
+ p6 <- TOST_figure(TOST3mix_leftbias)
+ p7 <- TOST_figure(TOST3leftbias)
 
 ## SI plot
  SI3mix <- samples_s3mix$SI_bestpars$SI

@@ -59,7 +59,7 @@ samples_s3 <- process_beta_fit(
 )
 tab2_s3mix <- tost_si_summary(samples_s3)
 TOST3 <- samples_s3$TOST_bestpars
-p <- TOST_fig_fun(TOST3)
+p <- TOST_figure(TOST3)
 SI3 <- samples_s3$SI_bestpars$SI
 p <- SI_fig_fun(SI3, cowling_data)
 cowplot::save_plot("figures/scenario3a_mixture_beta_si.png", p)
@@ -75,7 +75,7 @@ samples_s4 <- process_beta_fit(
 )
 tab2_s4mix <- tost_si_summary(samples_s4)
 TOST4 <- samples_s4$TOST_bestpars
-p <- TOST_fig_fun(TOST4)
+p <- TOST_figure(TOST4)
 
 s4_si_all <- beta_fit_si_all(cowling_data, samples_s4)
 s3_si_qntls <- map_dfr(si_all, quantile, .id = "nu")
@@ -114,7 +114,7 @@ tab2_s4recall <- tost_si_summary(samples_s4recall)
 
 
 TOST4 <- samples_s4recall$TOST_bestpars
-p <- TOST_fig_fun(TOST4)
+p <- TOST_figure(TOST4)
 SI4recall <- samples_s4recall$SI_bestpars$SI
 
 

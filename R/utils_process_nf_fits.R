@@ -249,17 +249,28 @@ tost_si_summary <- function(tost_samples,si_samples, digits = 2) {
 }
 
 # plot TOST
-TOST_fig_fun <- function(TOST) {
+TOST_figure <- function(TOST) {
   cutoff <- 0
   hist.y <- density(TOST, from = -20, to = 40) %$%
     data.frame(x = x, y = y) %>%
     mutate(area = x >= cutoff)
-
+  ## also print area left of cutoff
+  presymp <- scales::percent(sum(hist.y$area) / nrow(hist.y), 0.1)
+  label <- glue::glue("Pre-symptomatic\n{presymp}")
   the.plot <- ggplot(data = hist.y, aes(x = x, ymin = 0, ymax = y, fill = area)) +
     geom_ribbon() +
     geom_line(aes(y = y)) +
     geom_vline(xintercept = cutoff, color = "red") +
-    annotate(geom = "text", x = cutoff, y = max(hist.y$y) * 0.95, color = "red", label = "symptom\nonset", hjust = -0.1) +
+    annotate(
+      geom = "text", x = cutoff, y = max(hist.y$y) * 0.95,
+      color = "red", label = "symptom\nonset", hjust = -0.1
+    ) +
+    annotate(
+      geom = "text", x = cutoff - 19,
+      y = max(hist.y$y) * 0.9,
+      color = "red",
+      label = label, hjust = -0.1
+    ) +
     theme_minimal() +
     xlab("TOST (days)") +
     ylab("density") +
@@ -419,7 +430,7 @@ wrapper_single_model <- function(stanfit, data, mixture = T, recall = F, isol = 
 
   tab2 <- tost_si_summary(samples)
 
-  p1 <- TOST_fig_fun(samples$TOST_bestpars)
+  p1 <- TOST_figure(samples$TOST_bestpars)
 
   SI <- samples$SI_bestpars$SI
 
