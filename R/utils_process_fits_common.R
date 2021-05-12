@@ -87,7 +87,7 @@ conditional_si_pooled <- function(obs, si_given_nu, nsim) {
   ## SIs in all. You can resample when pooling.
   map2(
     si_given_nu, nu_freq$nu_weights, function(x, size) {
-      sample(x, size)
+      sample(x, size, replace = TRUE)
     }
   )
 }
@@ -122,8 +122,12 @@ estimated_SI <- function(obs, inf_times, mixture, recall,
     }
   )
   ## Now pool, this is still a named list with names being nu values
+  un_si <- conditional_si_pooled(obs, un_si, nsim)
+  pooled_unc <- unname(unlist(un_si))
+
   si <- conditional_si_pooled(obs, with_recall, nsim)
   pooled_si <- unname(unlist(si))
+
   ## Mixture
   pinvalid <- ifelse(mixture, tab1["pinvalid", "best"], 0)
   toss <- runif(nsim)
@@ -133,6 +137,6 @@ estimated_SI <- function(obs, inf_times, mixture, recall,
   mixed <- c(pooled_si[valid], invalid_si[!valid])
 
   list(
-    unconditional = un_si, conditional = mixed
+    unconditional = pooled_unc, conditional = mixed
   )
 }

@@ -61,7 +61,7 @@ tab2_s3mix <- tost_si_summary(samples_s3)
 TOST3 <- samples_s3$TOST_bestpars
 p <- TOST_figure(TOST3)
 SI3 <- samples_s3$SI_bestpars$SI
-p <- SI_fig_fun(SI3, cowling_data)
+p <- SI_figure(SI3, cowling_data)
 cowplot::save_plot("figures/scenario3a_mixture_beta_si.png", p)
 
 

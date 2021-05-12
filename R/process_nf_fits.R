@@ -109,15 +109,17 @@ TOST3leftbias <- samples_s3leftbias$TOST_bestpars
  p7 <- TOST_figure(TOST3leftbias)
 
 ## SI plot
- SI3mix <- samples_s3mix$SI_bestpars$SI
- SI4mix <- samples_s4mix$SI_bestpars$SI
- SI3recall <- samples_s3recall$SI_bestpars$SI
- SI4recall <- samples_s4recall$SI_bestpars$SI
- SI4mix_recall <- samples_s4mixrecall$SI_bestpars$SI
- SI3mix_leftbias <- samples_s3mixleftbias$SI_bestpars$SI
- SI3leftbias <- samples_s3leftbias$SI_bestpars$SI
+SI3 <- s3_si_samples$SI_bestpars$SI
+psi3 <- SI_figure(SI3, cowling_data)
+SI3mix <- samples_s3mix$SI_bestpars$SI
+SI4mix <- samples_s4mix$SI_bestpars$SI
+SI3recall <- samples_s3recall$SI_bestpars$SI
+SI4recall <- samples_s4recall$SI_bestpars$SI
+SI4mix_recall <- samples_s4mixrecall$SI_bestpars$SI
+SI3mix_leftbias <- samples_s3mixleftbias$SI_bestpars$SI
+SI3leftbias <- samples_s3leftbias$SI_bestpars$SI
 
- library(fitdistrplus)
+library(fitdistrplus)
 
  data <- readRDS("data/cowling_data_clean.rds")
  data <- data%>%
@@ -177,20 +179,20 @@ TOST3leftbias <- samples_s3leftbias$TOST_bestpars
                                            tab1 = tab1_s4mixrecall,
                                            n = 1e4)
 
- p1 <- SIcomp_fig_fun(SI1 = SI3mix, SI2 = SI3mix, data = data)
- p2 <- SIcomp_fig_fun(SI1 = SI4mix, SI2 = SI4mix_con, data = data)
- p2_empiric_nu <- SIcomp_fig_fun(SI1 = SI4mix, SI2 = SI4mix_con_empiricnu, data = data)
- p2nu0 <-  SIcomp_fig_fun(SI1 = SI4mix, SI2 = SI4mix_con_nu0, data = data)
-  p4 <- SIcomp_fig_fun(SI1 = SI4mix_recall, SI2 = SI4mix_recall_con, data = data)
-  p5 <- SIcomp_fig_fun(SI1 = SI3recall, SI2 = SI3recall_con, data = data)
-  p6 <- SIcomp_fig_fun(SI1 = SI4recall, SI2 = SI4recall_con, data = data)
+p1 <- SIcomp_fig_fun(SI1 = best_si_s3[[1]], SI2 = best_si_s3[[2]], data = cowling_data)
+p2 <- SIcomp_fig_fun(SI1 = SI4mix, SI2 = SI4mix_con, data = data)
+p2_empiric_nu <- SIcomp_fig_fun(SI1 = SI4mix, SI2 = SI4mix_con_empiricnu, data = data)
+p2nu0 <-  SIcomp_fig_fun(SI1 = SI4mix, SI2 = SI4mix_con_nu0, data = data)
+p4 <- SIcomp_fig_fun(SI1 = SI4mix_recall, SI2 = SI4mix_recall_con, data = data)
+p5 <- SIcomp_fig_fun(SI1 = SI3recall, SI2 = SI3recall_con, data = data)
+p6 <- SIcomp_fig_fun(SI1 = SI4recall, SI2 = SI4recall_con, data = data)
 
  library(cowplot)
 
 cowplot::save_plot(filename = "figures/s3mix.jpeg", p1, base_height = 5, base_asp = 1)
- cowplot::save_plot(filename = "figures/s4mix.jpeg", p2, base_height = 5, base_asp = 1)
- cowplot::save_plot(filename = "figures/s4mix_empiric_nu.jpeg", p2_empiric_nu, base_height = 5, base_asp = 1)
- cowplot::save_plot(filename = "figures/s4mix_nu0.jpeg", p2nu0, base_height = 5, base_asp = 1)
+cowplot::save_plot(filename = "figures/s4mix.jpeg", p2, base_height = 5, base_asp = 1)
+cowplot::save_plot(filename = "figures/s4mix_empiric_nu.jpeg", p2_empiric_nu, base_height = 5, base_asp = 1)
+cowplot::save_plot(filename = "figures/s4mix_nu0.jpeg", p2nu0, base_height = 5, base_asp = 1)
 cowplot::save_plot(filename = "figures/s4mixrecall.jpeg", p4, base_height = 5, base_asp = 1)
 cowplot::save_plot(filename = "figures/s4recall.jpeg", p6, base_height = 5, base_asp = 1)
 cowplot::save_plot(filename = "figures/s3recall.jpeg", p5, base_height = 5, base_asp = 1)

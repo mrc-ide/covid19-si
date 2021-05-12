@@ -114,7 +114,7 @@ expected_SI_empiricnu <- function(SI, data, mixture, recall, isol, tab1, n = 1e5
 }
 
 # plot estimated SI and data
-SI_fig_fun <- function(SI, data) {
+SI_figure <- function(SI, data) {
   p <- ggplot() +
     geom_histogram(
       data = data, aes(si, y = ..density.., fill = "gray77"),
@@ -352,7 +352,7 @@ expected_SI <- function(SI, data, mixture, recall, isol, tab1, n = 1e5, tmin = -
 }
 
 # plot estimated SI and data
-SI_fig_fun <- function(SI, data) {
+SI_figure <- function(SI, data) {
   p <- ggplot() +
     geom_histogram(
       data = data, aes(si, y = ..density.., fill = "gray77"),
