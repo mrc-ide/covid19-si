@@ -76,8 +76,8 @@ post_si_s3_mat <- map(post_si_s3, ~ .[[2]]) %>%
   do.call(what = 'rbind')
 ## Use the same names so that Amy's code can be re-used
 s3_si_samples <- list(
-  SI_meanpars = list(SI = mean_si_s3),
-  SI_bestpats = list(SI = best_si_s3),
+  SI_meanpars = list(SI = mean_si_s3[[2]]),
+  SI_bestpars = list(SI = best_si_s3[[2]]),
   SI_post = post_si_s3_mat
 )
 ## table 2 - summary stats for sampled distributions

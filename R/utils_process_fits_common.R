@@ -79,17 +79,14 @@ conditional_si_pooled <- function(obs, si_given_nu, nsim) {
 
   ## Renormalise weights over this smaller set of nus
   nu_freq <- janitor::tabyl(obs$nu[obs$nu %in% as.numeric(names(si_given_nu))])
-  ## Now sample from this list.
-  nu_weights <- sample(
-    names(si_given_nu), nsim, replace = TRUE, prob = nu_freq$percent
+  ## Number of samples to be drawn is nsim * percent
+  nu_freq$nu_weights <- ceiling(
+    nu_freq$percent * nsim
   )
-  nu_weights <- janitor::tabyl(nu_weights)
-  ## Some nus may never be sampled because they are
-  ## infrequent. So we only combines SIs for nu that
-  ## are sampled
-  idx <- which(as.numeric(names(si_given_nu)) %in% nu_weights$nu_weights)
+  ## This can give you more or less than nsim
+  ## SIs in all. You can resample when pooling.
   map2(
-    si_given_nu[idx], nu_weights$n, function(x, size) {
+    si_given_nu, nu_freq$nu_weights, function(x, size) {
       sample(x, size)
     }
   )
@@ -125,7 +122,7 @@ estimated_SI <- function(obs, inf_times, mixture, recall,
     }
   )
   ## Now pool, this is still a named list with names being nu values
-  si <- conditional_si_pooled(obs, with_recall)
+  si <- conditional_si_pooled(obs, with_recall, nsim)
   pooled_si <- unname(unlist(si))
   ## Mixture
   pinvalid <- ifelse(mixture, tab1["pinvalid", "best"], 0)
