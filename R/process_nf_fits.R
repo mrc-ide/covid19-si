@@ -53,19 +53,41 @@ samples_s4recall <- estimated_TOST_nf(
 )
 
 ### Sample SI distributions
-si_s3 <- estimated_SI(
+best_si_s3 <- estimated_SI(
   cowling_data, samples_s3$TOST_bestpars, mixture = FALSE,
   recall = FALSE, isol = FALSE, tab1 = tab1_s3
 )
 
+mean_si_s3 <- estimated_SI(
+  cowling_data, samples_s3$TOST_meanpars, mixture = FALSE,
+  recall = FALSE, isol = FALSE, tab1 = tab1_s3
+)
+
+post_si_s3 <- apply(
+  samples_s3$TOST_post, 2, function(inf_samples) {
+    estimated_SI(
+      cowling_data, inf_samples, mixture = FALSE,
+      recall = FALSE, isol = FALSE, tab1 = tab1_s3
+    )
+  }
+)
+## Extract conditional SI and make a matrix/data.frame
+post_si_s3_mat <- map(post_si_s3, ~ .[[2]]) %>%
+  do.call(what = 'rbind')
+## Use the same names so that Amy's code can be re-used
+s3_si_samples <- list(
+  SI_meanpars = list(SI = mean_si_s3),
+  SI_bestpats = list(SI = best_si_s3),
+  SI_post = post_si_s3_mat
+)
 ## table 2 - summary stats for sampled distributions
 
- tab2_s3mix <- tost_si_summary(samples_s3mix)
- tab2_s4mix <- tost_si_summary(samples_s4mix)
- tab2_s3mixrecall <- tost_si_summary(samples_s3mixrecall)
- tab2_s4mixrecall <- tost_si_summary(samples_s4mixrecall)
- tab2_s3recall <- tost_si_summary(samples_s3recall)
- tab2_s4recall <- tost_si_summary(samples_s4recall)
+tab2_s3mix <- tost_si_summary(samples_s3mix)
+tab2_s4mix <- tost_si_summary(samples_s4mix)
+tab2_s3mixrecall <- tost_si_summary(samples_s3mixrecall)
+tab2_s4mixrecall <- tost_si_summary(samples_s4mixrecall)
+tab2_s3recall <- tost_si_summary(samples_s3recall)
+tab2_s4recall <- tost_si_summary(samples_s4recall)
 
 
 ## TOST plot
