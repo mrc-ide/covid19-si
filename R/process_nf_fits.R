@@ -179,13 +179,13 @@ library(fitdistrplus)
                                            tab1 = tab1_s4mixrecall,
                                            n = 1e4)
 
-p1 <- SIcomp_fig_fun(SI1 = best_si_s3[[1]], SI2 = best_si_s3[[2]], data = cowling_data)
-p2 <- SIcomp_fig_fun(SI1 = SI4mix, SI2 = SI4mix_con, data = data)
-p2_empiric_nu <- SIcomp_fig_fun(SI1 = SI4mix, SI2 = SI4mix_con_empiricnu, data = data)
-p2nu0 <-  SIcomp_fig_fun(SI1 = SI4mix, SI2 = SI4mix_con_nu0, data = data)
-p4 <- SIcomp_fig_fun(SI1 = SI4mix_recall, SI2 = SI4mix_recall_con, data = data)
-p5 <- SIcomp_fig_fun(SI1 = SI3recall, SI2 = SI3recall_con, data = data)
-p6 <- SIcomp_fig_fun(SI1 = SI4recall, SI2 = SI4recall_con, data = data)
+p1 <- plot_both_SIs(SI1 = best_si_s3[[1]], SI2 = best_si_s3[[2]], data = cowling_data)
+p2 <- plot_both_SIs(SI1 = SI4mix, SI2 = SI4mix_con, data = data)
+p2_empiric_nu <- plot_both_SIs(SI1 = SI4mix, SI2 = SI4mix_con_empiricnu, data = data)
+p2nu0 <-  plot_both_SIs(SI1 = SI4mix, SI2 = SI4mix_con_nu0, data = data)
+p4 <- plot_both_SIs(SI1 = SI4mix_recall, SI2 = SI4mix_recall_con, data = data)
+p5 <- plot_both_SIs(SI1 = SI3recall, SI2 = SI3recall_con, data = data)
+p6 <- plot_both_SIs(SI1 = SI4recall, SI2 = SI4recall_con, data = data)
 
  library(cowplot)
 
@@ -204,7 +204,7 @@ cowplot::save_plot(filename = "figures/s3recall.jpeg", p5, base_height = 5, base
                                  isol = TRUE,
                                  tab1 = tab1_s4,
                                  n = 1e5)
- SIcomp_fig_fun(SI1 = SI4, SI2 = SI4_con, data = data)
+ plot_both_SIs(SI1 = SI4, SI2 = SI4_con, data = data)
  TOST3_post <- samples_s3$TOST_post
  TOST3_post <- reshape2::melt(TOST3_post[,1:1000])
  p <- ggplot(TOST3_post)

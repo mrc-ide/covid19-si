@@ -93,7 +93,7 @@ ggsave("figures/s4mixture_si_given_nu_beta.png", psi_given_nu)
 
 s4_si_pooled <- beta_fit_si_pooled(cowling_data, s4_si_all)
 
-p <- SIcomp_fig_fun(
+p <- plot_both_SIs(
   SI1 = samples_s4$SI_bestpar$SI, SI2 = s4_si_pooled,
   data = cowling_data
 )
@@ -128,5 +128,5 @@ SI4recall_con <- expected_SI(
   n = 1e4
 )
 
-p <- SIcomp_fig_fun(SI1 = SI4recall, SI2 = SI4recall_con, data = cowling_data)
+p <- plot_both_SIs(SI1 = SI4recall, SI2 = SI4recall_con, data = cowling_data)
 ggsave("figures/s4recall_cowling_beta.png", p)

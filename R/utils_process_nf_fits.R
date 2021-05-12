@@ -144,7 +144,7 @@ SI_figure <- function(SI, data) {
 }
 
 # plot to compare "true" SI and expected SI alongside the data
-SIcomp_fig_fun <- function(SI1, SI2, data) {
+plot_both_SIs <- function(SI1, SI2, data) {
   p <- ggplot() +
     geom_histogram(
       data = data, aes(si, y = ..density.., fill = "gray77"),
@@ -386,7 +386,7 @@ SI_figure <- function(SI, data) {
 }
 
 # plot to compare "true" SI and expected SI alongside the data
-SIcomp_fig_fun <- function(SI1, SI2, data) {
+plot_both_SIs <- function(SI1, SI2, data) {
   p <- ggplot() +
     geom_histogram(
       data = data, aes(si, y = ..density.., fill = "gray77"),
@@ -444,7 +444,7 @@ wrapper_single_model <- function(stanfit, data, mixture = T, recall = F, isol = 
     n = n
   )
 
-  p2 <- SIcomp_fig_fun(SI1 = SI, SI2 = SI_conditional, data = data)
+  p2 <- plot_both_SIs(SI1 = SI, SI2 = SI_conditional, data = data)
 
   return(list(
     table1 = tab1,
