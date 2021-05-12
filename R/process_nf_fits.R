@@ -81,7 +81,7 @@ s3_si_samples <- list(
   SI_post = post_si_s3_mat
 )
 ## table 2 - summary stats for sampled distributions
-
+tab2_s3 <- tost_si_summary(samples_s3, s3_si_samples)
 tab2_s3mix <- tost_si_summary(samples_s3mix)
 tab2_s4mix <- tost_si_summary(samples_s4mix)
 tab2_s3mixrecall <- tost_si_summary(samples_s3mixrecall)

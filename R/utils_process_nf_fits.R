@@ -204,34 +204,48 @@ TOST_summary <- function(sample) {
 }
 
 # put summary stats from SI and TOST into a table (for a single model)
-tost_si_summary <- function(tost_samples,si_samples) {
-  foo <- as.data.frame(apply(samples$TOST_post, 2, TOST_summary))
+tost_si_summary <- function(tost_samples,si_samples, digits = 2) {
+  foo <- as.data.frame(apply(tost_samples$TOST_post, 2, TOST_summary))
   CrI_2.5 <- apply(foo, 1, quantile, probs = 0.025)
   CrI_97.5 <- apply(foo, 1, quantile, probs = 0.975)
 
   tab2 <- data.frame(
-    best_pars = TOST_summary(samples$TOST_bestpars),
-    mean_pars = TOST_summary(samples$TOST_meanpars),
+    best_pars = TOST_summary(tost_samples$TOST_bestpars),
+    mean_pars = TOST_summary(tost_samples$TOST_meanpars),
     CrI_2.5 = CrI_2.5,
     CrI_97.5 = CrI_97.5
   )
   mean_si <- c(
-    mean(si_samples), mean(samples$SI_meanpars$SI),
-    quantile(colMeans(samples$SI_post), probs = c(0.025, 0.975))
+    mean(si_samples$SI_bestpars$SI),
+    mean(si_samples$SI_meanpars$SI),
+    quantile(
+      colMeans(si_samples$SI_post), probs = c(0.025, 0.975),
+      na.rm = TRUE
+    )
   )
   median_si <- c(
-    median(samples$SI_bestpars$SI), median(samples$SI_meanpars$SI),
-    quantile(colMedians(as.matrix(samples$SI_post)), probs = c(0.025, 0.975))
+    median(si_samples$SI_bestpars$SI),
+    median(si_samples$SI_meanpars$SI),
+    quantile(
+      colMedians(as.matrix(si_samples$SI_post)),
+      probs = c(0.025, 0.975), na.rm = TRUE
+    )
   )
   sd_si <- c(
-    sd(samples$SI_bestpars$SI), sd(samples$SI_meanpars$SI),
-    quantile(colSds(as.matrix(samples$SI_post)), probs = c(0.025, 0.975))
+    sd(si_samples$SI_bestpars$SI),
+    sd(si_samples$SI_meanpars$SI),
+    quantile(
+      colSds(as.matrix(si_samples$SI_post)),
+      probs = c(0.025, 0.975), na.rm = TRUE
+    )
   )
-  tab_2 <- rbind(tab2, mean_si = mean_si, median_si = median_si, sd_si = sd_si)
 
-  tab_2 <- round(tab_2, 2)
+  tab_2 <- rbind(
+    tab2, mean_si = mean_si, median_si = median_si,
+    sd_si = sd_si
+  )
 
-  return(tab_2)
+  round(tab_2, digits)
 }
 
 # plot TOST
