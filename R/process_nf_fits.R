@@ -29,7 +29,7 @@ model_features$model_prefix <-ifelse(
 
 ## Need to rename fit files, at the moment only 1 has the right
 ## name
-index <- 15
+index <- 12
 model_features <- model_features[index, ]
 
 if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
