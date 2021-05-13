@@ -1,225 +1,97 @@
-s3 <- readRDS("stanfits/scenario3a_nf_fit.rds")
-s3mixture <- readRDS("stanfits/release/scenario3a_mixture_nf_long_max_shed.rds")
-s3mixture_recall <- readRDS("stanfits/release/scenario3arecall_mixture_nf.rds")
-fit4 <- readRDS("stanfits/release/scenario4a_mixture_nf.rds")
-fit4_recall <- readRDS("stanfits/release/scenario4arecall_mixture_nf.rds")
-s3mixture_nomix_recall <- readRDS("stanfits/release/scenario3arecall_no_mixture_nf.rds")
-fit4_nomix_recall <- readRDS("stanfits/release/scenario4arecall_no_mixture_nf.rds")
-s3mixture_leftbias <- readRDS("stanfits/release/scenario3a_mixture_left_bias_nf.rds")
-s3mixture_nomix_leftbias <- readRDS("stanfits/release/scenario3a_nomixture_left_bias_nf.stan.rds")
-
-## processing fits --> tables and figures
-tab1_s3 <- fitted_params(s3)
-tab1_s3mix <- fitted_params(s3mixture)
-tab1_s4mix <- fitted_params(fit4)
-tab1_s3mixrecall <- fitted_params(s3mixture_recall)
-tab1_s4mixrecall <- fitted_params(fit4_recall)
-tab1_s3recall <- fitted_params(s3mixture_nomix_recall)
-tab1_s4recall <- fitted_params(fit4_nomix_recall)
-tab1_s3mixleftbias <- fitted_params(s3mixture_leftbias)
-tab1_s3leftbias <- fitted_params(s3mixture_nomix_leftbias)
-
-## sample TOST distributions
-samples_s3 <- estimated_TOST_nf(
-  tab1_s3, taus = seq(-20, 40, 0.1), n = 1e4,
-  rstan::extract(s3)
+model_features <- list(
+  "mixture" = c(TRUE, FALSE),
+  "left_bias" = c(TRUE, FALSE),
+  "recall"  = c(TRUE, FALSE),
+  "right_bias" = c(TRUE, FALSE)
+)
+model_features <- expand.grid(model_features)
+model_features$model_prefix <- ifelse(
+  model_features$`right_bias`, "scenario4a", "scenario3a"
 )
 
-samples_s3mix <- estimated_TOST_nf(
-  tab1_s3mix, taus = seq(-20, 40, 0.1), n = 1e4,
-  rstan::extract(s3mixture)
+model_features$model_prefix <-ifelse(
+  model_features$mixture,
+  glue::glue("{model_features$model_prefix}_mixture"),
+  model_features$model_prefix
 )
 
-samples_s4mix <- estimated_TOST_nf(
-  tab1_s4mix, taus = seq(-20, 40, 0.1), n = 1e4,
-  rstan::extract(fit4)
+model_features$model_prefix <-ifelse(
+  model_features$`left_bias`,
+  glue::glue("{model_features$model_prefix}_leftbias"),
+  model_features$model_prefix
 )
 
-samples_s3mixrecall <- estimated_TOST_nf(
-  tab1_s3mixrecall, taus = seq(-20, 40, 0.1), n = 1e4,
-  rstan::extract(s3mixture_recall)
-)
-samples_s4mixrecall <- estimated_TOST_nf(
-  tab1_s4mixrecall, taus = seq(-20, 40, 0.1), n = 1e4,
-  rstan::extract(fit4_recall))
-
-samples_s3recall <- estimated_TOST_nf(
-  tab1_s3recall, taus = seq(-20, 40, 0.1), n = 1e4,
-  rstan::extract(s3mixture_nomix_recall)
-)
-samples_s4recall <- estimated_TOST_nf(
-  tab1_s4recall, taus = seq(-20, 40, 0.1), n = 1e4,
-  rstan::extract(fit4_nomix_recall)
+model_features$model_prefix <-ifelse(
+  model_features$`recall`,
+  glue::glue("{model_features$model_prefix}_recall"),
+  model_features$model_prefix
 )
 
-### Sample SI distributions
-best_si_s3 <- estimated_SI(
-  cowling_data, samples_s3$TOST_bestpars, mixture = FALSE,
-  recall = FALSE, isol = FALSE, tab1 = tab1_s3
-)
+## Need to rename fit files, at the moment only 1 has the right
+## name
+index <- 16
+model_features <- model_features[index, ]
 
-mean_si_s3 <- estimated_SI(
-  cowling_data, samples_s3$TOST_meanpars, mixture = FALSE,
-  recall = FALSE, isol = FALSE, tab1 = tab1_s3
-)
+if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
 
-post_si_s3 <- apply(
-  samples_s3$TOST_post, 2, function(inf_samples) {
-    estimated_SI(
-      cowling_data, inf_samples, mixture = FALSE,
-      recall = FALSE, isol = FALSE, tab1 = tab1_s3
+pwalk(
+  model_features,
+  function(mixture, left_bias, recall, right_bias, model_prefix) {
+
+    fit <- readRDS(glue("stanfits/{model_prefix}_nf_fit.rds"))
+    tab1 <- fitted_params(fit)
+    saveRDS(
+      tab1, glue("processed_stanfits/{model_prefix}_nf_tab1.rds")
+    )
+
+    samples_tost <- estimated_TOST_nf(
+      tab1, taus = seq(-20, 40, 0.1), n = 1e4,
+      rstan::extract(fit)
+    )
+    best_si <- estimated_SI(
+      cowling_data, samples_tost$TOST_bestpars, mixture = mixture,
+      recall = recall, isol = right_bias, tab1 = tab1
+    )
+
+    mean_si <- estimated_SI(
+      cowling_data, samples_tost$TOST_meanpars, mixture = mixture,
+      recall = recall, isol = right_bias, tab1 = tab1
+    )
+
+    post_si <- apply(
+      samples_tost$TOST_post, 2, function(inf_samples) {
+        estimated_SI(
+          cowling_data, inf_samples, mixture = mixture,
+          recall = recall, isol = right_bias, tab1 = tab1_s3
+        )
+      })
+    ## Extract conditional SI and make a matrix/data.frame
+    post_si_s3_mat <- map(post_si, ~ .[[2]]) %>%
+      do.call(what = 'rbind')
+    ## Use the same names so that Amy's code can be re-used
+    samples_si <- list(
+      SI_meanpars = list(SI = mean_si[[2]]),
+      SI_bestpars = list(SI = best_si[[2]]),
+      SI_post = post_si_s3_mat
+    )
+    ## table 2 - summary stats for sampled distributions
+    tab2 <- tost_si_summary(samples_tost, samples_si)
+    saveRDS(
+      tab2, glue("processed_stanfits/{model_prefix}_nf_tab2.rds")
+    )
+    p1 <- TOST_figure(samples_tost$TOST_bestpars)
+    save_plot(
+      filename = glue("figures/{model_prefix}_nf_tost.png"), p1
+    )
+    psi <- SI_figure(samples_si$SI_bestpars$SI, cowling_data)
+    save_plot(
+      filename = glue("figures/{model_prefix}_nf_si.png"), psi
+    )
+    psi2 <- plot_both_SIs(
+      SI1 = best_si[[1]], SI2 = best_si[[2]], data = cowling_data
+    )
+    save_plot(
+      filename = glue("figures/{model_prefix}_nf_si.png"), psi2
     )
   }
 )
-## Extract conditional SI and make a matrix/data.frame
-post_si_s3_mat <- map(post_si_s3, ~ .[[2]]) %>%
-  do.call(what = 'rbind')
-## Use the same names so that Amy's code can be re-used
-s3_si_samples <- list(
-  SI_meanpars = list(SI = mean_si_s3[[2]]),
-  SI_bestpars = list(SI = best_si_s3[[2]]),
-  SI_post = post_si_s3_mat
-)
-## table 2 - summary stats for sampled distributions
-tab2_s3 <- tost_si_summary(samples_s3, s3_si_samples)
-tab2_s3mix <- tost_si_summary(samples_s3mix)
-tab2_s4mix <- tost_si_summary(samples_s4mix)
-tab2_s3mixrecall <- tost_si_summary(samples_s3mixrecall)
-tab2_s4mixrecall <- tost_si_summary(samples_s4mixrecall)
-tab2_s3recall <- tost_si_summary(samples_s3recall)
-tab2_s4recall <- tost_si_summary(samples_s4recall)
-
-
-## TOST plot
-TOST3 <- samples_s3$TOST_bestpars
-TOST3mix <- samples_s3mix$TOST_bestpars
-TOST4mix <- samples_s4mix$TOST_bestpars
-TOST3recall <- samples_s3recall$TOST_bestpars
-TOST4recall <- samples_s4recall$TOST_bestpars
-TOST4mix_recall <- samples_s4mixrecall$TOST_bestpars
-TOST3mix_leftbias <- samples_s3mixleftbias$TOST_bestpars
-TOST3leftbias <- samples_s3leftbias$TOST_bestpars
-
- p1 <- TOST_figure(TOST3)
- p2 <- TOST_figure(TOST4mix)
- p3 <- TOST_figure(TOST3recall)
- p4 <- TOST_figure(TOST4recall)
- p5 <- TOST_figure(TOST4mix_recall)
- p6 <- TOST_figure(TOST3mix_leftbias)
- p7 <- TOST_figure(TOST3leftbias)
-
-## SI plot
-SI3 <- s3_si_samples$SI_bestpars$SI
-psi3 <- SI_figure(SI3, cowling_data)
-SI3mix <- samples_s3mix$SI_bestpars$SI
-SI4mix <- samples_s4mix$SI_bestpars$SI
-SI3recall <- samples_s3recall$SI_bestpars$SI
-SI4recall <- samples_s4recall$SI_bestpars$SI
-SI4mix_recall <- samples_s4mixrecall$SI_bestpars$SI
-SI3mix_leftbias <- samples_s3mixleftbias$SI_bestpars$SI
-SI3leftbias <- samples_s3leftbias$SI_bestpars$SI
-
-library(fitdistrplus)
-
- data <- readRDS("data/cowling_data_clean.rds")
- data <- data%>%
-    mutate(si = as.numeric(si))%>%
-    dplyr::rename(nu = onset_first_iso)%>%
-    dplyr::filter(!is.na(nu))
-
- SI3mix_con <- expected_SI(SI = samples_s3mix$SI_bestpars,
-                               data = data,
-                               mixture = TRUE,
-                               recall = FALSE,
-                               isol = FALSE,
-                               tab1 =  tab1_s3mix ,
-                               n = 1e4
-                               )
- SI4mix_con <- expected_SI(SI = samples_s4mix$SI_bestpars,
-                                    data = data,
-                                    mixture = TRUE,
-                                    recall = FALSE,
-                                    isol = TRUE,
-                                    tab1 =  tab1_s4mix ,
-                                    n = 1e4)
- SI4mix_con_nu0 <- expected_SI(SI = samples_s4mix$SI_bestpars,
-                               data = data,
-                               mixture = TRUE,
-                               recall = FALSE,
-                               isol = TRUE,
-                               tab1 =  tab1_s4mix ,
-                               n = 1e4)
- SI4mix_con_empiricnu <- expected_SI_empiricnu(SI = samples_s4mix$SI_bestpars,
-                               data = data,
-                               mixture = TRUE,
-                               recall = FALSE,
-                               isol = TRUE,
-                               tab1 =  tab1_s4mix ,
-                               n = 1e4)
-
- SI3recall_con <- expected_SI(SI = samples_s3recall$SI_bestpars,
-                                       data = data,
-                                       mixture = FALSE,
-                                       recall = TRUE,
-                                       isol = FALSE,
-                                       tab1 =  tab1_s3recall,
-                                       n = 1e4)
- SI4recall_con <- expected_SI(SI = samples_s4recall$SI_bestpars,
-                                       data = data,
-                                       mixture = FALSE,
-                                       recall = TRUE,
-                                       isol = TRUE,
-                                       tab1 = tab1_s4recall,
-                                       n = 1e4)
- SI4mix_recall_con <- expected_SI(SI = samples_s4mixrecall$SI_bestpars,
-                                           data = data,
-                                           mixture = TRUE,
-                                           recall = TRUE,
-                                           isol = TRUE,
-                                           tab1 = tab1_s4mixrecall,
-                                           n = 1e4)
-
-p1 <- plot_both_SIs(SI1 = best_si_s3[[1]], SI2 = best_si_s3[[2]], data = cowling_data)
-p2 <- plot_both_SIs(SI1 = SI4mix, SI2 = SI4mix_con, data = data)
-p2_empiric_nu <- plot_both_SIs(SI1 = SI4mix, SI2 = SI4mix_con_empiricnu, data = data)
-p2nu0 <-  plot_both_SIs(SI1 = SI4mix, SI2 = SI4mix_con_nu0, data = data)
-p4 <- plot_both_SIs(SI1 = SI4mix_recall, SI2 = SI4mix_recall_con, data = data)
-p5 <- plot_both_SIs(SI1 = SI3recall, SI2 = SI3recall_con, data = data)
-p6 <- plot_both_SIs(SI1 = SI4recall, SI2 = SI4recall_con, data = data)
-
- library(cowplot)
-
-cowplot::save_plot(filename = "figures/s3mix.jpeg", p1, base_height = 5, base_asp = 1)
-cowplot::save_plot(filename = "figures/s4mix.jpeg", p2, base_height = 5, base_asp = 1)
-cowplot::save_plot(filename = "figures/s4mix_empiric_nu.jpeg", p2_empiric_nu, base_height = 5, base_asp = 1)
-cowplot::save_plot(filename = "figures/s4mix_nu0.jpeg", p2nu0, base_height = 5, base_asp = 1)
-cowplot::save_plot(filename = "figures/s4mixrecall.jpeg", p4, base_height = 5, base_asp = 1)
-cowplot::save_plot(filename = "figures/s4recall.jpeg", p6, base_height = 5, base_asp = 1)
-cowplot::save_plot(filename = "figures/s3recall.jpeg", p5, base_height = 5, base_asp = 1)
-
- SI4_con <- pred_observed_SI_fun(SI = samples_s4$SI_bestpars,
-                                 data = data,
-                                 mixture = TRUE,
-                                 recall = FALSE,
-                                 isol = TRUE,
-                                 tab1 = tab1_s4,
-                                 n = 1e5)
- plot_both_SIs(SI1 = SI4, SI2 = SI4_con, data = data)
- TOST3_post <- samples_s3$TOST_post
- TOST3_post <- reshape2::melt(TOST3_post[,1:1000])
- p <- ggplot(TOST3_post)
-
-
- p <- ggplot()+
-   geom_density(data = TOST3_post, aes(x = value, y = ..density.., group = variable), size = 1, colour = "grey", alpha = 0.3)+
-   geom_density(aes(x = TOST3, y = ..density..), colour = "black")+
-   theme_minimal()+
-   xlab("TOST (days)")
-
- q <- ggplot()+
-   stat_ecdf(data = TOST3_post, aes(x = value, group = variable), size = 1, colour = "grey", alpha = 0.3)+
-   stat_ecdf(aes(x = TOST3), colour = "black")+
-   theme_minimal()+
-   xlab("TOST (days)")
-
-
