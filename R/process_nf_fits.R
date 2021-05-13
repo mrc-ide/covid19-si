@@ -29,7 +29,7 @@ model_features$model_prefix <-ifelse(
 
 ## Need to rename fit files, at the moment only 1 has the right
 ## name
-index <- 12
+index <- c(12, 15, 16)
 model_features <- model_features[index, ]
 
 if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
@@ -176,10 +176,31 @@ pwalk(
           SI1 = si[[1]], SI2 = si[[2]],
           data = cowling_data
         )
-        ggsave(
+        save_plot(
           filename = glue("figures/{model_prefix}_nf_si.pdf"), psi2
         )
     }
   }
 )
 
+
+## To be executed after getting Table 2s from
+## various models
+overall_table2 <- map_dfr(
+  model_features$model_prefix,
+  function(model_prefix) {
+    out <- readRDS(glue("processed_stanfits/{model_prefix}_nf_tab2.rds"))
+    out <- tibble::rownames_to_column(out, var = "param")
+    out$model <- model_prefix
+    out
+  }
+)
+
+overall_table2$formatted_pars <-
+  glue(
+    "{overall_table2$best_pars} ",
+    "({overall_table2$CrI_2.5} - {overall_table2$CrI_97.5})"
+  )
+
+x <- overall_table2[ ,c("param", "formatted_pars", "model")]
+x <- tidyr::spread(x, key = param, value = formatted_pars)
