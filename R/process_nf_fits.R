@@ -29,7 +29,7 @@ model_features$model_prefix <-ifelse(
 
 ## Need to rename fit files, at the moment only 1 has the right
 ## name
-index <- 16
+index <- 15
 model_features <- model_features[index, ]
 
 if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
@@ -59,9 +59,6 @@ table1 <- map2(
 
 samples_tost <- map2(
   table1, fits, function(tab1, fit) {
-    message(
-      glue("{check} Sampling TOST for model {model_prefix}")
-    )
     estimated_TOST_nf(
       tab1, taus = seq(-20, 40, 0.1), n = 1e4,
       rstan::extract(fit)
@@ -73,7 +70,7 @@ best_si <- pmap(
   list(
     tost = samples_tost, mixture = model_features$mixture,
     recall = model_features$recall, isol = model_features$right_bias,
-    tab1 = table1, model_prefix = model_features$model_prefix,
+    tab1 = table1, model_prefix = model_features$model_prefix
   ), function(tost, mixture, recall, isol, tab1, model_prefix) {
     message(
       glue("{check} Sampling best SI for model {model_prefix}")
@@ -89,8 +86,8 @@ mean_si <- pmap(
   list(
     tost = samples_tost, mixture = model_features$mixture,
     recall = model_features$recall, isol = model_features$right_bias,
-    tab1 = table1, model_prefix = model_features$model_prefix,
-    ), function(tost, mixture, recall, isol, tab1) {
+    tab1 = table1, model_prefix = model_features$model_prefix
+    ), function(tost, mixture, recall, isol, tab1, model_prefix) {
     message(
       glue("{check} Sampling mean SI for model {model_prefix}")
     )
@@ -105,7 +102,7 @@ post_si <- pmap(
   list(
     tost = samples_tost, mixture = model_features$mixture,
     recall = model_features$recall, isol = model_features$right_bias,
-    tab1 = table1, model_prefix = model_features$model_prefix,
+    tab1 = table1, model_prefix = model_features$model_prefix
   ), function(tost, mixture, recall, isol, tab1, model_prefix) {
     message(
       glue("{check} Posterior SI distribution for model {model_prefix}")
