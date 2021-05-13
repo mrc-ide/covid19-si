@@ -122,18 +122,18 @@ post_si <- pmap(
 
 table2 <- pmap(
   list(
-    mean_si = mean_si, best_si = best_si, post_si = post_si,
+    mean_si = mean_si, best_si = best_si, post = post_si,
     tost = samples_tost,
     model_prefix = model_features$model_prefix
   ),
-  function(mean_si, best_si, post_si, tost, model_prefix) {
+  function(mean_si, best_si, post, tost, model_prefix) {
     message(
       glue("{check} Constructing table 2 for model {model_prefix}")
     )
       samples_si <- list(
         SI_meanpars = list(SI = mean_si[[2]]),
         SI_bestpars = list(SI = best_si[[2]]),
-        SI_post = post_si
+        SI_post = post
       )
       ## table 2 - summary stats for sampled distributions
       tab2 <- tost_si_summary(tost, samples_si)
@@ -149,7 +149,7 @@ walk2(
   function(tost, model_prefix) {
   p1 <- TOST_figure(tost$TOST_bestpars)
   save_plot(
-    filename = glue("figures/{model_prefix}_nf_tost.png"), p1
+    filename = glue("figures/{model_prefix}_nf_tost.pdf"), p1
   )
 })
 
@@ -159,26 +159,27 @@ walk2(
   function(si, model_prefix) {
   psi <- SI_figure(si[[2]], cowling_data)
   save_plot(
-    filename = glue("figures/{model_prefix}_nf_si.png"), psi
+    filename = glue("figures/{model_prefix}_nf_si.pdf"), psi
   )
-
 })
 
 x <- as.list(model_features)
-x <- append(x, values = c(best_si = best_si))
+x <- append(x, values = list(si = best_si))
 pwalk(
   x, function(mixture, left_bias, recall,
-              right_bias, model_prefix, best_si) {
+              right_bias, model_prefix, si) {
     ## If none of these are true, then conditional
     ## and unconditional SIs would be the same.
+    message("model_prefix ", model_prefix)
     if (mixture | left_bias | recall | right_bias) {
         psi2 <- plot_both_SIs(
-          SI1 = best_si[[1]], SI2 = best_si[[2]],
+          SI1 = si[[1]], SI2 = si[[2]],
           data = cowling_data
         )
-        save_plot(
-          filename = glue("figures/{model_prefix}_nf_si.png"), psi2
+        ggsave(
+          filename = glue("figures/{model_prefix}_nf_si.pdf"), psi2
         )
     }
   }
 )
+

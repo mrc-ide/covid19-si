@@ -137,7 +137,13 @@ SI_figure <- function(SI, data) {
     ) +
     theme_minimal() +
     xlab("Serial Interval (days)") +
-    annotate(geom = "text", x = mean(SI), y = 0.095, color = "red", label = paste(" mean:\n", round(mean(SI), 1), " days", sep = ""), hjust = -0.1) +
+    annotate(
+      geom = "text", x = mean(SI), y = 0.095, color = "red",
+      label = paste(
+        " mean:\n", round(mean(SI), 1), " days",
+        sep = ""
+      ),
+      hjust = -0.1) +
     theme(legend.title = element_blank()) +
     theme(legend.position = "bottom")
   print(p)
@@ -145,6 +151,7 @@ SI_figure <- function(SI, data) {
 
 # plot to compare "true" SI and expected SI alongside the data
 plot_both_SIs <- function(SI1, SI2, data) {
+
   p <- ggplot() +
     geom_histogram(
       data = data, aes(si, y = ..density.., fill = "gray77"),
@@ -173,12 +180,24 @@ plot_both_SIs <- function(SI1, SI2, data) {
     ) +
     theme_minimal() +
     xlab("Serial Interval (days)") +
-    annotate(geom = "text", x = mean(SI1), y = 0.085, color = "red", label = paste(" mean:\n", round(mean(SI1), 1), " days", sep = ""), hjust = -0.1) +
-    annotate(geom = "text", x = mean(SI1), y = 0.095, color = "blue", label = paste(" mean:\n", round(mean(SI2), 1), " days", sep = ""), hjust = -0.1) +
+    annotate(
+      geom = "text", x = mean(SI1), y = 0.085, color = "red",
+      label = paste(" mean:\n", round(mean(SI1), 1), " days", sep = ""),
+      hjust = -0.1
+    ) +
+    annotate(
+      geom = "text", x = mean(SI1), y = 0.095, color = "blue",
+      label = paste(" mean:\n", round(mean(SI2), 1), " days", sep = ""),
+      hjust = -0.1
+    ) +
     theme(legend.title = element_blank()) +
-    guides(fill = guide_legend(override.aes = list(alpha = c(0.8, 0.3, 0.3)))) +
+    guides(
+      fill = guide_legend(override.aes = list(alpha = c(0.8, 0.3, 0.3)))
+    ) +
     theme(legend.position = "bottom")
-  print(p)
+
+
+  p
 }
 
 
@@ -255,7 +274,7 @@ TOST_figure <- function(TOST) {
     data.frame(x = x, y = y) %>%
     mutate(area = x >= cutoff)
   ## also print area left of cutoff
-  presymp <- scales::percent(sum(hist.y$area) / nrow(hist.y), 0.1)
+  presymp <- scales::percent(sum(TOST < 0) / length(TOST), 0.1)
   label <- glue::glue("Pre-symptomatic\n{presymp}")
   the.plot <- ggplot(data = hist.y, aes(x = x, ymin = 0, ymax = y, fill = area)) +
     geom_ribbon() +

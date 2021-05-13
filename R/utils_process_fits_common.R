@@ -97,7 +97,7 @@ conditional_si_pooled <- function(obs, si_given_nu, nsim) {
 ##
 ## This function will then apply relevant biases to
 estimated_SI <- function(obs, inf_times, mixture, recall,
-                         isol, tab1, nsim = 1e5, tmin = -20) {
+                         isol, tab1, nsim = 1e4, tmin = -20) {
 
   ## First simulate unconditional SI and then apply biases
   un_si <- unconditional_si_all(obs, inf_times)
@@ -131,10 +131,10 @@ estimated_SI <- function(obs, inf_times, mixture, recall,
   ## Mixture
   pinvalid <- ifelse(mixture, tab1["pinvalid", "best"], 0)
   toss <- runif(nsim)
-  valid <- which(toss > pinvalid)
+  valid <- which(toss >= pinvalid)
   invalid_si <- runif(nsim, tmin, 40)
 
-  mixed <- c(pooled_si[valid], invalid_si[!valid])
+  mixed <- c(pooled_si[valid], invalid_si[-valid])
 
   list(
     unconditional = pooled_unc, conditional = mixed
