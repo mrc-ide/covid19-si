@@ -1,6 +1,6 @@
 model_features <- list(
   "mixture" = c(TRUE, FALSE),
-  "left_bias" = c(TRUE, FALSE),
+  ##"left_bias" = c(TRUE, FALSE),
   "recall"  = c(TRUE, FALSE),
   "right_bias" = c(TRUE, FALSE)
 )
@@ -15,11 +15,11 @@ model_features$model_prefix <-ifelse(
   model_features$model_prefix
 )
 
-model_features$model_prefix <-ifelse(
-  model_features$`left_bias`,
-  glue::glue("{model_features$model_prefix}_leftbias"),
-  model_features$model_prefix
-)
+## model_features$model_prefix <-ifelse(
+##   model_features$`left_bias`,
+##   glue::glue("{model_features$model_prefix}_leftbias"),
+##   model_features$model_prefix
+## )
 
 model_features$model_prefix <-ifelse(
   model_features$`recall`,
@@ -29,7 +29,12 @@ model_features$model_prefix <-ifelse(
 
 ## Need to rename fit files, at the moment only 1 has the right
 ## name
-index <- c(12, 15, 16)
+##index <- c(12, 15, 16)
+index <- map_lgl(
+  model_features$model_prefix,
+  function(model_prefix) file.exists(glue("stanfits/{model_prefix}_nf_fit.rds"))
+)
+
 model_features <- model_features[index, ]
 
 if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
