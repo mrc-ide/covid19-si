@@ -171,12 +171,12 @@ walk2(
 x <- as.list(model_features)
 x <- append(x, values = list(si = best_si))
 pwalk(
-  x, function(mixture, left_bias, recall,
+  x, function(mixture, recall,
               right_bias, model_prefix, si) {
     ## If none of these are true, then conditional
     ## and unconditional SIs would be the same.
     message("model_prefix ", model_prefix)
-    if (mixture | left_bias | recall | right_bias) {
+    if (mixture |  recall | right_bias) {
         psi2 <- plot_both_SIs(
           SI1 = si[[1]], SI2 = si[[2]],
           data = cowling_data
@@ -188,7 +188,16 @@ pwalk(
   }
 )
 
+x <- as.list(model_features)
+x <- append(x, values = list(fits = fits))
 
+dic <- pmap_dbl(
+  x, function(mixture, recall, right_bias, model_prefix, fits) {
+    samples <- rstan::extract(fits)
+    DIC_alt(log_likel_nf(samples, mixture, recall))
+  }
+)
+names(dic) <- x$model_prefix
 ## To be executed after getting Table 2s from
 ## various models
 overall_table2 <- map_dfr(
@@ -196,7 +205,9 @@ overall_table2 <- map_dfr(
   function(model_prefix) {
     out <- readRDS(glue("processed_stanfits/{model_prefix}_nf_tab2.rds"))
     out <- tibble::rownames_to_column(out, var = "param")
+    out$DIC <- dic[[model_prefix]]
     out$model <- model_prefix
+
     out
   }
 )
@@ -207,5 +218,5 @@ overall_table2$formatted_pars <-
     "({overall_table2$CrI_2.5} - {overall_table2$CrI_97.5})"
   )
 
-x <- overall_table2[ ,c("param", "formatted_pars", "model")]
+x <- overall_table2[ ,c("param", "formatted_pars", "model", "DIC")]
 x <- tidyr::spread(x, key = param, value = formatted_pars)
