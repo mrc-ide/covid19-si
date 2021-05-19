@@ -110,3 +110,11 @@ fit_3a <- stan(
   ),
   verbose = TRUE
 )
+
+saveRDS(
+  fit_3a, glue::glue("stanfits/{prefix}_fit.rds")
+)
+
+ggmcmc(
+  ggs(fit_3a), glue::glue("checks/{prefix}_check.pdf")
+)
