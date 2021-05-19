@@ -1,25 +1,28 @@
 set.seed(42)
+library(cowplot)
 library(dplyr)
-library(rstan)
-library(hermione)
+library(epitrix)
+library(ggforce)
+library(glue)
 library(ggmcmc)
 library(ggplot2)
-library(epitrix)
-library(purrr)
-library(sbcrs)
+library(magrittr)
 library(matrixStats)
 library(patchwork)
-library(ggforce)
+library(purrr)
+library(rstan)
 library(tibble)
-library(magrittr)
 source("R/utils.R")
-source("R/scenario_3a_mix_utils.R")
-source("R/scenario_4a_mix_utils.R")
-source("R/utils_process_fits.R")
+source("R/utils_process_fits_common.R")
+source("R/utils_process_nf_fits.R")
+source("R/utils_model_selection.R")
+source("R/utils_process_beta_fits.R")
+
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
-max_shed <- 21
+## Larger max_shed for NF distribution
+max_shed <- 40
 nsim_pre_filter <- 20000
 nsim_post_filter <- 300
 alpha_invalid <- 1
@@ -79,6 +82,16 @@ params_check <- list(
   beta1 = 0,
   iso_par1 = list(shape = 1, scale = 5)
 )
+
+## Read and clean data here so all scripts use the
+## same data. Model specific filters to be applied
+## in model specific files
+cowling_data <- readRDS("data/cowling_data_clean.rds") %>%
+  mutate(si = as.numeric(si))%>%
+   dplyr::rename(nu = onset_first_iso)%>%
+   dplyr::filter(!is.na(nu))
+
+
 
 ## Sanity tests for Neil's distribution implementation
 ## rstan::expose_stan_functions("stan-models/likelihoods.stan")
