@@ -9,8 +9,8 @@ best_si <-  estimated_SI(
   recall = FALSE, isol = FALSE, leaky = TRUE, tab1 = tab1
 )
 mean_si <- estimated_SI(
-  cowling_data, tost$TOST_meanpars, mixture = mixture,
-  recall = recall, isol = isol, tab1 = tab1
+  cowling_data, tost$TOST_meanpars, mixture = FALSE,
+  recall = FALSE, isol = FALSE, leaky = TRUE, tab1 = tab1
 )
 x <- apply(
   tost$TOST_post, 2, function(inf_samples) {
@@ -26,7 +26,7 @@ post_si <- map(x, ~ .[[2]]) %>% do.call(what = 'rbind')
 samples_si <- list(
   SI_meanpars = list(SI = mean_si[[2]]),
   SI_bestpars = list(SI = best_si[[2]]),
-  SI_post = post
+  SI_post = post_si
 )
 ## table 2 - summary stats for sampled distributions
 tab2 <- tost_si_summary(tost, samples_si)
@@ -34,5 +34,5 @@ tab2 <- tost_si_summary(tost, samples_si)
 psi <- SI_figure(best_si[[2]], cowling_data)
 
 save_plot(
-  filename = glue("figures/{model_prefix}_nf_si.pdf"), psi
+  filename = glue("figures/scenario3a_leaky_nf_si.pdf"), psi
 )
