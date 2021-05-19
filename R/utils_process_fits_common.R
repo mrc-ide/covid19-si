@@ -49,6 +49,7 @@ conditional_si <- function(un_si, nu, nsim) {
   idx <- which(inf_samples <= nu)
   filtered <- inf_samples[idx]
   filtered_si <- un_si[[2]][idx]
+
   if (length(filtered) == 0) return(NULL)
   inf_samples <- sample(filtered, nsim, replace = TRUE)
   si <- sample(filtered_si, nsim, replace = TRUE)
@@ -57,18 +58,15 @@ conditional_si <- function(un_si, nu, nsim) {
 
 ## obs is observed data with column nu
 ## processed_fit is the output of process_beta_fit
-conditional_si_all <- function(obs, inf_samples, nsim) {
-  un_si <- unconditional_si_all(
-    obs, inf_samples
-  )
+conditional_si_all <- function(un_si, nsim) {
   si_given_nu <- imap(
     un_si, function(si, nu) {
       conditional_si(si, as.numeric(nu), nsim = nsim)
     }
   )
   keep(si_given_nu, function(x) !is.null(x[["si"]]))
-
 }
+
 ## si_given_nu is the output of beta_fit_si_all, a list of conditional
 ## SIs for each nu in the data
 ## Returns a named list
@@ -92,20 +90,43 @@ conditional_si_pooled <- function(obs, si_given_nu, nsim) {
   )
 }
 
+leaky_si <- function(un_si, nu, pleak, nsim) {
+  inf_samples <- un_si[[1]]
+  ## Keep some after isolation with probability pleak
+  ## pleak = 0 if isolation is perfect
+  toss <- runif(nsim, 0, 1)
+  leaky <- which(toss > pleak)
+  filtered <- inf_samples[leaky]
+  filtered_si <- un_si[[2]][leaky]
+  list(inf = inf_samples, si = filtered_si)
+}
+
+leaky_si_all <- function(un_si, pleak, nsim) {
+  si_given_nu <- imap(
+    un_si, function(si, nu) {
+      leaky_si(si, as.numeric(nu), pleak, nsim = nsim)
+    }
+  )
+  keep(si_given_nu, function(x) !is.null(x[["si"]]))
+}
+
+
 ## predicted observed SIs (under assumed biases)
 ## currently assumes recall and isolation biases only affect valid SIs
 ##
 ## This function will then apply relevant biases to
 estimated_SI <- function(obs, inf_times, mixture, recall,
-                         isol, tab1, nsim = 1e4, tmin = -20) {
+                         isol, leaky = FALSE, tab1, nsim = 1e4, tmin = -20) {
 
   ## First simulate unconditional SI and then apply biases
   un_si <- unconditional_si_all(obs, inf_times)
+  pleak_par <- ifelse(leaky, tab1["pleak", "best"], 0)
+  leaky <- leaky_si_all(un_si, pleak_par, nsim)
   # with isolation bias
   if (isol) {
-    with_iso <- conditional_si_all(obs, inf_times, nsim)
+    with_iso <- conditional_si_all(leaky, nsim)
   } else {
-    with_iso <- un_si
+    with_iso <- leaky
   }
   with_iso <- map(with_iso, ~ .[["si"]])
   ## with recall bias
