@@ -13,11 +13,28 @@ log_prior_nf <- function(params, mixture, recall) {
 }
 
 
-log_likel_nf <- function(samples, mixture, recall) {
+log_prior_beta <- function(params, mixture, recall) {
+
+  prob_a <- dunif(params$alpha1, min = 0, max = 100)
+  prob_b <-  dunif(params$beta1, min = 0, max = 100)
+  prob_pinvalid <- ifelse(mixture, dbeta(params$pinvalid, shape1 = 4, shape2 = 10), 1)
+  prob_recall <- ifelse(recall, dunif(params$recall, min = 0, max = 5), 1)
+
+  log(prob_a) + log(prob_b) +
+    log(prob_pinvalid) + log(prob_recall)
+}
+
+
+log_likel <- function(samples, mixture, recall, model = c("nf", "beta")) {
   map_dbl(
     seq_along(samples[[1]]), function(index) {
       params <- map(samples, ~ .[[index]])
-      log_prior <- log_prior_nf(params, mixture, recall)
+      if (model == "nf") {
+        log_prior <- log_prior_nf(params, mixture, recall)
+      } else {
+        log_prior <- log_prior_beta(params, mixture, recall)
+      }
+
       params$lp_ - log_prior
     }
   )

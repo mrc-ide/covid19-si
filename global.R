@@ -16,7 +16,7 @@ source("R/utils.R")
 source("R/utils_process_fits_common.R")
 source("R/utils_process_nf_fits.R")
 source("R/utils_model_selection.R")
-##source("R/utils_process_beta_fits.R")
+source("R/utils_process_beta_fits.R")
 
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)

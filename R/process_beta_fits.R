@@ -32,18 +32,19 @@ model_features$model_prefix <-ifelse(
 ##index <- c(12, 15, 16)
 index <- map_lgl(
   model_features$model_prefix,
-  function(model_prefix) file.exists(glue("stanfits/{model_prefix}_nf_fit.rds"))
+  function(model_prefix) file.exists(glue("stanfits/{model_prefix}_beta_fit.rds"))
 )
 
 model_features <- model_features[index, ]
 
 if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
 check <- "\U2713"
+
 fits <- map(
   model_features$model_prefix,
   function(model_prefix) {
     message("Reading fit file for ", model_prefix)
-    readRDS(glue("stanfits/{model_prefix}_nf_fit.rds"))
+    readRDS(glue("stanfits/{model_prefix}_beta_fit.rds"))
   }
 )
 
@@ -55,7 +56,7 @@ table1 <- map2(
       glue("{check} Extracted parameters for model {model_prefix}")
     )
     saveRDS(
-      tab1, glue("processed_stanfits/{model_prefix}_nf_tab1.rds")
+      tab1, glue("processed_stanfits/{model_prefix}_beta_tab1.rds")
     )
     tab1
   }
@@ -64,8 +65,8 @@ table1 <- map2(
 
 samples_tost <- map2(
   table1, fits, function(tab1, fit) {
-    estimated_TOST_nf(
-      tab1, taus = seq(-20, 40, 0.1), n = 1e4,
+    estimated_TOST_beta(
+      tab1, max_shed = 21, offset = -11, nsim = 1e4,
       rstan::extract(fit)
     )
   }
@@ -113,9 +114,9 @@ post_si <- pmap(
       glue("{check} Posterior SI distribution for model {model_prefix}")
     )
     x <- apply(
-      tost$TOST_post, 2, function(inf_samples) {
+      tost$TOST_post, 2, function(ibeta_samples) {
         estimated_SI(
-          cowling_data, inf_samples, mixture = mixture,
+          cowling_data, ibeta_samples, mixture = mixture,
           recall = recall, isol = isol, tab1 = tab1
         )
       }
@@ -143,7 +144,7 @@ table2 <- pmap(
       ## table 2 - summary stats for sampled distributions
       tab2 <- tost_si_summary(tost, samples_si)
       saveRDS(
-        tab2, glue("processed_stanfits/{model_prefix}_nf_tab2.rds")
+        tab2, glue("processed_stanfits/{model_prefix}_beta_tab2.rds")
       )
       tab2
     }
@@ -154,7 +155,7 @@ walk2(
   function(tost, model_prefix) {
   p1 <- TOST_figure(tost$TOST_bestpars)
   save_plot(
-    filename = glue("figures/{model_prefix}_nf_tost.pdf"), p1
+    filename = glue("figures/{model_prefix}_beta_tost.pdf"), p1
   )
 })
 
@@ -164,7 +165,7 @@ walk2(
   function(si, model_prefix) {
   psi <- SI_figure(si[[2]], cowling_data)
   save_plot(
-    filename = glue("figures/{model_prefix}_nf_si.pdf"), psi
+    filename = glue("figures/{model_prefix}_beta_si.pdf"), psi
   )
 })
 
@@ -182,7 +183,7 @@ pwalk(
           data = cowling_data
         )
         save_plot(
-          filename = glue("figures/{model_prefix}_nf_si.pdf"), psi2
+          filename = glue("figures/{model_prefix}_beta_si.pdf"), psi2
         )
     }
   }
@@ -194,16 +195,17 @@ x <- append(x, values = list(fits = fits))
 dic <- pmap_dbl(
   x, function(mixture, recall, right_bias, model_prefix, fits) {
     samples <- rstan::extract(fits)
-    DIC_alt(log_likel_nf(samples, mixture, recall, "nf"))
+    DIC_alt(log_likel(samples, mixture, recall, "beta"))
   }
 )
+
 names(dic) <- x$model_prefix
 ## To be executed after getting Table 2s from
 ## various models
 overall_table2 <- map_dfr(
   model_features$model_prefix,
   function(model_prefix) {
-    out <- readRDS(glue("processed_stanfits/{model_prefix}_nf_tab2.rds"))
+    out <- readRDS(glue("processed_stanfits/{model_prefix}_beta_tab2.rds"))
     out <- tibble::rownames_to_column(out, var = "param")
     out$DIC <- dic[[model_prefix]]
     out$model <- model_prefix
@@ -220,3 +222,4 @@ overall_table2$formatted_pars <-
 
 x <- overall_table2[ ,c("param", "formatted_pars", "model", "DIC")]
 x <- tidyr::spread(x, key = param, value = formatted_pars)
+readr::write_csv(x, "beta_model_outputs.csv")
