@@ -14,9 +14,8 @@ fit_4a <- stan(
     beta2 = 1 / params_inc[["scale"]],
     M = length(si_vec),
     si_vec = si_vec,
-    width = 0.1
-  ),
-  verbose = TRUE
+    width = 0.5
+  ), chains = 1, iter = 1000, verbose = TRUE
 )
 
 saveRDS(
