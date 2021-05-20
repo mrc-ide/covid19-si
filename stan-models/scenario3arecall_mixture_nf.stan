@@ -30,8 +30,8 @@ model{
   real denominator;
   matrix[M, N] pdf_mat;
   // Priors suggested by Neil
-  a ~ normal(4.28, 0.74);
-  b ~ normal(1.44, 0.12);
+  a ~ normal(4, 1);
+  b ~ normal(1, 0.5);
   pinvalid ~ beta(4, 10);
   pdf_mat = pdf_matrix(nu, si_vec, max_shed, a, b, c, tmax, 
                        recall, alpha2, beta2, width, first_valid_nu);

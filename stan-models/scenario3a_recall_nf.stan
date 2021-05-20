@@ -26,8 +26,8 @@ model{
   real dummy[1];
   int first_valid_nu = 1;
   // Priors suggested by Neil
-  a ~ normal(4.28, 0.74);
-  b ~ normal(1.44, 0.12);
+  a ~ normal(4, 1);
+  b ~ normal(1, 0.5);
   // Since this model doesn't need nu, we set nu to be a value larger
   // than max_shed so that the division by F(nu) never takes place.
   dummy[1] = max_shed + 10;
