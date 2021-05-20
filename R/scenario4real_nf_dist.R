@@ -18,6 +18,37 @@ data_offset <- data %>%
   mutate(si = as.numeric(si)) %>%
   dplyr::rename(nu = onset_first_iso)
 
+# discrete pairs
+data_discrete_pairs <- data_offset%>%
+  filter(cluster_size ==2)
+
+# whole data set with nu replacement for s3 type pairs
+data_s3_s4mix <- data_offset %>%
+  mutate(infector_first_isolateDate = purrr::pmap_dbl(list(infector_isolateDate_beforeSymptom,
+                                                           infector_isolateDate_afterSymptom), min, na.rm = TRUE))%>%
+  mutate(infectee_first_isolateDate = purrr::pmap_dbl(list(infectee_isolateDate_beforeSymptom,
+                                                           infectee_isolateDate_afterSymptom), min, na.rm = TRUE))
+
+data_s3_s4mix$infector_first_isolateDate[data_s3_s4mix$infector_first_isolateDate == Inf] <- NA #when a value is NA it results in Inf
+data_s3_s4mix$infector_first_isolateDate <- as.Date(data_s3_s4mix$infector_first_isolateDate, origin = "1970-01-01")
+data_s3_s4mix$infectee_first_isolateDate[data_s3_s4mix$infectee_first_isolateDate == Inf] <- NA #when both values are NA it results in Inf
+data_s3_s4mix$infectee_first_isolateDate <- as.Date(data_s3_s4mix$infectee_first_isolateDate, origin = "1970-01-01")
+
+for(i in 1:(length(data_s3_s4mix$infector_first_isolateDate))){
+  if(!is.na(data_s3_s4mix$infectee_first_isolateDate[i])){
+    if(data_s3_s4mix$infector_first_isolateDate[i] >= data_s3_s4mix$infectee_onsetDate[i] && data_s3_s4mix$infector_first_isolateDate[i] >= data_s3_s4mix$infectee_first_isolateDate[i]){
+      if(data_s3_s4mix$infectee_first_isolateDate[i] >= data_s3_s4mix$infectee_onsetDate[i]){
+        data_s3_s4mix$nu[i] <- 41
+      }
+    }
+  }
+}
+
+# discrete pairs with nu replacement for s3 type pairs
+data_discrete_pairs_s3_s4mix <- data_s3_s4mix%>%
+  filter(cluster_size ==2)
+
+
 # fit the model
 si_vec <- seq(-20, 40, 1)
 
@@ -30,7 +61,7 @@ fits_4a <- stan(
     N = nrow(data_offset),
     si = data_offset$si,
     nu = data_offset$nu,
-    max_shed = 21,
+    max_shed = 40,
     alpha2 = params_real$inc_par2[["shape"]],
     beta2 = 1 / params_real$inc_par2[["scale"]],
     max_invalid_si = 40,
@@ -41,7 +72,7 @@ fits_4a <- stan(
     first_valid_nu = 1
     ##tmax = 0
   ),
-  chains = 1, iter = 500,
+  chains = 1, iter = 2000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
