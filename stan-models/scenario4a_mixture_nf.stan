@@ -13,7 +13,6 @@ data{
   // Vector of SI from min_invalid_si to max_invalid_si, offset by
   // a small amount to avoid boundary issues.
   real si_vec[M];
-  int first_valid_nu;
 }
 parameters{
   real <lower = 0, upper = 1> pinvalid;
@@ -28,6 +27,7 @@ model{
   real invalid;
   real denominator_valid;
   matrix[M, N] pdf_mat;
+  int first_valid_nu = 1;
   a ~ normal(4, 1);
   b ~ normal(1, 0.5);
   pinvalid ~ beta(4, 10);
