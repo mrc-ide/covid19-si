@@ -103,3 +103,35 @@ cowling_data <- readRDS("data/cowling_data_clean.rds") %>%
 ## a = b, should be log(1/cosh(a * (t - tmax)))
 ## nf_lpdf(1, 1, 1, 10, 5)
 ## 1 / cosh(10 - 5)
+
+model_features <- list(
+  "mixture" = c(TRUE, FALSE),
+  ##"left_bias" = c(TRUE, FALSE),
+  "recall"  = c(TRUE, FALSE),
+  "right_bias" = c(TRUE, FALSE)
+)
+model_features <- expand.grid(model_features)
+model_features$model_prefix <- ifelse(
+  model_features$`right_bias`, "scenario4a", "scenario3a"
+)
+
+model_features$model_prefix <-ifelse(
+  model_features$mixture,
+  glue::glue("{model_features$model_prefix}_mixture"),
+  model_features$model_prefix
+)
+
+## model_features$model_prefix <-ifelse(
+##   model_features$`left_bias`,
+##   glue::glue("{model_features$model_prefix}_leftbias"),
+##   model_features$model_prefix
+## )
+
+model_features$model_prefix <-ifelse(
+  model_features$`recall`,
+  glue::glue("{model_features$model_prefix}_recall"),
+  model_features$model_prefix
+)
+
+short_run <- TRUE
+iter <- ifelse(short_run, 100, 4000)

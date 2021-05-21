@@ -18,9 +18,9 @@ parameters{
   real <lower = 0> b;
   real <lower = 0, upper = 1> c;
   real <lower = -20, upper = 10> tmax;
+  real <lower = 0, upper = 5> recall;    
 }
 model{
-  real recall = 0;  
   real valid;
   real invalid;
   real denominator_valid;

@@ -28,8 +28,8 @@ model{
   real invalid;
   real denominator_valid;
   matrix[M, N] pdf_mat;
-  a ~ normal(4.28, 0.74);
-  b ~ normal(1.44, 0.12);
+  a ~ normal(4, 1);
+  b ~ normal(1, 0.5);
   pinvalid ~ beta(4, 10);
   // Do this once when alpha and beta are sampled.
   // Make sure nus are in increasing order. This will work even if
