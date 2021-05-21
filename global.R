@@ -83,13 +83,6 @@ params_check <- list(
   iso_par1 = list(shape = 1, scale = 5)
 )
 
-## Read and clean data here so all scripts use the
-## same data. Model specific filters to be applied
-## in model specific files
-cowling_data <- readRDS("data/cowling_data_clean.rds") %>%
-  mutate(si = as.numeric(si))%>%
-   dplyr::rename(nu = onset_first_iso)%>%
-   dplyr::filter(!is.na(nu))
 
 
 

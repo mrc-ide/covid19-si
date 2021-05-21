@@ -5,55 +5,13 @@ nf_pdf <- function(t, a = 0.5, b = 0.5, c = 0.1, tmax = 0) {
   (numerator / (growing + failing))^c
 }
 
-# offset - must be a negative number!
-offset <- -20
-
-# load the data
-data <- readRDS("data/cowling_data_clean.rds")
-
-# sub-set to only incude those SIs that are possible under our assumed offset
-data_offset <- data %>%
-  filter(si > offset) %>%
-  filter(onset_first_iso > offset) %>%
-  mutate(si = as.numeric(si)) %>%
-  dplyr::rename(nu = onset_first_iso)
-
-# discrete pairs
-data_discrete_pairs <- data_offset%>%
-  filter(cluster_size ==2)
-
-# whole data set with nu replacement for s3 type pairs
-data_s3_s4mix <- data_offset %>%
-  mutate(infector_first_isolateDate = purrr::pmap_dbl(list(infector_isolateDate_beforeSymptom,
-                                                           infector_isolateDate_afterSymptom), min, na.rm = TRUE))%>%
-  mutate(infectee_first_isolateDate = purrr::pmap_dbl(list(infectee_isolateDate_beforeSymptom,
-                                                           infectee_isolateDate_afterSymptom), min, na.rm = TRUE))
-
-data_s3_s4mix$infector_first_isolateDate[data_s3_s4mix$infector_first_isolateDate == Inf] <- NA #when a value is NA it results in Inf
-data_s3_s4mix$infector_first_isolateDate <- as.Date(data_s3_s4mix$infector_first_isolateDate, origin = "1970-01-01")
-data_s3_s4mix$infectee_first_isolateDate[data_s3_s4mix$infectee_first_isolateDate == Inf] <- NA #when both values are NA it results in Inf
-data_s3_s4mix$infectee_first_isolateDate <- as.Date(data_s3_s4mix$infectee_first_isolateDate, origin = "1970-01-01")
-
-for(i in 1:(length(data_s3_s4mix$infector_first_isolateDate))){
-  if(!is.na(data_s3_s4mix$infectee_first_isolateDate[i])){
-    if(data_s3_s4mix$infector_first_isolateDate[i] >= data_s3_s4mix$infectee_onsetDate[i] && data_s3_s4mix$infector_first_isolateDate[i] >= data_s3_s4mix$infectee_first_isolateDate[i]){
-      if(data_s3_s4mix$infectee_first_isolateDate[i] >= data_s3_s4mix$infectee_onsetDate[i]){
-        data_s3_s4mix$nu[i] <- 41
-      }
-    }
-  }
-}
-
-# discrete pairs with nu replacement for s3 type pairs
-data_discrete_pairs_s3_s4mix <- data_s3_s4mix%>%
-  filter(cluster_size ==2)
 
 
 # fit the model
 si_vec <- seq(-20, 40, 1)
 
 ## Make sure data are arranged in order of nu
-data_offset <- arrange(data_offset, nu)
+
 
 fits_4a <- stan(
   file = here::here("stan-models/scenario4arecall_mixture_nf.stan"),
