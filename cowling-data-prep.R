@@ -3,16 +3,14 @@
 ## in model specific files
 cowling_data <- readRDS("data/cowling_data_clean.rds") %>%
   mutate(si = as.numeric(si))%>%
-   dplyr::rename(nu = onset_first_iso)%>%
-   dplyr::filter(!is.na(nu))
+   rename(nu = onset_first_iso)%>%
+   filter(!is.na(nu))
 
 
 # offset - must be a negative number!
 offset <- -20
 # sub-set to only incude those SIs that are possible under our assumed offset
-data_offset <- filter(
-  cowling_data, si > offset, onset_first_iso > offset
-)
+data_offset <- filter(cowling_data, si > offset, nu > offset)
 
 
 # discrete pairs

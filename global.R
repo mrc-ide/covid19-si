@@ -12,6 +12,7 @@ library(patchwork)
 library(purrr)
 library(rstan)
 library(tibble)
+source("cowling-data-prep.R")
 source("R/utils.R")
 source("R/utils_process_fits_common.R")
 source("R/utils_process_nf_fits.R")
@@ -155,6 +156,5 @@ fit_model <- function(mixture, recall, right_bias, model_prefix) {
     chains = chains
   )
   outfile <- glue("stanfits/{prefix}_fit.rds")
-  saveRDS(fit, outfile)
   fit
 }
