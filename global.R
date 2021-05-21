@@ -103,3 +103,65 @@ cowling_data <- readRDS("data/cowling_data_clean.rds") %>%
 ## a = b, should be log(1/cosh(a * (t - tmax)))
 ## nf_lpdf(1, 1, 1, 10, 5)
 ## 1 / cosh(10 - 5)
+
+model_features <- list(
+  "mixture" = c(TRUE, FALSE),
+  ##"left_bias" = c(TRUE, FALSE),
+  "recall"  = c(TRUE, FALSE),
+  "right_bias" = c(TRUE, FALSE)
+)
+model_features <- expand.grid(model_features)
+model_features$model_prefix <- ifelse(
+  model_features$`right_bias`, "scenario4a", "scenario3a"
+)
+
+model_features$model_prefix <-ifelse(
+  model_features$mixture,
+  glue::glue("{model_features$model_prefix}_mixture"),
+  model_features$model_prefix
+)
+
+## model_features$model_prefix <-ifelse(
+##   model_features$`left_bias`,
+##   glue::glue("{model_features$model_prefix}_leftbias"),
+##   model_features$model_prefix
+## )
+
+model_features$model_prefix <-ifelse(
+  model_features$`recall`,
+  glue::glue("{model_features$model_prefix}_recall"),
+  model_features$model_prefix
+)
+
+short_run <- TRUE
+iter <- ifelse(short_run, 100, 4000)
+chains <- ifelse(short_run, 1, 4)
+
+params_inc <- params_real$inc_par2
+si_vec <- seq(-20, max_valid_si)
+standata <- list(
+  N = nrow(cowling_data), si = cowling_data$si, max_shed = max_shed,
+  alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
+  M = length(si_vec), si_vec = si_vec, width = 0.5
+)
+
+#######
+
+fit_model <- function(mixture, recall, right_bias, model_prefix) {
+  prefix <- glue("{model_prefix}_nf")
+  infile <- glue("stan-models/{prefix}.stan")
+  message(infile)
+  if (!file.exists(infile)) message("Does not exist ", infile)
+  if(mixture) {
+    standata$max_invalid_si <- max_invalid_si
+    standata$min_invalid_si <- min_invalid_si
+  }
+  if (right_bias) standata$nu <- cowling_data$nu
+  fit <- stan(
+    file = infile, data = standata,  verbose = FALSE, iter = iter,
+    chains = chains
+  )
+  outfile <- glue("stanfits/{prefix}_fit.rds")
+  saveRDS(fit, outfile)
+  fit
+}
