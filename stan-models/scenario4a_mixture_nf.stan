@@ -13,7 +13,6 @@ data{
   // Vector of SI from min_invalid_si to max_invalid_si, offset by
   // a small amount to avoid boundary issues.
   real si_vec[M];
-  int first_valid_nu;
 }
 parameters{
   real <lower = 0, upper = 1> pinvalid;
@@ -28,8 +27,9 @@ model{
   real invalid;
   real denominator_valid;
   matrix[M, N] pdf_mat;
-  a ~ normal(4.28, 0.74);
-  b ~ normal(1.44, 0.12);
+  int first_valid_nu = 1;
+  a ~ normal(4, 1);
+  b ~ normal(1, 0.5);
   pinvalid ~ beta(4, 10);
   // Do this once when alpha and beta are sampled.
   // Make sure nus are in increasing order. This will work even if

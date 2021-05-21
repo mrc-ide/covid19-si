@@ -1,32 +1,3 @@
-model_features <- list(
-  "mixture" = c(TRUE, FALSE),
-  ##"left_bias" = c(TRUE, FALSE),
-  "recall"  = c(TRUE, FALSE),
-  "right_bias" = c(TRUE, FALSE)
-)
-model_features <- expand.grid(model_features)
-model_features$model_prefix <- ifelse(
-  model_features$`right_bias`, "scenario4a", "scenario3a"
-)
-
-model_features$model_prefix <-ifelse(
-  model_features$mixture,
-  glue::glue("{model_features$model_prefix}_mixture"),
-  model_features$model_prefix
-)
-
-## model_features$model_prefix <-ifelse(
-##   model_features$`left_bias`,
-##   glue::glue("{model_features$model_prefix}_leftbias"),
-##   model_features$model_prefix
-## )
-
-model_features$model_prefix <-ifelse(
-  model_features$`recall`,
-  glue::glue("{model_features$model_prefix}_recall"),
-  model_features$model_prefix
-)
-
 ## Need to rename fit files, at the moment only 1 has the right
 ## name
 ##index <- c(12, 15, 16)
