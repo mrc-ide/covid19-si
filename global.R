@@ -133,6 +133,8 @@ chains <- ifelse(short_run, 1, 4)
 
 params_inc <- params_real$inc_par2
 si_vec <- seq(-20, max_valid_si)
+## For s3/s4 mix
+cowling_data <- data_s3_s4mix
 standata <- list(
   N = nrow(cowling_data), si = cowling_data$si, max_shed = max_shed,
   alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
@@ -151,6 +153,25 @@ fit_model <- function(mixture, recall, right_bias, model_prefix) {
     standata$min_invalid_si <- min_invalid_si
   }
   if (right_bias) standata$nu <- cowling_data$nu
+  fit <- stan(
+    file = infile, data = standata,  verbose = FALSE, iter = iter,
+    chains = chains
+  )
+  outfile <- glue("stanfits/{prefix}_fit.rds")
+  fit
+}
+
+
+fit_leaky_model <- function(mixture, recall, right_bias, model_prefix) {
+  prefix <- glue("{model_prefix}_leaky_nf")
+  infile <- glue("stan-models/{prefix}.stan")
+  message(infile)
+  if (!file.exists(infile)) message("Does not exist ", infile)
+  standata$nu <- cowling_data$nu
+  if(mixture) {
+    standata$max_invalid_si <- max_invalid_si
+    standata$min_invalid_si <- min_invalid_si
+  }
   fit <- stan(
     file = infile, data = standata,  verbose = FALSE, iter = iter,
     chains = chains
