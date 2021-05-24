@@ -134,16 +134,21 @@ chains <- ifelse(short_run, 1, 4)
 params_inc <- params_real$inc_par2
 si_vec <- seq(-20, max_valid_si)
 ## For s3/s4 mix
-cowling_data <- data_s3_s4mix
-standata <- list(
+## cowling_data <- data_s3_s4mix
+s3data <- list(
   N = nrow(cowling_data), si = cowling_data$si, max_shed = max_shed,
+  alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
+  M = length(si_vec), si_vec = si_vec, width = 0.5
+)
+s3s4mix <- list(
+  N = nrow(data_s3_s4mix), si = data_s3_s4mix$si, max_shed = max_shed,
   alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
   M = length(si_vec), si_vec = si_vec, width = 0.5
 )
 
 #######
 
-fit_model <- function(mixture, recall, right_bias, model_prefix) {
+fit_model <- function(mixture, recall, right_bias, model_prefix, standata = s3data, obs = cowling_data) {
   prefix <- glue("{model_prefix}_nf")
   infile <- glue("stan-models/{prefix}.stan")
   message(infile)
@@ -152,7 +157,7 @@ fit_model <- function(mixture, recall, right_bias, model_prefix) {
     standata$max_invalid_si <- max_invalid_si
     standata$min_invalid_si <- min_invalid_si
   }
-  if (right_bias) standata$nu <- cowling_data$nu
+  if (right_bias| recall) standata$nu <- obs$nu
   fit <- stan(
     file = infile, data = standata,  verbose = FALSE, iter = iter,
     chains = chains
@@ -162,12 +167,31 @@ fit_model <- function(mixture, recall, right_bias, model_prefix) {
 }
 
 
-fit_leaky_model <- function(mixture, recall, right_bias, model_prefix) {
+s3s4_model <- function(mixture, recall, right_bias, model_prefix, standata = s3s4mix, obs = data_s3_s4mix) {
+  prefix <- glue("{model_prefix}_nf")
+  infile <- glue("stan-models/{prefix}.stan")
+  message(infile)
+  if (!file.exists(infile)) message("Does not exist ", infile)
+  if(mixture) {
+    standata$max_invalid_si <- max_invalid_si
+    standata$min_invalid_si <- min_invalid_si
+  }
+  if (right_bias| recall) standata$nu <- obs$nu
+  fit <- stan(
+    file = infile, data = standata,  verbose = FALSE, iter = iter,
+    chains = chains
+  )
+  outfile <- glue("stanfits/{prefix}_fit.rds")
+  fit
+}
+
+
+fit_leaky_model <- function(mixture, recall, right_bias, model_prefix, standata = s3data, obs = cowling_data) {
   prefix <- glue("{model_prefix}_leaky_nf")
   infile <- glue("stan-models/{prefix}.stan")
   message(infile)
   if (!file.exists(infile)) message("Does not exist ", infile)
-  standata$nu <- cowling_data$nu
+  standata$nu <- obs$nu
   if(mixture) {
     standata$max_invalid_si <- max_invalid_si
     standata$min_invalid_si <- min_invalid_si
