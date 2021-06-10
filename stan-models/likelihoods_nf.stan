@@ -68,6 +68,8 @@ functions{
       inf_density =  nf_lpdf(s | a, b, c, tmax);
       if (s > nu) {
         inf_density =  pleak * inf_density;
+      } else {
+        inf_density =  (1 - pleak) * inf_density;
       }
       inc_density = gamma_lpdf(x - s|alpha2, beta2);
       out = out + (exp(inf_density + inc_density) * width);

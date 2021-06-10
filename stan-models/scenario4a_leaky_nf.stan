@@ -26,6 +26,7 @@ model{
   real invalid;
   real denominator_valid;
   matrix[M, N] pdf_mat;
+  matrix[M, N] pdf_mat_non_leaky;  
   int first_valid_nu = 1;
   a ~ normal(4, 1);
   b ~ normal(1, 0.5);
@@ -34,10 +35,20 @@ model{
   // some values of nu are repeated
   pdf_mat = leaky_pdf_matrix(nu, si_vec, max_shed, a, b, c, tmax, 
                              recall, alpha2, beta2, pleak, width, first_valid_nu);
+  pdf_mat_non_leaky = pdf_matrix(nu, si_vec, max_shed, a, b, c, tmax, 
+                                 recall, alpha2, beta2, width, first_valid_nu);
+  
   for (n in 1:N) {
-    valid = validnf_leaky_lpdf(si[n] | nu[n], max_shed, a, b, c, tmax, 
-                               recall, alpha2, beta2, pleak, width);
-    denominator_valid = sum(col(pdf_mat, n));
+    if (si[n] > nu[n]) {
+      valid = validnf_leaky_lpdf(si[n] | nu[n], max_shed, a, b, c, tmax, 
+                                 recall, alpha2, beta2, pleak, width);
+      denominator_valid = sum(col(pdf_mat, n));
+    } else {
+      valid = validnf_lpdf(si[n] | nu[n], max_shed, a, b, c, tmax, 
+                           recall, alpha2, beta2, width);
+      denominator_valid = sum(col(pdf_mat_non_leaky, n));
+      
+    }
     target += valid - log(denominator_valid);
   }
 }

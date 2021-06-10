@@ -7,7 +7,7 @@ fits <- pmap(model_features[model_features$right_bias, ], s3s4_model)
 ## fits <- obj$enqueue_bulk(model_features, s3s4_model)
 
 ##
-leaky_fits <- pmap(model_features[model_features$right_bias, ], fit_leaky_model)
+leaky_fits <- pmap(model_features[4, ], fit_leaky_model)
 ## leaky_fits <- obj$enqueue_bulk(model_features[model_features$right_bias, ], fit_leaky_model)
 
 
