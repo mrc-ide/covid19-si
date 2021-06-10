@@ -14,7 +14,7 @@ ctx <-context_save(
 # [ save:id   ]  7ddb4352cd76dc7fc57d89dff8b371ad
 # [ save:name ]  churnable_nightheron
 
-
+ctx <- context_read('7ddb4352cd76dc7fc57d89dff8b371ad', 'max_si_21')
 obj <- didehpc::queue_didehpc(ctx)
 fits <- obj$enqueue_bulk(model_features, fit_model)
 tb1 <- obj$task_bundle_get('churnable_nightheron')
