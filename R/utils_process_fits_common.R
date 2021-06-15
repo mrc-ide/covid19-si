@@ -92,13 +92,40 @@ conditional_si_pooled <- function(obs, si_given_nu, nsim) {
 
 leaky_si <- function(un_si, nu, pleak, nsim) {
   inf_samples <- un_si[[1]]
-  ## Keep some after isolation with probability pleak
-  ## pleak = 0 if isolation is perfect
-  toss <- runif(nsim, 0, 1)
-  leaky <- which(toss > pleak)
-  filtered <- inf_samples[leaky]
-  filtered_si <- un_si[[2]][leaky]
-  list(inf = inf_samples, si = filtered_si)
+
+  ## Split inf_times into before and
+  ## after nu. And then from the before
+  ## group, select 1 - pleak samples
+  ## and from the after group, select
+  ## pleak samples
+  before_nu <- which(inf_samples <= nu)
+  after_nu <- which(inf_samples > nu)
+  ## Do it this way rather than sampling the vector
+  ## directly so that we can use the index to select
+  ## SIs
+  leaky <- sample(
+    length(after_nu), size = floor(nsim * pleak),
+    replace = TRUE
+  )
+  not_leaky <- sample(
+    length(before_nu), size = floor(nsim * (1 - pleak)),
+    replace = TRUE
+  )
+  filtered <- c(
+    inf_samples[before_nu][not_leaky],
+    inf_samples[after_nu][leaky]
+  )
+  filtered_si <- c(
+    un_si[[2]][before_nu][not_leaky],
+    un_si[[2]][after_nu][leaky]
+  )
+  list(
+    inf = filtered, si = filtered_si,
+    leaky_inf = after_nu[leaky],
+    not_leaky_inf = before_nu[not_leaky],
+    leaky_si = un_si[[2]][after_nu][leaky],
+    not_leaky_si = un_si[[2]][before_nu][not_leaky]
+  )
 }
 
 leaky_si_all <- function(un_si, pleak, nsim) {
@@ -117,6 +144,11 @@ leaky_si_all <- function(un_si, pleak, nsim) {
 ## This function will then apply relevant biases to
 estimated_SI <- function(obs, inf_times, mixture, recall,
                          isol, leaky = FALSE, tab1, nsim = 1e4, tmin = -20) {
+
+  if (leaky & isol) {
+    stop("leaky and isolation should both not be true")
+  }
+
 
   ## First simulate unconditional SI and then apply biases
   un_si <- unconditional_si_all(obs, inf_times)
