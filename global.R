@@ -13,25 +13,25 @@ library(purrr)
 library(rstan)
 library(tibble)
 source("cowling-data-prep.R")
-# source("R/utils.R")
-# source("R/utils_process_fits_common.R")
-# source("R/utils_process_nf_fits.R")
-# source("R/utils_model_selection.R")
-# source("R/utils_process_beta_fits.R")
+source("R/utils.R")
+source("R/utils_process_fits_common.R")
+source("R/utils_process_nf_fits.R")
+source("R/utils_model_selection.R")
+source("R/utils_process_beta_fits.R")
 
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = FALSE)
 
 ## Larger max_shed for NF distribution
-max_shed <- 21
+max_shed <- 40
 nsim_pre_filter <- 20000
 nsim_post_filter <- 300
 alpha_invalid <- 1
 beta_invalid <- 1
 min_invalid_si <- -11 ## Real has as large as -11
-max_si <- 21
-max_invalid_si <- 21
-max_valid_si <- 21
+max_si <- 40
+max_invalid_si <- 40
+max_valid_si <- 40
 width <- 0.1
 
 # additional params for sim data

@@ -53,7 +53,7 @@ best_si <- pmap(
     )
     estimated_SI(
       cowling_data, tost$TOST_bestpars, mixture = mixture,
-      recall = recall, isol = isol, tab1 = tab1
+      recall = recall, isol = isol, leaky = FALSE, tab1 = tab1
     )
   }
 )

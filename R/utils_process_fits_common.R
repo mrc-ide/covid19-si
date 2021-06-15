@@ -119,13 +119,11 @@ leaky_si <- function(un_si, nu, pleak, nsim) {
     un_si[[2]][before_nu][not_leaky],
     un_si[[2]][after_nu][leaky]
   )
-  list(
-    inf = filtered, si = filtered_si,
-    leaky_inf = after_nu[leaky],
-    not_leaky_inf = before_nu[not_leaky],
-    leaky_si = un_si[[2]][after_nu][leaky],
-    not_leaky_si = un_si[[2]][before_nu][not_leaky]
-  )
+  if (length(filtered) == 0) return(NULL)
+  ## TODO Sample these again to ensure length is
+  ## nsim
+  list(inf = inf_samples, si = filtered_si)
+
 }
 
 leaky_si_all <- function(un_si, pleak, nsim) {
@@ -153,12 +151,12 @@ estimated_SI <- function(obs, inf_times, mixture, recall,
   ## First simulate unconditional SI and then apply biases
   un_si <- unconditional_si_all(obs, inf_times)
   pleak_par <- ifelse(leaky, tab1["pleak", "best"], 0)
-  leaky <- leaky_si_all(un_si, pleak_par, nsim)
+  l_si <- leaky_si_all(un_si, pleak_par, nsim)
   # with isolation bias
   if (isol) {
-    with_iso <- conditional_si_all(leaky, nsim)
+    with_iso <- conditional_si_all(l_si, nsim)
   } else {
-    with_iso <- leaky
+    with_iso <- l_si
   }
   with_iso <- map(with_iso, ~ .[["si"]])
   ## with recall bias
