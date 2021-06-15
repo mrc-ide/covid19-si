@@ -92,7 +92,7 @@ post_si <- pmap(
       }
     )
     ## Extract conditional SI and make a matrix/data.frame
-    map(x, ~ .[[2]]) %>% do.call(what = 'rbind')
+    map(x, ~ .[["unconditional"]]) %>% do.call(what = 'rbind')
   }
 )
 
@@ -107,8 +107,8 @@ table2 <- pmap(
       glue("{check} Constructing table 2 for model {model_prefix}")
     )
       samples_si <- list(
-        SI_meanpars = list(SI = mean_si[[2]]),
-        SI_bestpars = list(SI = best_si[[2]]),
+        SI_meanpars = list(SI = mean_si[["unconditional"]]),
+        SI_bestpars = list(SI = best_si[["unconditional"]]),
         SI_post = post
       )
       ## table 2 - summary stats for sampled distributions
