@@ -23,7 +23,7 @@ options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = FALSE)
 
 ## Larger max_shed for NF distribution
-max_shed <- 40
+max_shed <- 21
 nsim_pre_filter <- 20000
 nsim_post_filter <- 300
 alpha_invalid <- 1
