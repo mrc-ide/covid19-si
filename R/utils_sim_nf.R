@@ -63,8 +63,57 @@ sim_si <- sim_nf(a = 5, b = 1, c = 0.2, tmax = 0, taus = seq(-20, 21, 0.1), n = 
                    shape_isol = 3,
                    scale_isol = 2,
                    offset_isol = 5)
-sim_si <- arrange(sim_si, nu)
+
 
 saveRDS(file = "data/sim_data_manuscript.rds", sim_si)
-
+sim_si <- arrange(sim_si$SI_observed, nu)
 si_vec <- seq(-20, 40, 1)
+
+fit3_sim <- function() {
+  stan(
+    file = "stan-models/scenario3a_mixture_nf.stan",
+    data = list(
+      N = nrow(sim_si),
+      si = sim_si$SI,
+      nu = sim_si$nu,
+      max_shed = 21,
+      alpha2 = params_real$inc_par2[["shape"]],
+      beta2 = 1 / params_real$inc_par2[["scale"]],
+      max_invalid_si = 40,
+      min_invalid_si = -20,
+      width = 1,
+      M = length(si_vec),
+      si_vec = si_vec,
+      first_valid_nu = 1
+      ##tmax = 0
+    ),
+    chains = 2, iter = 2000,
+    verbose = TRUE
+    ##control = list(adapt_delta = 0.99)
+  )
+}
+
+
+## fit s4
+fits_4a <- function() {
+  stan(
+    file = "stan-models/scenario4arecall_mixture_nf.stan",
+    data = list(
+      N = nrow(sim_si),
+      si = sim_si$SI,
+      nu = sim_si$nu,
+      max_shed = 21,
+      alpha2 = params_real$inc_par2[["shape"]],
+      beta2 = 1 / params_real$inc_par2[["scale"]],
+      max_invalid_si = 40,
+      min_invalid_si = -20,
+      width = 1,
+      M = length(si_vec),
+      si_vec = si_vec,
+      first_valid_nu = 1
+    ),
+    chains = 2, iter = 2000,
+    verbose = TRUE
+    ##control = list(adapt_delta = 0.99)
+  )
+}

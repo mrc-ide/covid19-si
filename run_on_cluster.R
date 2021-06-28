@@ -3,40 +3,20 @@ rstan_options(auto_write = FALSE)
 # config <- didehpc::didehpc_config(cluster = 'fi--didemrchnb')
 options(didehpc.cluster = 'fi--didemrchnb')
 root <- "simulated"
-packages <- c("rstan", "dplyr","purrr", "ggplot2", "epitrix", "glue")
-source_files <- c("R/utils_process_fits.R", "utils.R", "R/utils_sim_nf.R")
+packages <- c("rstan", "dplyr","purrr", "ggplot2", "epitrix", "glue", 'RcppEigen')
+source_files <- c("R/utils_process_fits.R", "R/utils.R", "R/utils_sim_nf.R")
+src <- conan::conan_sources('local::BH_1.75.0-0.tar.gz')
 ctx <-context_save(
   root, packages = packages, sources = source_files,
-  package_sources = provisionr::package_sources(local = "BH_1.75.0-0.zip")
+  package_sources = src
 )
-context::context_log_start()
-misspec_offset <- -7
+# [ open:db   ]  rds
+# [ save:id   ]  32d2d01ee69329404984186a17bcdf2f
+# [ save:name ]  atrophied_johndory
 obj <- didehpc::queue_didehpc(ctx)
 
-#fit s3
-fit3_sim <- function() {
- stan(
-  file = here::here("stan-models/scenario3a_mixture_nf.stan"),
-  data = list(
-    N = nrow(sim_si),
-    si = sim_si$SI,
-    nu = sim_si$nu,
-    max_shed = 21,
-    alpha2 = params_real$inc_par2[["shape"]],
-    beta2 = 1 / params_real$inc_par2[["scale"]],
-    max_invalid_si = 40,
-    min_invalid_si = -20,
-    width = 1,
-    M = length(si_vec),
-    si_vec = si_vec,
-    first_valid_nu = 1
-    ##tmax = 0
-  ),
-  chains = 2, iter = 2000,
-  verbose = TRUE
-  ##control = list(adapt_delta = 0.99)
-)
-}
+
+
 
 ## tab1_s3 <- table1_fun(fit3_sim)
 ## best_s3 <- tab1_s3$best
@@ -55,26 +35,10 @@ fit3_sim <- function() {
 ##   theme_minimal()
 
 
-## fit s4
-fits_4a <- function() {
-  stan(
-  file = here::here("stan-models/scenario4arecall_mixture_nf.stan"),
-  data = list(
-    N = nrow(sim_si),
-    si = sim_si$SI,
-    nu = sim_si$nu,
-    max_shed = 21,
-    alpha2 = params_real$inc_par2[["shape"]],
-    beta2 = 1 / params_real$inc_par2[["scale"]],
-    max_invalid_si = 40,
-    min_invalid_si = -20,
-    width = 1,
-    M = length(si_vec),
-    si_vec = si_vec,
-    first_valid_nu = 1
-  ),
-  chains = 2, iter = 2000,
-  verbose = TRUE
-  ##control = list(adapt_delta = 0.99)
-  )
-}
+
+task <- obj$enqueue(fit3_sim()) 
+# 200f04111e6aabba82ba1b029b638bea
+
+
+t4 <- obj$enqueue(fits_4a()) 
+# 05e00ed215ec184bbe7eafe29aeca325
