@@ -1,23 +1,23 @@
 set.seed(42)
-# library(cowplot)
+library(cowplot)
 library(dplyr)
 library(epitrix)
-# library(ggforce)
+library(ggforce)
 library(glue)
-# library(ggmcmc)
-# library(ggplot2)
+library(ggmcmc)
+library(ggplot2)
 library(magrittr)
-# library(matrixStats)
-# library(patchwork)
+library(matrixStats)
+library(patchwork)
 library(purrr)
 library(rstan)
 library(tibble)
 source("cowling-data-prep.R")
-# source("R/utils.R")
-# source("R/utils_process_fits_common.R")
-# source("R/utils_process_nf_fits.R")
-# source("R/utils_model_selection.R")
-# source("R/utils_process_beta_fits.R")
+source("R/utils.R")
+source("R/utils_process_fits_common.R")
+source("R/utils_process_nf_fits.R")
+source("R/utils_model_selection.R")
+source("R/utils_process_beta_fits.R")
 
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = FALSE)
@@ -29,9 +29,9 @@ nsim_post_filter <- 300
 alpha_invalid <- 1
 beta_invalid <- 1
 min_invalid_si <- -11 ## Real has as large as -11
-max_si <- 21
-max_invalid_si <- 21
-max_valid_si <- 21
+max_si <- 40
+max_invalid_si <- 40
+max_valid_si <- 40
 width <- 0.1
 
 # additional params for sim data

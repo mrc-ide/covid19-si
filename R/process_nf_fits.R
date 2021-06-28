@@ -3,7 +3,7 @@
 ##index <- c(12, 15, 16)
 index <- map_lgl(
   model_features$model_prefix,
-  function(model_prefix) file.exists(glue("stanfits/{model_prefix}_nf_fit.rds"))
+  function(model_prefix) file.exists(glue("stanfits/relaxed_priors/{model_prefix}_nf_fit.rds"))
 )
 
 model_features <- model_features[index, ]
@@ -14,7 +14,7 @@ fits <- map(
   model_features$model_prefix,
   function(model_prefix) {
     message("Reading fit file for ", model_prefix)
-    readRDS(glue("stanfits/{model_prefix}_nf_fit.rds"))
+    readRDS(glue("stanfits/relaxed_priors/{model_prefix}_nf_fit.rds"))
   }
 )
 
@@ -53,7 +53,7 @@ best_si <- pmap(
     )
     estimated_SI(
       cowling_data, tost$TOST_bestpars, mixture = mixture,
-      recall = recall, isol = isol, tab1 = tab1
+      recall = recall, isol = isol, leaky = FALSE, tab1 = tab1
     )
   }
 )
@@ -92,7 +92,7 @@ post_si <- pmap(
       }
     )
     ## Extract conditional SI and make a matrix/data.frame
-    map(x, ~ .[[2]]) %>% do.call(what = 'rbind')
+    map(x, ~ .[["unconditional"]]) %>% do.call(what = 'rbind')
   }
 )
 
@@ -107,8 +107,8 @@ table2 <- pmap(
       glue("{check} Constructing table 2 for model {model_prefix}")
     )
       samples_si <- list(
-        SI_meanpars = list(SI = mean_si[[2]]),
-        SI_bestpars = list(SI = best_si[[2]]),
+        SI_meanpars = list(SI = mean_si[["unconditional"]]),
+        SI_bestpars = list(SI = best_si[["unconditional"]]),
         SI_post = post
       )
       ## table 2 - summary stats for sampled distributions
@@ -191,3 +191,4 @@ overall_table2$formatted_pars <-
 
 x <- overall_table2[ ,c("param", "formatted_pars", "model", "DIC")]
 x <- tidyr::spread(x, key = param, value = formatted_pars)
+x <- arrange(x, dic)
