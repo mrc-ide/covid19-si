@@ -128,8 +128,8 @@ model_features$model_prefix <-ifelse(
 )
 
 short_run <- FALSE
-iter <- ifelse(short_run, 100, 4000)
-chains <- ifelse(short_run, 1, 3)
+iter <- ifelse(short_run, 100, 3000)
+chains <- ifelse(short_run, 1, 2)
 
 params_inc <- params_real$inc_par2
 si_vec <- seq(-20, max_valid_si)
