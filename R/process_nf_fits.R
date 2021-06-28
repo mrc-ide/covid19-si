@@ -3,7 +3,7 @@
 ##index <- c(12, 15, 16)
 index <- map_lgl(
   model_features$model_prefix,
-  function(model_prefix) file.exists(glue("stanfits/relaxed_priors/{model_prefix}_nf_fit.rds"))
+  function(model_prefix) file.exists(glue("stanfits/release/{model_prefix}_nf_fit.rds"))
 )
 
 model_features <- model_features[index, ]
@@ -14,7 +14,7 @@ fits <- map(
   model_features$model_prefix,
   function(model_prefix) {
     message("Reading fit file for ", model_prefix)
-    readRDS(glue("stanfits/relaxed_priors/{model_prefix}_nf_fit.rds"))
+    readRDS(glue("stanfits/release/{model_prefix}_nf_fit.rds"))
   }
 )
 
@@ -95,6 +95,8 @@ post_si <- pmap(
     map(x, ~ .[["unconditional"]]) %>% do.call(what = 'rbind')
   }
 )
+
+saveRDS(post_si, "processed_stanfits/nf_post_si.rds")
 
 table2 <- pmap(
   list(
