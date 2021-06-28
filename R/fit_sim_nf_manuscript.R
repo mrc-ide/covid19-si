@@ -2,15 +2,13 @@
 
 ## read in simulated data
 sim_si <- readRDS("sim_data_manuscript.rds")
-
-
-## fit s3
 si_vec <- seq(-20, 40, 1)
 
 ## Make sure data are arranged in order of nu
 data <- sim_si$SI_observed
 data <- arrange(data, nu)
 
+#fit s3
 fit3_sim <- stan(
   file = here::here("stan-models/scenario3a_mixture_nf.stan"),
   data = list(
@@ -51,7 +49,6 @@ ggplot(SI_comp)+
 
 
 ## fit s4
-
 fits_4a <- stan(
   file = here::here("stan-models/scenario4arecall_mixture_nf.stan"),
   data = list(
