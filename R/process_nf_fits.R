@@ -194,3 +194,16 @@ overall_table2$formatted_pars <-
 x <- overall_table2[ ,c("param", "formatted_pars", "model", "DIC")]
 x <- tidyr::spread(x, key = param, value = formatted_pars)
 x <- arrange(x, dic)
+saveRDS(x, "processed_stanfits/nf_overall_table2.rds")
+
+
+
+## For manuscript
+for_ms <- select(x, model, mean_inf, sd_inf, mean_si, sd_si, DIC)
+for_ms <- left_join(
+  for_ms, model_features, by = c("model" = "model_prefix")
+)
+for_ms <- select(
+ for_ms, mixture, recall, right_bias, mean_inf, sd_inf, mean_si, sd_si, DIC
+)
+##stargazer::stargazer(for_ms, summary = FALSE, rownames = FALSE)
