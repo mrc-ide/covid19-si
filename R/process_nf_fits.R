@@ -135,7 +135,7 @@ walk2(
   samples_tost, model_features$model_prefix,
   function(tost, model_prefix) {
   p1 <- TOST_figure(tost$TOST_bestpars)
-  save_plot(
+  ggsave(
     filename = glue("figures/{model_prefix}_nf_tost.pdf"), p1
   )
 })
@@ -145,7 +145,7 @@ walk2(
   best_si, model_features$model_prefix,
   function(si, model_prefix) {
   psi <- SI_figure(si[[2]], cowling_data)
-  save_plot(
+  ggsave(
     filename = glue("figures/{model_prefix}_nf_si.pdf"), psi
   )
 })
@@ -251,7 +251,7 @@ p <- ggplot(best_unconditional, aes(model, si)) +
     axis.title.x = element_blank()
   )
 
-cowplot::save_plot("figures/nf_all_si_distr.pdf", p)
+ggsave("figures/nf_all_si_distr.pdf", p)
 
 
 ## Similary TOST
@@ -284,4 +284,4 @@ p <- ggplot(tost_bestpars, aes(model, tost)) +
     axis.title.x = element_blank()
   )
 
-cowplot::save_plot("figures/nf_all_tost_distr.pdf", p)
+ggsave("figures/nf_all_tost_distr.pdf", p)
