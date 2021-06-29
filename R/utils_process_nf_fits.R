@@ -181,13 +181,13 @@ plot_both_SIs <- function(SI1, SI2, data) {
     theme_minimal() +
     xlab("Serial Interval (days)") +
     annotate(
-      geom = "text", x = mean(SI1), y = 0.085, color = "red",
-      label = paste(" mean:\n", round(mean(SI1), 1), " days", sep = ""),
+      geom = "text", x = mean(SI1), y = 0.055, color = "red",
+      label = paste(" Mean:\n", format(round(mean(SI1), 1), nsmall = 1), " days", sep = ""),
       hjust = -0.1
     ) +
     annotate(
-      geom = "text", x = mean(SI1), y = 0.095, color = "blue",
-      label = paste(" mean:\n", round(mean(SI2), 1), " days", sep = ""),
+      geom = "text", x = mean(SI2), y = 0.095, color = "blue",
+      label = paste(" Mean:\n", format(round(mean(SI2), 1), nsmall = 1), " days", sep = ""),
       hjust = -0.1
     ) +
     theme(legend.title = element_blank()) +

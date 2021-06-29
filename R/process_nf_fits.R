@@ -32,6 +32,10 @@ table1 <- map2(
   }
 )
 
+## table1 <- map(
+##   model_features$model_prefix,
+##   function(x) readRDS(glue("processed_stanfits/{x}_nf_tab1.rds"))
+## )
 
 samples_tost <- map2(
   table1, fits, function(tab1, fit) {
@@ -41,6 +45,8 @@ samples_tost <- map2(
     )
   }
 )
+
+saveRDS(samples_tost, "processed_stanfits/samples_tost_nf.rds")
 
 best_si <- pmap(
   list(
@@ -57,6 +63,8 @@ best_si <- pmap(
     )
   }
 )
+
+saveRDS(best_si, "processed_stanfits/best_si_nf.rds")
 
 mean_si <- pmap(
   list(
@@ -97,6 +105,7 @@ post_si <- pmap(
 )
 
 saveRDS(post_si, "processed_stanfits/nf_post_si.rds")
+## post_si <- readRDS("processed_stanfits/nf_post_si.rds")
 
 table2 <- pmap(
   list(
@@ -154,7 +163,7 @@ pwalk(
           SI1 = si[[1]], SI2 = si[[2]],
           data = cowling_data
         )
-        save_plot(
+        ggsave(
           filename = glue("figures/{model_prefix}_nf_si.pdf"), psi2
         )
     }
@@ -200,10 +209,79 @@ saveRDS(x, "processed_stanfits/nf_overall_table2.rds")
 
 ## For manuscript
 for_ms <- select(x, model, mean_inf, sd_inf, mean_si, sd_si, DIC)
+for_ms <- arrange(for_ms, DIC)
 for_ms <- left_join(
   for_ms, model_features, by = c("model" = "model_prefix")
 )
 for_ms <- select(
  for_ms, mixture, recall, right_bias, mean_inf, sd_inf, mean_si, sd_si, DIC
 )
-##stargazer::stargazer(for_ms, summary = FALSE, rownames = FALSE)
+## stargazer::stargazer(for_ms, summary = FALSE, rownames = FALSE)
+overall_table2 <- readRDS("processed_stanfits/nf_overall_table2.rds")
+overall_table2 <- arrange(overall_table2, DIC)
+names(best_si) <- model_features$model_prefix
+## Reorder best_si
+best_unconditional <- map_dfr(
+  best_si, function(x) {
+    data.frame(si = x[["unconditional"]])
+  }, .id = "model"
+)
+
+best_unconditional$model <- factor(
+  best_unconditional$model, levels = overall_table2$model,
+  ordered = TRUE
+)
+
+p <- ggplot(best_unconditional, aes(model, si)) +
+  gghalves::geom_half_violin(
+    fill = "red", alpha = 0.3,
+    draw_quantiles = c(0.25, 0.5, 0.75)
+  ) +
+  ##geom_boxplot(width = 0.1, color = "grey", alpha = 0.5, coef = 1) +
+  theme_minimal() +
+  ylab("Serial Interval") +
+  scale_x_discrete(
+    breaks = c("scenario4a_mixture", "scenario3a_mixture_recall", "scenario4a_mixture_recall",
+               "scenario4a_recall", "scenario3a_mixture", "scenario3a_recall"),
+    labels = c("ISOL + MIX", "BASELINE + MIX + RECALL", "ISOL + MIX + RECALL",
+               "ISOL + RECALL", "BASELINE + MIX", "BASELINE + RECALL")
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    axis.title.x = element_blank()
+  )
+
+cowplot::save_plot("figures/nf_all_si_distr.pdf", p)
+
+
+## Similary TOST
+names(samples_tost) <- model_features$model_prefix
+tost_bestpars <- map_dfr(
+  samples_tost, function(x) data.frame(tost = x[["TOST_bestpars"]]),
+  .id = "model"
+)
+tost_bestpars$model <- factor(
+  tost_bestpars$model, levels = overall_table2$model,
+  ordered = TRUE
+)
+
+p <- ggplot(tost_bestpars, aes(model, tost)) +
+  gghalves::geom_half_violin(
+    fill = "red", alpha = 0.3,
+    draw_quantiles = c(0.25, 0.5, 0.75)
+  ) +
+  ##geom_boxplot(width = 0.1, color = "grey", alpha = 0.5, coef = 1) +
+  theme_minimal() +
+  ylab("TOST") +
+  scale_x_discrete(
+    breaks = c("scenario4a_mixture", "scenario3a_mixture_recall", "scenario4a_mixture_recall",
+               "scenario4a_recall", "scenario3a_mixture", "scenario3a_recall"),
+    labels = c("ISOL + MIX", "BASELINE + MIX + RECALL", "ISOL + MIX + RECALL",
+               "ISOL + RECALL", "BASELINE + MIX", "BASELINE + RECALL")
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    axis.title.x = element_blank()
+  )
+
+cowplot::save_plot("figures/nf_all_tost_distr.pdf", p)
