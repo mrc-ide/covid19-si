@@ -7,7 +7,9 @@ library(tibble)
 source("cowling-data-prep.R")
 source("R/utils.R")
 max_shed <- 21
-min_invalid_si <- -11 ## Real has as large as -11
+min_valid_si <- -20
+max_valid_si <- 40
+min_invalid_si <- -20 
 max_invalid_si <- 40
 width <- 0.5
 
@@ -59,11 +61,16 @@ iter <- ifelse(short_run, 100, 3000)
 chains <- ifelse(short_run, 1, 2)
 
 params_inc <- params_real$inc_par2
-si_vec <- seq(-20, max_valid_si)
+si_vec <- seq(min_valid_si, max_valid_si)
 ## For s3/s4 mix
 ## cowling_data <- data_s3_s4mix
 s3data <- list(
   N = nrow(cowling_data), si = cowling_data$si, max_shed = max_shed,
+  alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
+  M = length(si_vec), si_vec = si_vec, width = width
+)
+s3pairs <- list(
+  N = nrow(data_discrete_pairs), si = data_discrete_pairs$si, max_shed = max_shed,
   alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
   M = length(si_vec), si_vec = si_vec, width = width
 )
@@ -76,6 +83,23 @@ s3s4mix <- list(
 #######
 
 fit_model <- function(mixture, recall, right_bias, model_prefix, standata = s3data, obs = cowling_data) {
+  prefix <- glue("{model_prefix}_nf")
+  infile <- glue("stan-models/{prefix}.stan")
+  message(infile)
+  if (!file.exists(infile)) message("Does not exist ", infile)
+  if(mixture) {
+    standata$max_invalid_si <- max_invalid_si
+    standata$min_invalid_si <- min_invalid_si
+  }
+  if (right_bias| recall) standata$nu <- obs$nu
+  fit <- stan(
+    file = infile, data = standata,  verbose = FALSE, iter = iter,
+    chains = chains
+  )
+  fit
+}
+
+fit_model_to_pairs  <- function(mixture, recall, right_bias, model_prefix, standata = s3pairs, obs = data_discrete_pairs) {
   prefix <- glue("{model_prefix}_nf")
   infile <- glue("stan-models/{prefix}.stan")
   message(infile)

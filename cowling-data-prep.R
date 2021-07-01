@@ -8,18 +8,13 @@ cowling_data <- readRDS("data/cowling_data_clean.rds") %>%
 
 cowling_data <- arrange(cowling_data, nu)
 
-# offset - must be a negative number!
-offset <- -20
-# sub-set to only incude those SIs that are possible under our assumed offset
-data_offset <- filter(cowling_data, si > offset, nu > offset)
-data_offset <- arrange(data_offset, nu)
 
 # discrete pairs
-data_discrete_pairs <- filter(data_offset, cluster_size == 2)
+data_discrete_pairs <- filter(cowling_data, cluster_size == 2)
 data_discrete_pairs <- arrange(data_discrete_pairs, nu)
 
 # whole data set with nu replacement for s3 type pairs
-data_s3_s4mix <- data_offset %>%
+data_s3_s4mix <- cowling_data %>%
   mutate(
     infector_first_isolateDate = pmap_dbl(
       list(infector_isolateDate_beforeSymptom,
