@@ -19,7 +19,7 @@ nsim_post_filter <- 300
 alpha_invalid <- 1
 beta_invalid <- 1
 max_si <- 40
-max_valid_si <- 40
+
 
 # additional params for sim data
 params <- list(
