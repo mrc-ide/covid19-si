@@ -68,6 +68,8 @@ functions{
       inf_density =  nf_lpdf(s | a, b, c, tmax);
       if (s > nu) {
         inf_density =  pleak * inf_density;
+      } else {
+        inf_density =  (1 - pleak) * inf_density;
       }
       inc_density = gamma_lpdf(x - s|alpha2, beta2);
       out = out + (exp(inf_density + inc_density) * width);
@@ -82,9 +84,9 @@ functions{
   // Similarly si_vec
   // nus are running across columns and SIs are running down rows
   matrix leaky_pdf_matrix(real[] nu_vec, real[] si_vec, real max_shed, 
-                    real a, real b, real c, real tmax, real recall, 
+                          real a, real b, real c, real tmax, real recall, 
                           real alpha2, real beta2, real pleak, real width,
-                    int first_valid_nu) {
+                          int first_valid_nu) {
 
     int num_nu = size(nu_vec);
     int num_si = size(si_vec);
