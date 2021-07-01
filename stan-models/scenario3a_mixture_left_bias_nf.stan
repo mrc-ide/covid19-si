@@ -1,7 +1,9 @@
 #include likelihoods_nf.stan
 data{
   int N; // number of data points
-  real si[N];  
+  real si[N];
+  // symptom_onset - importation
+  real rho[N];
   real max_shed;
   real <lower = 0> alpha2; // incubation period parameter
   real <lower = 0> beta2; // incubation period parameter
@@ -26,9 +28,8 @@ model{
   real invalid;
   real denominator_valid;
   real denominator;
-  matrix[M, 1] pdf_mat;
+  real pdf_mat[1, N, M];
   real dummy[1];
-  int first_valid_nu = 1;
   // Priors suggested by Neil
   a ~ normal(4, 1);
   b ~ normal(1, 0.5);
@@ -36,14 +37,20 @@ model{
   // Since this model doesn't need nu, we set nu to be a value larger
   // than max_shed so that the division by F(nu) never takes place.
   dummy[1] = max_shed + 10;
-  pdf_mat = pdf_matrix(dummy, si_vec, max_shed, a, b, c, tmax, 
-                       recall, alpha2, beta2, width, first_valid_nu);
-  denominator_valid = sum(col(pdf_mat, 1));
+  pdf_mat = pdf_matrix_with_left_bias(dummy, si_vec, rho, max_shed,
+                                      a, b, c, tmax, 
+                                      recall, alpha2, beta2, width);
   for (n in 1:N) {
     invalid = invalid_lpdf(si[n]|min_invalid_si, max_invalid_si);
-    valid = validnf_lpdf(si[n] |dummy[1], max_shed, a, b, c, tmax, 
-                         recall, alpha2, beta2, width);
-    valid = valid - log(denominator_valid);      
-    target += log_mix(pinvalid, invalid, valid);    
+    if ( si[n] > rho[n]) {
+      denominator_valid = sum(pdf_mat[1, n, ]);
+      valid = validnf_with_left_bias_lpdf(si[n] |dummy[1], max_shed,
+                                          rho[n], a, b, c, tmax, 
+                                          recall, alpha2, beta2, width);
+      valid = valid - log(denominator_valid);      
+      target += log_mix(pinvalid, invalid, valid);    
+    } else {
+      target += invalid + log(pinvalid);
+    }
   }
 }

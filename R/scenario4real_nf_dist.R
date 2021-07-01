@@ -5,24 +5,13 @@ nf_pdf <- function(t, a = 0.5, b = 0.5, c = 0.1, tmax = 0) {
   (numerator / (growing + failing))^c
 }
 
-# offset - must be a negative number!
-offset <- -20
 
-# load the data
-data <- readRDS("data/cowling_data_clean.rds")
-
-# sub-set to only incude those SIs that are possible under our assumed offset
-data_offset <- data %>%
-  filter(si > offset) %>%
-  filter(onset_first_iso > offset) %>%
-  mutate(si = as.numeric(si)) %>%
-  dplyr::rename(nu = onset_first_iso)
 
 # fit the model
 si_vec <- seq(-20, 40, 1)
 
 ## Make sure data are arranged in order of nu
-data_offset <- arrange(data_offset, nu)
+
 
 fits_4a <- stan(
   file = here::here("stan-models/scenario4arecall_mixture_nf.stan"),
@@ -30,7 +19,7 @@ fits_4a <- stan(
     N = nrow(data_offset),
     si = data_offset$si,
     nu = data_offset$nu,
-    max_shed = 21,
+    max_shed = 40,
     alpha2 = params_real$inc_par2[["shape"]],
     beta2 = 1 / params_real$inc_par2[["scale"]],
     max_invalid_si = 40,
@@ -41,7 +30,7 @@ fits_4a <- stan(
     first_valid_nu = 1
     ##tmax = 0
   ),
-  chains = 1, iter = 500,
+  chains = 1, iter = 2000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
