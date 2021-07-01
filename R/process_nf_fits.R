@@ -1,3 +1,4 @@
+check <- "\U2713"
 fit_dir <- "stanfits/release"
 outdir <- "processed_stanfits/release"
 figs_dir <- "figures/release"
@@ -10,7 +11,11 @@ index <- map_lgl(
 model_features <- model_features[index, ]
 
 if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
-check <- "\U2713"
+if (! dir.exists(outdir)) dir.create(outdir)
+if (! dir.exists(figs_dir)) dir.create(figs_dir)
+
+
+
 fits <- map(
   model_features$model_prefix,
   function(model_prefix) {
@@ -47,7 +52,7 @@ samples_tost <- map2(
   }
 )
 
-saveRDS(samples_tost, "{outdir}/samples_tost_nf.rds")
+saveRDS(samples_tost, glue("{outdir}/samples_tost_nf.rds"))
 
 best_si <- pmap(
   list(
@@ -65,7 +70,7 @@ best_si <- pmap(
   }
 )
 
-saveRDS(best_si, "{outdir}/best_si_nf.rds")
+saveRDS(best_si, glue("{outdir}/best_si_nf.rds"))
 
 mean_si <- pmap(
   list(
@@ -82,6 +87,8 @@ mean_si <- pmap(
     )
   }
 )
+
+saveRDS(mean_si, glue("{outdir}/mean_si_nf.rds"))
 
 post_si <- pmap(
   list(
@@ -105,7 +112,7 @@ post_si <- pmap(
   }
 )
 
-saveRDS(post_si, "{outdir}/nf_post_si.rds")
+saveRDS(post_si, glue("{outdir}/nf_post_si.rds"))
 ## post_si <- readRDS("{outdir}/nf_post_si.rds")
 
 table2 <- pmap(
@@ -204,7 +211,7 @@ overall_table2$formatted_pars <-
 x <- overall_table2[ ,c("param", "formatted_pars", "model", "DIC")]
 x <- tidyr::spread(x, key = param, value = formatted_pars)
 x <- arrange(x, dic)
-saveRDS(x, "{outdir}/nf_overall_table2.rds")
+saveRDS(x, glue("{outdir}/nf_overall_table2.rds"))
 
 
 
@@ -218,7 +225,9 @@ for_ms <- select(
  for_ms, mixture, recall, right_bias, mean_inf, sd_inf, mean_si, sd_si, DIC
 )
 ## stargazer::stargazer(for_ms, summary = FALSE, rownames = FALSE)
-overall_table2 <- readRDS("{outdir}/nf_overall_table2.rds")
+overall_table2 <- readRDS(
+  glue("{outdir}/nf_overall_table2.rds")
+)
 overall_table2 <- arrange(overall_table2, DIC)
 names(best_si) <- model_features$model_prefix
 ## Reorder best_si
@@ -232,27 +241,49 @@ best_unconditional$model <- factor(
   best_unconditional$model, levels = overall_table2$model,
   ordered = TRUE
 )
+## Top 4 moldes
+top4 <- best_unconditional[best_unconditional$model %in% overall_table2$model[1:4], ]
+palette <- c("#56B4E9", "#009E73", "#0072B2", "#D55E00")
+names(palette) <- overall_table2$model[1:4]
 
-p <- ggplot(best_unconditional, aes(model, si)) +
-  gghalves::geom_half_violin(
-    fill = "red", alpha = 0.3,
-    draw_quantiles = c(0.25, 0.5, 0.75)
-  ) +
-  ##geom_boxplot(width = 0.1, color = "grey", alpha = 0.5, coef = 1) +
-  theme_minimal() +
-  ylab("Serial Interval") +
-  scale_x_discrete(
-    breaks = c("scenario4a_mixture", "scenario3a_mixture_recall", "scenario4a_mixture_recall",
-               "scenario4a_recall", "scenario3a_mixture", "scenario3a_recall"),
-    labels = c("ISOL + MIX", "BASELINE + MIX + RECALL", "ISOL + MIX + RECALL",
-               "ISOL + RECALL", "BASELINE + MIX", "BASELINE + RECALL")
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-    axis.title.x = element_blank()
+nice_model_name <- function(model) {
+  prefix <- case_when(
+    grepl("scenario3", model) ~ "BASELINE",
+    grepl("scenario4", model) ~ "ISOL"
+  )
+  suffix1 <- case_when(
+    grepl("mixture", model) ~ " + MIX",
+    TRUE ~ ""
+  )
+  suffix2 <- case_when(
+    grepl("recall", model) ~ " + RECALL",
+    TRUE ~ ""
   )
 
-ggsave("{figs_dir}/nf_all_si_distr.pdf", p)
+  paste0(prefix, suffix1, suffix2)
+}
+
+p <- ggplot(top4, aes(model, si, fill = model)) +
+  gghalves::geom_half_violin(
+    draw_quantiles = c(0.25, 0.5, 0.75)
+    ) +
+  scale_fill_manual(
+    values = palette,
+    breaks = overall_table2$model[1:4],
+    labels = nice_model_name
+  ) +
+  theme_minimal() +
+  ylab("Serial Interval") +
+  theme(
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank(),
+    legend.position = "top",
+    legend.title = element_blank(),
+  )
+
+ggsave(
+  glue("{figs_dir}/nf_top4_si_distr.pdf"), p
+)
 
 
 ## Similary TOST
