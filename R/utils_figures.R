@@ -22,11 +22,17 @@ figs_dir <- "figures/release"
 overall_table2 <- readRDS(glue("{outdir}/nf_overall_table2.rds"))
 overall_table2 <- arrange(overall_table2, DIC)
 names(best_si) <- model_features$model_prefix
-## Reorder best_si
+
 best_unconditional <- map_dfr(
-  best_si, function(x) {
-    data.frame(si = x[["unconditional"]])
-  }, .id = "model"
+  grep("scenario3", model_features$model_prefix, value = TRUE),
+  function(model) {
+    s4 <- gsub("scenario3", "scenario4", model)
+    data.frame(
+      s3si = best_si[[model]][["unconditional"]],
+      s4si = best_si[[s4]][["unconditional"]],
+      s3model = model
+    )
+  }
 )
 
 best_unconditional$model <- factor(
@@ -36,18 +42,27 @@ best_unconditional$model <- factor(
 ## Top 4 moldes
 top4 <- best_unconditional[best_unconditional$model %in% overall_table2$model[1:4], ]
 palette <- c("#56B4E9", "#009E73", "#0072B2", "#D55E00")
-names(palette) <- overall_table2$model[1:4]
+names(palette) <- c(
+  "scenario3a", "scenario3a_mixture_recall",
+  "scenario3a_recall", "scenario3a_mixture"
+)
 
 
 
-p <- ggplot(top4, aes(model, si, fill = model)) +
+p <- ggplot(best_unconditional) +
   gghalves::geom_half_violin(
-    draw_quantiles = c(0.25, 0.5, 0.75)
+    aes(s3model, s3si, fill = s3model),
+    draw_quantiles = c(0.25, 0.5, 0.75), side = "l"
     ) +
+  gghalves::geom_half_violin(
+    aes(s3model, s4si, fill = s3model),
+    draw_quantiles = c(0.25, 0.5, 0.75), side = "r",
+    alpha = 0.3
+  ) +
   scale_fill_manual(
     values = palette,
-    breaks = overall_table2$model[1:4],
-    labels = nice_model_name
+    breaks = c("scenario3a_mixture", "scenario3a_recall", "scenario3a_mixture_recall"),
+    labels = c("BASELINE/ISOL + MIX", "BASELINE/ISOL + RECALL", "BASELINE/ISOL + MIX + RECALL")
   ) +
   theme_minimal() +
   ylab("Serial Interval") +
@@ -63,23 +78,33 @@ ggsave(glue("{figs_dir}/nf_top4_si_distr.pdf"), p)
 
 ## Similary TOST
 names(samples_tost) <- model_features$model_prefix
+
 tost_bestpars <- map_dfr(
-  samples_tost, function(x) data.frame(tost = x[["TOST_bestpars"]]),
-  .id = "model"
+  grep("scenario3", model_features$model_prefix, value = TRUE),
+  function(model) {
+    s4 <- gsub("scenario3", "scenario4", model)
+    data.frame(
+      s3tost = samples_tost[[model]][["TOST_bestpars"]],
+      s4tost = samples_tost[[s4]][["TOST_bestpars"]],
+      s3model = model
+    )
+  }
 )
-tost_bestpars$model <- factor(
-  tost_bestpars$model, levels = overall_table2$model,
-  ordered = TRUE
-)
-top4 <- tost_bestpars[tost_bestpars$model %in% overall_table2$model[1:4], ]
-p <- ggplot(top4, aes(model, tost, fill = model)) +
+
+p <- ggplot(tost_bestpars) +
   gghalves::geom_half_violin(
-    draw_quantiles = c(0.25, 0.5, 0.75)
+    aes(s3model, s3tost, fill = s3model),
+    draw_quantiles = c(0.25, 0.5, 0.75), side = "l"
+    ) +
+  gghalves::geom_half_violin(
+    aes(s3model, s4tost, fill = s3model),
+    draw_quantiles = c(0.25, 0.5, 0.75),
+    side = "r", alpha = 0.3
   ) +
   scale_fill_manual(
     values = palette,
-    breaks = overall_table2$model[1:4],
-    labels = nice_model_name
+    breaks = c("scenario3a_mixture", "scenario3a_recall", "scenario3a_mixture_recall"),
+    labels = c("BASELINE/ISOL + MIX", "BASELINE/ISOL + RECALL", "BASELINE/ISOL + MIX + RECALL")
   ) +
   theme_minimal() +
   ylab("TOST") +
@@ -90,4 +115,6 @@ p <- ggplot(top4, aes(model, tost, fill = model)) +
     legend.title = element_blank(),
   )
 
-ggsave("{figs_dir}/nf_all_tost_distr.pdf", p)
+ggsave(
+  glue("{figs_dir}/nf_all_tost_distr.pdf"), p
+)
