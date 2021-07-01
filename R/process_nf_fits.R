@@ -14,7 +14,7 @@ fits <- map(
   model_features$model_prefix,
   function(model_prefix) {
     message("Reading fit file for ", model_prefix)
-    readRDS(glue("stanfits/release/{model_prefix}_nf_fit.rds"))
+    readRDS(glue("stanfits/relaxed_priors/{model_prefix}_nf_fit.rds"))
   }
 )
 
@@ -26,7 +26,7 @@ table1 <- map2(
       glue("{check} Extracted parameters for model {model_prefix}")
     )
     saveRDS(
-      tab1, glue("processed_stanfits/{model_prefix}_nf_tab1.rds")
+      tab1, glue("processed_stanfits/relaxed_priors/{model_prefix}_nf_tab1.rds")
     )
     tab1
   }
@@ -34,7 +34,7 @@ table1 <- map2(
 
 ## table1 <- map(
 ##   model_features$model_prefix,
-##   function(x) readRDS(glue("processed_stanfits/{x}_nf_tab1.rds"))
+##   function(x) readRDS(glue("processed_stanfits/relaxed_priors/{x}_nf_tab1.rds"))
 ## )
 
 samples_tost <- map2(
@@ -46,7 +46,7 @@ samples_tost <- map2(
   }
 )
 
-saveRDS(samples_tost, "processed_stanfits/samples_tost_nf.rds")
+saveRDS(samples_tost, "processed_stanfits/relaxed_priors/samples_tost_nf.rds")
 
 best_si <- pmap(
   list(
@@ -64,7 +64,7 @@ best_si <- pmap(
   }
 )
 
-saveRDS(best_si, "processed_stanfits/best_si_nf.rds")
+saveRDS(best_si, "processed_stanfits/relaxed_priors/best_si_nf.rds")
 
 mean_si <- pmap(
   list(
@@ -104,8 +104,8 @@ post_si <- pmap(
   }
 )
 
-saveRDS(post_si, "processed_stanfits/nf_post_si.rds")
-## post_si <- readRDS("processed_stanfits/nf_post_si.rds")
+saveRDS(post_si, "processed_stanfits/relaxed_priors/nf_post_si.rds")
+## post_si <- readRDS("processed_stanfits/relaxed_priors/nf_post_si.rds")
 
 table2 <- pmap(
   list(
@@ -125,7 +125,7 @@ table2 <- pmap(
       ## table 2 - summary stats for sampled distributions
       tab2 <- tost_si_summary(tost, samples_si)
       saveRDS(
-        tab2, glue("processed_stanfits/{model_prefix}_nf_tab2.rds")
+        tab2, glue("processed_stanfits/relaxed_priors/{model_prefix}_nf_tab2.rds")
       )
       tab2
     }
@@ -136,7 +136,7 @@ walk2(
   function(tost, model_prefix) {
   p1 <- TOST_figure(tost$TOST_bestpars)
   ggsave(
-    filename = glue("figures/{model_prefix}_nf_tost.pdf"), p1
+    filename = glue("figures/relaxed_priors/{model_prefix}_nf_tost.pdf"), p1
   )
 })
 
@@ -146,7 +146,7 @@ walk2(
   function(si, model_prefix) {
   psi <- SI_figure(si[[2]], cowling_data)
   ggsave(
-    filename = glue("figures/{model_prefix}_nf_si.pdf"), psi
+    filename = glue("figures/relaxed_priors/{model_prefix}_nf_si.pdf"), psi
   )
 })
 
@@ -164,7 +164,7 @@ pwalk(
           data = cowling_data
         )
         ggsave(
-          filename = glue("figures/{model_prefix}_nf_si.pdf"), psi2
+          filename = glue("figures/relaxed_priors/{model_prefix}_nf_si.pdf"), psi2
         )
     }
   }
@@ -185,7 +185,7 @@ names(dic) <- x$model_prefix
 overall_table2 <- map_dfr(
   model_features$model_prefix,
   function(model_prefix) {
-    out <- readRDS(glue("processed_stanfits/{model_prefix}_nf_tab2.rds"))
+    out <- readRDS(glue("processed_stanfits/relaxed_priors/{model_prefix}_nf_tab2.rds"))
     out <- tibble::rownames_to_column(out, var = "param")
     out$DIC <- dic[[model_prefix]]
     out$model <- model_prefix
@@ -203,7 +203,7 @@ overall_table2$formatted_pars <-
 x <- overall_table2[ ,c("param", "formatted_pars", "model", "DIC")]
 x <- tidyr::spread(x, key = param, value = formatted_pars)
 x <- arrange(x, dic)
-saveRDS(x, "processed_stanfits/nf_overall_table2.rds")
+saveRDS(x, "processed_stanfits/relaxed_priors/nf_overall_table2.rds")
 
 
 
@@ -217,7 +217,7 @@ for_ms <- select(
  for_ms, mixture, recall, right_bias, mean_inf, sd_inf, mean_si, sd_si, DIC
 )
 ## stargazer::stargazer(for_ms, summary = FALSE, rownames = FALSE)
-overall_table2 <- readRDS("processed_stanfits/nf_overall_table2.rds")
+overall_table2 <- readRDS("processed_stanfits/relaxed_priors/nf_overall_table2.rds")
 overall_table2 <- arrange(overall_table2, DIC)
 names(best_si) <- model_features$model_prefix
 ## Reorder best_si
@@ -251,7 +251,7 @@ p <- ggplot(best_unconditional, aes(model, si)) +
     axis.title.x = element_blank()
   )
 
-ggsave("figures/nf_all_si_distr.pdf", p)
+ggsave("figures/relaxed_priors/nf_all_si_distr.pdf", p)
 
 
 ## Similary TOST
@@ -284,4 +284,4 @@ p <- ggplot(tost_bestpars, aes(model, tost)) +
     axis.title.x = element_blank()
   )
 
-ggsave("figures/nf_all_tost_distr.pdf", p)
+ggsave("figures/relaxed_priors/nf_all_tost_distr.pdf", p)
