@@ -25,6 +25,10 @@ purrr::walk2(fits, outfiles, function(x, y) saveRDS(x, y))
 
 # 01.07.2021 S3s4 mixture, only need run s4 models on this 'genial_stickinsect'
 fits_s3s4 <- obj$enqueue_bulk(model_features[model_features$right_bias, ], s3s4_model)
+fits_s3s4 <- obj$task_bundle_get('genial_stickinsect')
+outfiles <- glue('stanfits/s3s4mix/{model_features$model_prefix[model_features$right_bias]}_nf_fit.rds')
+purrr::walk2(fits_s3s4$results(), outfiles, function(x, y) saveRDS(x, y))
+
 # Fits with discrete pairs
 root <- "pairs"
 packages <- c("rstan", "dplyr","purrr", "ggplot2", "epitrix", "glue", 'BH', 'RcppEigen')
@@ -42,3 +46,6 @@ ctx <-context_save(
 objpairs <- didehpc::queue_didehpc(ctx)
 fits_pairs <- objpairs$enqueue_bulk(model_features, fit_model_to_pairs)
 # 01.07.2021 Fit all models to discrete pairs only 'premythical_americankestrel'
+fits <- objpairs$task_bundle_get('premythical_americankestrel')
+outfiles <- glue('stanfits/discrete_pairs/{model_features$model_prefix}_nf_fit.rds')
+purrr::walk2(fits$results(), outfiles, function(x, y) saveRDS(x, y))
