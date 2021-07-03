@@ -1,7 +1,7 @@
 check <- "\U2713"
-fit_dir <- "stanfits/relaxed_priors"
-outdir <- "processed_stanfits/relaxed_priors"
-figs_dir <- "figures/relaxed_priors"
+fit_dir <- "stanfits/discrete_pairs"
+outdir <- "processed_stanfits/discrete_pairs"
+figs_dir <- "figures/discrete_pairs"
 
 index <- map_lgl(
   model_features$model_prefix,
@@ -125,18 +125,18 @@ table2 <- pmap(
     message(
       glue("{check} Constructing table 2 for model {model_prefix}")
     )
-      samples_si <- list(
-        SI_meanpars = list(SI = mean_si[["unconditional"]]),
-        SI_bestpars = list(SI = best_si[["unconditional"]]),
-        SI_post = post
-      )
-      ## table 2 - summary stats for sampled distributions
-      tab2 <- tost_si_summary(tost, samples_si)
-      saveRDS(
-        tab2, glue("{outdir}/{model_prefix}_nf_tab2.rds")
-      )
-      tab2
-    }
+    samples_si <- list(
+      SI_meanpars = list(SI = mean_si[["unconditional"]]),
+      SI_bestpars = list(SI = best_si[["unconditional"]]),
+      SI_post = post
+    )
+    ## table 2 - summary stats for sampled distributions
+    tab2 <- tost_si_summary(tost, samples_si)
+    saveRDS(
+      tab2, glue("{outdir}/{model_prefix}_nf_tab2.rds")
+    )
+    tab2
+  }
 )
 
 walk2(
