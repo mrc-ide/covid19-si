@@ -1,20 +1,26 @@
-## Need to rename fit files, at the moment only 1 has the right
-## name
-##index <- c(12, 15, 16)
+check <- "\U2713"
+fit_dir <- "stanfits/release"
+outdir <- "processed_stanfits/release"
+figs_dir <- "figures/release"
+
 index <- map_lgl(
   model_features$model_prefix,
-  function(model_prefix) file.exists(glue("stanfits/release/{model_prefix}_nf_fit.rds"))
+  function(model_prefix) file.exists(glue("{fit_dir}/{model_prefix}_nf_fit.rds"))
 )
 
 model_features <- model_features[index, ]
 
 if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
-check <- "\U2713"
+if (! dir.exists(outdir)) dir.create(outdir)
+if (! dir.exists(figs_dir)) dir.create(figs_dir)
+
+
+
 fits <- map(
   model_features$model_prefix,
   function(model_prefix) {
     message("Reading fit file for ", model_prefix)
-    readRDS(glue("stanfits/relaxed_priors/{model_prefix}_nf_fit.rds"))
+    readRDS(glue("{fit_dir}/{model_prefix}_nf_fit.rds"))
   }
 )
 
@@ -26,7 +32,7 @@ table1 <- map2(
       glue("{check} Extracted parameters for model {model_prefix}")
     )
     saveRDS(
-      tab1, glue("processed_stanfits/relaxed_priors/{model_prefix}_nf_tab1.rds")
+      tab1, glue("{outdir}/{model_prefix}_nf_tab1.rds")
     )
     tab1
   }
@@ -34,7 +40,7 @@ table1 <- map2(
 
 ## table1 <- map(
 ##   model_features$model_prefix,
-##   function(x) readRDS(glue("processed_stanfits/relaxed_priors/{x}_nf_tab1.rds"))
+##   function(x) readRDS(glue("{outdir}/{x}_nf_tab1.rds"))
 ## )
 
 samples_tost <- map2(
@@ -46,7 +52,7 @@ samples_tost <- map2(
   }
 )
 
-saveRDS(samples_tost, "processed_stanfits/relaxed_priors/samples_tost_nf.rds")
+saveRDS(samples_tost, glue("{outdir}/samples_tost_nf.rds"))
 
 best_si <- pmap(
   list(
@@ -64,7 +70,7 @@ best_si <- pmap(
   }
 )
 
-saveRDS(best_si, "processed_stanfits/relaxed_priors/best_si_nf.rds")
+saveRDS(best_si, glue("{outdir}/best_si_nf.rds"))
 
 mean_si <- pmap(
   list(
@@ -81,6 +87,8 @@ mean_si <- pmap(
     )
   }
 )
+
+saveRDS(mean_si, glue("{outdir}/mean_si_nf.rds"))
 
 post_si <- pmap(
   list(
@@ -104,8 +112,8 @@ post_si <- pmap(
   }
 )
 
-saveRDS(post_si, "processed_stanfits/relaxed_priors/nf_post_si.rds")
-## post_si <- readRDS("processed_stanfits/relaxed_priors/nf_post_si.rds")
+saveRDS(post_si, glue("{outdir}/nf_post_si.rds"))
+## post_si <- readRDS("{outdir}/nf_post_si.rds")
 
 table2 <- pmap(
   list(
@@ -125,7 +133,7 @@ table2 <- pmap(
       ## table 2 - summary stats for sampled distributions
       tab2 <- tost_si_summary(tost, samples_si)
       saveRDS(
-        tab2, glue("processed_stanfits/relaxed_priors/{model_prefix}_nf_tab2.rds")
+        tab2, glue("{outdir}/{model_prefix}_nf_tab2.rds")
       )
       tab2
     }
@@ -136,7 +144,7 @@ walk2(
   function(tost, model_prefix) {
   p1 <- TOST_figure(tost$TOST_bestpars)
   ggsave(
-    filename = glue("figures/relaxed_priors/{model_prefix}_nf_tost.pdf"), p1
+    filename = glue("{figs_dir}/{model_prefix}_nf_tost.pdf"), p1
   )
 })
 
@@ -146,7 +154,7 @@ walk2(
   function(si, model_prefix) {
   psi <- SI_figure(si[[2]], cowling_data)
   ggsave(
-    filename = glue("figures/relaxed_priors/{model_prefix}_nf_si.pdf"), psi
+    filename = glue("{figs_dir}/{model_prefix}_nf_si.pdf"), psi
   )
 })
 
@@ -164,7 +172,7 @@ pwalk(
           data = cowling_data
         )
         ggsave(
-          filename = glue("figures/relaxed_priors/{model_prefix}_nf_si.pdf"), psi2
+          filename = glue("{figs_dir}/{model_prefix}_nf_si.pdf"), psi2
         )
     }
   }
@@ -185,7 +193,7 @@ names(dic) <- x$model_prefix
 overall_table2 <- map_dfr(
   model_features$model_prefix,
   function(model_prefix) {
-    out <- readRDS(glue("processed_stanfits/relaxed_priors/{model_prefix}_nf_tab2.rds"))
+    out <- readRDS(glue("{outdir}/{model_prefix}_nf_tab2.rds"))
     out <- tibble::rownames_to_column(out, var = "param")
     out$DIC <- dic[[model_prefix]]
     out$model <- model_prefix
@@ -203,85 +211,17 @@ overall_table2$formatted_pars <-
 x <- overall_table2[ ,c("param", "formatted_pars", "model", "DIC")]
 x <- tidyr::spread(x, key = param, value = formatted_pars)
 x <- arrange(x, dic)
-saveRDS(x, "processed_stanfits/relaxed_priors/nf_overall_table2.rds")
+saveRDS(x, glue("{outdir}/nf_overall_table2.rds"))
 
 
 
 ## For manuscript
-for_ms <- select(x, model, mean_inf, sd_inf, mean_si, sd_si, DIC)
-for_ms <- arrange(for_ms, DIC)
-for_ms <- left_join(
-  for_ms, model_features, by = c("model" = "model_prefix")
-)
-for_ms <- select(
- for_ms, mixture, recall, right_bias, mean_inf, sd_inf, mean_si, sd_si, DIC
-)
+## for_ms <- select(x, model, mean_inf, sd_inf, mean_si, sd_si, DIC)
+## for_ms <- arrange(for_ms, DIC)
+## for_ms <- left_join(
+##   for_ms, model_features, by = c("model" = "model_prefix")
+## )
+## for_ms <- select(
+##  for_ms, mixture, recall, right_bias, mean_inf, sd_inf, mean_si, sd_si, DIC
+## )
 ## stargazer::stargazer(for_ms, summary = FALSE, rownames = FALSE)
-overall_table2 <- readRDS("processed_stanfits/relaxed_priors/nf_overall_table2.rds")
-overall_table2 <- arrange(overall_table2, DIC)
-names(best_si) <- model_features$model_prefix
-## Reorder best_si
-best_unconditional <- map_dfr(
-  best_si, function(x) {
-    data.frame(si = x[["unconditional"]])
-  }, .id = "model"
-)
-
-best_unconditional$model <- factor(
-  best_unconditional$model, levels = overall_table2$model,
-  ordered = TRUE
-)
-
-p <- ggplot(best_unconditional, aes(model, si)) +
-  gghalves::geom_half_violin(
-    fill = "red", alpha = 0.3,
-    draw_quantiles = c(0.25, 0.5, 0.75)
-  ) +
-  ##geom_boxplot(width = 0.1, color = "grey", alpha = 0.5, coef = 1) +
-  theme_minimal() +
-  ylab("Serial Interval") +
-  scale_x_discrete(
-    breaks = c("scenario4a_mixture", "scenario3a_mixture_recall", "scenario4a_mixture_recall",
-               "scenario4a_recall", "scenario3a_mixture", "scenario3a_recall"),
-    labels = c("ISOL + MIX", "BASELINE + MIX + RECALL", "ISOL + MIX + RECALL",
-               "ISOL + RECALL", "BASELINE + MIX", "BASELINE + RECALL")
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-    axis.title.x = element_blank()
-  )
-
-ggsave("figures/relaxed_priors/nf_all_si_distr.pdf", p)
-
-
-## Similary TOST
-names(samples_tost) <- model_features$model_prefix
-tost_bestpars <- map_dfr(
-  samples_tost, function(x) data.frame(tost = x[["TOST_bestpars"]]),
-  .id = "model"
-)
-tost_bestpars$model <- factor(
-  tost_bestpars$model, levels = overall_table2$model,
-  ordered = TRUE
-)
-
-p <- ggplot(tost_bestpars, aes(model, tost)) +
-  gghalves::geom_half_violin(
-    fill = "red", alpha = 0.3,
-    draw_quantiles = c(0.25, 0.5, 0.75)
-  ) +
-  ##geom_boxplot(width = 0.1, color = "grey", alpha = 0.5, coef = 1) +
-  theme_minimal() +
-  ylab("TOST") +
-  scale_x_discrete(
-    breaks = c("scenario4a_mixture", "scenario3a_mixture_recall", "scenario4a_mixture_recall",
-               "scenario4a_recall", "scenario3a_mixture", "scenario3a_recall"),
-    labels = c("ISOL + MIX", "BASELINE + MIX + RECALL", "ISOL + MIX + RECALL",
-               "ISOL + RECALL", "BASELINE + MIX", "BASELINE + RECALL")
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-    axis.title.x = element_blank()
-  )
-
-ggsave("figures/relaxed_priors/nf_all_tost_distr.pdf", p)
