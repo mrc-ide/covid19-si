@@ -1,7 +1,7 @@
 check <- "\U2713"
-fit_dir <- "stanfits/release"
-outdir <- "processed_stanfits/release"
-figs_dir <- "figures/release"
+fit_dir <- "stanfits/relaxed_priors"
+outdir <- "processed_stanfits/relaxed_priors"
+figs_dir <- "figures/relaxed_priors"
 
 index <- map_lgl(
   model_features$model_prefix,

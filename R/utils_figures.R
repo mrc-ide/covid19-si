@@ -15,8 +15,8 @@ nice_model_name <- function(model) {
   paste0(prefix, suffix1, suffix2)
 }
 
-outdir <- "processed_stanfits/release"
-figs_dir <- "figures/release"
+outdir <- "processed_stanfits/relaxed_priors"
+figs_dir <- "figures/relaxed_priors"
 
 
 overall_table2 <- readRDS(glue("{outdir}/nf_overall_table2.rds"))
@@ -35,16 +35,16 @@ best_unconditional <- map_dfr(
   }
 )
 
-best_unconditional$model <- factor(
-  best_unconditional$model, levels = overall_table2$model,
+best_unconditional$s3model <- factor(
+  best_unconditional$s3model, levels = overall_table2$model,
   ordered = TRUE
 )
 ## Top 4 moldes
 top4 <- best_unconditional[best_unconditional$model %in% overall_table2$model[1:4], ]
-palette <- c("#56B4E9", "#009E73", "#0072B2", "#D55E00")
+palette <- c("#56B4E9", "#009E73", "#CC79A7", "#D55E00")
 names(palette) <- c(
-  "scenario3a", "scenario3a_mixture_recall",
-  "scenario3a_recall", "scenario3a_mixture"
+  "scenario3a", "scenario3a_mixture",
+  "scenario3a_recall", "scenario3a_mixture_recall"
 )
 
 
@@ -61,8 +61,14 @@ p <- ggplot(best_unconditional) +
   ) +
   scale_fill_manual(
     values = palette,
-    breaks = c("scenario3a_mixture", "scenario3a_recall", "scenario3a_mixture_recall"),
-    labels = c("BASELINE/ISOL + MIX", "BASELINE/ISOL + RECALL", "BASELINE/ISOL + MIX + RECALL")
+    breaks = c(
+      "scenario3a", "scenario3a_mixture",
+      "scenario3a_recall", "scenario3a_mixture_recall"
+    ),
+    labels = c("BASELINE/ISOL", "BASELINE/ISOL + MIX",
+               "BASELINE/ISOL + RECALL",
+               "BASELINE/ISOL + MIX + RECALL"),
+    guide = guide_legend(nrow = 2, byrow = TRUE)
   ) +
   theme_minimal() +
   ylab("Serial Interval") +
@@ -103,8 +109,14 @@ p <- ggplot(tost_bestpars) +
   ) +
   scale_fill_manual(
     values = palette,
-    breaks = c("scenario3a_mixture", "scenario3a_recall", "scenario3a_mixture_recall"),
-    labels = c("BASELINE/ISOL + MIX", "BASELINE/ISOL + RECALL", "BASELINE/ISOL + MIX + RECALL")
+    breaks = c(
+      "scenario3a", "scenario3a_mixture",
+      "scenario3a_recall", "scenario3a_mixture_recall"
+    ),
+    labels = c("BASELINE/ISOL", "BASELINE/ISOL + MIX",
+               "BASELINE/ISOL + RECALL",
+               "BASELINE/ISOL + MIX + RECALL"),
+    guide = guide_legend(nrow = 2, byrow = TRUE)
   ) +
   theme_minimal() +
   ylab("TOST") +
