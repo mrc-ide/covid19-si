@@ -97,7 +97,7 @@ fit3_sim <- function() {
 ## fit s4
 fits_4a <- function() {
   stan(
-    file = "stan-models/scenario4arecall_mixture_nf.stan",
+    file = "stan-models/scenario4_mixture_recall_nf.stan",
     data = list(
       N = nrow(sim_si),
       si = sim_si$SI,

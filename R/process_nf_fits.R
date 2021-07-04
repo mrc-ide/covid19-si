@@ -1,11 +1,17 @@
 check <- "\U2713"
-fit_dir <- "stanfits/discrete_pairs"
-outdir <- "processed_stanfits/discrete_pairs"
-figs_dir <- "figures/discrete_pairs"
+meta_model <- "discrete_pairs"
+fit_dir <- glue("stanfits/{meta_model}")
+outdir <- glue("processed_stanfits/{meta_model}")
+figs_dir <- glue("figures/{meta_model}")
+obs_data <-data_discrete_pairs
 
 index <- map_lgl(
   model_features$model_prefix,
-  function(model_prefix) file.exists(glue("{fit_dir}/{model_prefix}_nf_fit.rds"))
+  function(model_prefix) {
+    infile <- glue("{fit_dir}/{model_prefix}_nf_fit.rds")
+    message("Looking for ", infile)
+    file.exists(infile)
+  }
 )
 
 model_features <- model_features[index, ]
@@ -64,7 +70,7 @@ best_si <- pmap(
       glue("{check} Sampling best SI for model {model_prefix}")
     )
     estimated_SI(
-      cowling_data, tost$TOST_bestpars, mixture = mixture,
+      obs_data, tost$TOST_bestpars, mixture = mixture,
       recall = recall, isol = isol, leaky = FALSE, tab1 = tab1
     )
   }
@@ -82,7 +88,7 @@ mean_si <- pmap(
       glue("{check} Sampling mean SI for model {model_prefix}")
     )
     estimated_SI(
-      cowling_data, tost$TOST_meanpars, mixture = mixture,
+      obs_data, tost$TOST_meanpars, mixture = mixture,
       recall = recall, isol = isol, tab1 = tab1
     )
   }
@@ -102,7 +108,7 @@ post_si <- pmap(
     x <- apply(
       tost$TOST_post, 2, function(inf_samples) {
         estimated_SI(
-          cowling_data, inf_samples, mixture = mixture,
+          obs_data, inf_samples, mixture = mixture,
           recall = recall, isol = isol, tab1 = tab1
         )
       }
@@ -152,7 +158,7 @@ walk2(
 walk2(
   best_si, model_features$model_prefix,
   function(si, model_prefix) {
-  psi <- SI_figure(si[[2]], cowling_data)
+  psi <- SI_figure(si[[2]], obs_data)
   ggsave(
     filename = glue("{figs_dir}/{model_prefix}_nf_si.pdf"), psi
   )
@@ -169,7 +175,7 @@ pwalk(
     if (mixture |  recall | right_bias) {
         psi2 <- plot_both_SIs(
           SI1 = si[[1]], SI2 = si[[2]],
-          data = cowling_data
+          data = obs_data
         )
         ggsave(
           filename = glue("{figs_dir}/{model_prefix}_nf_si.pdf"), psi2

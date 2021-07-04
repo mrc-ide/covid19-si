@@ -13,3 +13,8 @@ same_data <- list(
   relaxed = relaxed, s3s4mix = s3s4mix
 ) %>% bind_rows(.id = "meta-model")
 same_data <- arrange(same_data, DIC)
+
+
+## S3 fit for illustration has a problem.
+## Fit again.
+sim_si <- readRDS('data/illustration/sim_data_manuscript.rds')
