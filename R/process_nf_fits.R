@@ -1,9 +1,9 @@
 check <- "\U2713"
-meta_model <- "discrete_pairs"
+meta_model <- "s3s4mix"
 fit_dir <- glue("stanfits/{meta_model}")
 outdir <- glue("processed_stanfits/{meta_model}")
 figs_dir <- glue("figures/{meta_model}")
-obs_data <-data_discrete_pairs
+obs_data <- data_s3_s4mix
 
 index <- map_lgl(
   model_features$model_prefix,
