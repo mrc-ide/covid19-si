@@ -26,8 +26,10 @@ model{
   real denominator_valid;
   matrix[M, N] pdf_mat;
   int first_valid_nu = 1;
-  a ~ normal(4, 1);
-  b ~ normal(1, 0.5);
+  //a ~ normal(4, 1);
+  //b ~ normal(1, 0.5);
+  a ~ normal(4.28, 0.74);
+  b ~ normal(1.44, 0.12);  
   // Do this once when alpha and beta are sampled.
   // Make sure nus are in increasing order. This will work even if
   // some values of nu are repeated
