@@ -1,5 +1,5 @@
 check <- "\U2713"
-meta_model <- "s3s4mix"
+meta_model <- "maxshed_28/discrete_pairs"
 fit_dir <- glue("stanfits/{meta_model}")
 outdir <- glue("processed_stanfits/{meta_model}")
 figs_dir <- glue("figures/{meta_model}")
@@ -17,8 +17,8 @@ index <- map_lgl(
 model_features <- model_features[index, ]
 
 if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
-if (! dir.exists(outdir)) dir.create(outdir)
-if (! dir.exists(figs_dir)) dir.create(figs_dir)
+if (! dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
+if (! dir.exists(figs_dir)) dir.create(figs_dir, recursive = TRUE)
 
 
 

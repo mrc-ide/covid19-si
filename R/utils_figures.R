@@ -26,9 +26,8 @@ palette <- c(
 )
 
 
-outdir <- "processed_stanfits/discrete_pairs"
-figs_dir <- "figures/discrete_pairs"
-
+outdir <- glue("processed_stanfits/{meta_model}")
+figs_dir <- glue("figures/{meta_model}")
 
 overall_table2 <- readRDS(glue("{outdir}/nf_overall_table2.rds"))
 overall_table2 <- arrange(overall_table2, DIC)
