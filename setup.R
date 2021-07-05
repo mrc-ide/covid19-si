@@ -6,10 +6,10 @@ library(rstan)
 library(tibble)
 source("cowling-data-prep.R")
 source("R/utils.R")
-max_shed <- 28
+max_shed <- 21
 min_valid_si <- -20
 max_valid_si <- 40
-min_invalid_si <- -20 
+min_invalid_si <- -20
 max_invalid_si <- 40
 width <- 0.5
 
