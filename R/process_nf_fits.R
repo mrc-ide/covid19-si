@@ -3,7 +3,14 @@ meta_model <- "maxshed_28/discrete_pairs"
 fit_dir <- glue("stanfits/{meta_model}")
 outdir <- glue("processed_stanfits/{meta_model}")
 figs_dir <- glue("figures/{meta_model}")
-obs_data <- data_discrete_pairs
+
+if (grepl("discrete_pairs", meta_model)) {
+  obs_data <- data_discrete_pairs
+} else if (grepl("s3s4mix", meta_model)) {
+   obs_data <- data_s3_s4mix
+} else  {
+  obs_data <- cowling_data
+}
 
 index <- map_lgl(
   model_features$model_prefix,
@@ -150,7 +157,7 @@ walk2(
   function(tost, model_prefix) {
   p1 <- TOST_figure(tost$TOST_bestpars)
   ggsave(
-    filename = glue("{figs_dir}/{model_prefix}_nf_tost.pdf"), p1
+    filename = glue("{figs_dir}/{model_prefix}_nf_tost.png"), p1
   )
 })
 
@@ -160,7 +167,7 @@ walk2(
   function(si, model_prefix) {
   psi <- SI_figure(si[[2]], obs_data)
   ggsave(
-    filename = glue("{figs_dir}/{model_prefix}_nf_si.pdf"), psi
+    filename = glue("{figs_dir}/{model_prefix}_nf_si.png"), psi
   )
 })
 
@@ -178,7 +185,7 @@ pwalk(
           data = obs_data
         )
         ggsave(
-          filename = glue("{figs_dir}/{model_prefix}_nf_si.pdf"), psi2
+          filename = glue("{figs_dir}/{model_prefix}_nf_si.png"), psi2
         )
     }
   }
