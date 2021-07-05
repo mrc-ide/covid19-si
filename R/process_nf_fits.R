@@ -3,7 +3,7 @@ meta_model <- "maxshed_28/discrete_pairs"
 fit_dir <- glue("stanfits/{meta_model}")
 outdir <- glue("processed_stanfits/{meta_model}")
 figs_dir <- glue("figures/{meta_model}")
-obs_data <- data_s3_s4mix
+obs_data <- data_discrete_pairs
 
 index <- map_lgl(
   model_features$model_prefix,
