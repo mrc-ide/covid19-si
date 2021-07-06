@@ -1,5 +1,5 @@
 check <- "\U2713"
-meta_model <- "maxshed_28/discrete_pairs"
+meta_model <- "maxshed21_nfpriors/discrete_pairs"
 fit_dir <- glue("stanfits/{meta_model}")
 outdir <- glue("processed_stanfits/{meta_model}")
 figs_dir <- glue("figures/{meta_model}")
