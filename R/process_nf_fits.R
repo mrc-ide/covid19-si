@@ -197,7 +197,13 @@ x <- append(x, values = list(fits = fits))
 dic <- pmap_dbl(
   x, function(mixture, recall, right_bias, model_prefix, fits) {
     samples <- rstan::extract(fits)
-    DIC_alt(log_likel(samples, mixture, recall, "nf"))
+    DIC_alt(
+      log_likel(
+        samples, mixture, recall, "nf",
+        a_priors = list(mean = 4.28, sd = 0.74),
+        b_priors = list(mean = 1.44, sd = 0.12)
+      )
+    )
   }
 )
 names(dic) <- x$model_prefix

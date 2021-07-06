@@ -1,8 +1,7 @@
 ## params is a named list of estimated parameters
-log_prior_nf <- function(params, mixture, recall) {
-
-  prob_a <- dnorm(params$a, mean = 4, sd = 1) / pnorm(0, mean = 1, sd = 1)
-  prob_b <-  dnorm(params$b, mean = 1, sd = 0.5) / pnorm(0, mean = 1, sd = 0.5)
+log_prior_nf <- function(params, mixture, recall, a_priors = list(mean = 4, sd = 1), b_priors = list(mean = 1, sd = 0.5)) {
+  prob_a <- dnorm(params$a, mean = a_priors$mean, sd = a_priors$sd) / pnorm(0, mean = a_priors$mean, sd = a_priors$sd)
+  prob_b <-  dnorm(params$b, mean = b_priors$mean, sd = b_priors$sd) / pnorm(0, mean = b_priors$mean, sd = b_priors$sd)
   prob_c <- dunif(params$c, min = 0, max = 1)
   prob_tmax <- dunif(params$tmax, min = -20, max = 10)
   prob_pinvalid <- ifelse(mixture, dbeta(params$pinvalid, shape1 = 4, shape2 = 10), 1)
