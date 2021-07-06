@@ -26,6 +26,8 @@ palette <- c(
 )
 
 
+meta_model <- "maxshed21_nfpriors/s3s4mix"
+fit_dir <- glue("stanfits/{meta_model}")
 outdir <- glue("processed_stanfits/{meta_model}")
 figs_dir <- glue("figures/{meta_model}")
 

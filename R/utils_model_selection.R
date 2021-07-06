@@ -1,5 +1,5 @@
 ## params is a named list of estimated parameters
-log_prior_nf <- function(params, mixture, recall, a_priors = list(mean = 4, sd = 1), b_priors = list(mean = 1, sd = 0.5)) {
+log_prior_nf <- function(params, mixture, recall, a_priors, b_priors) {
   prob_a <- dnorm(params$a, mean = a_priors$mean, sd = a_priors$sd) / pnorm(0, mean = a_priors$mean, sd = a_priors$sd)
   prob_b <-  dnorm(params$b, mean = b_priors$mean, sd = b_priors$sd) / pnorm(0, mean = b_priors$mean, sd = b_priors$sd)
   prob_c <- dunif(params$c, min = 0, max = 1)
@@ -24,12 +24,12 @@ log_prior_beta <- function(params, mixture, recall) {
 }
 
 
-log_likel <- function(samples, mixture, recall, model = c("nf", "beta")) {
+log_likel <- function(samples, mixture, recall, model = c("nf", "beta"), a_priors = list(mean = 4, sd = 1), b_priors = list(mean = 1, sd = 0.5)) {
   map_dbl(
     seq_along(samples[[1]]), function(index) {
       params <- map(samples, ~ .[[index]])
       if (model == "nf") {
-        log_prior <- log_prior_nf(params, mixture, recall)
+        log_prior <- log_prior_nf(params, mixture, recall, a_priors, b_priors)
       } else {
         log_prior <- log_prior_beta(params, mixture, recall)
       }
