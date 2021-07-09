@@ -22,7 +22,7 @@ obj <- didehpc::queue_didehpc(ctx)
 fits <- obj$enqueue_bulk(model_features, fit_model)
 tb1 <- obj$task_bundle_get('felicific_rhea')
 fits <- tb1$results()
-outfiles <- glue('stanfits/maxshed_28/relaxed_priors/{model_features$model_prefix}_nf_fit.rds')
+outfiles <- glue('stanfits/maxshed21_nfpriors/release/{model_features$model_prefix}_nf_fit.rds')
 purrr::walk2(fits, outfiles, function(x, y) saveRDS(x, y))
 
 # 01.07.2021 S3s4 mixture, only need run s4 models on this 'genial_stickinsect'
@@ -30,7 +30,7 @@ purrr::walk2(fits, outfiles, function(x, y) saveRDS(x, y))
 # 05.07.2021 max shed 21 and Neil's priors 'trashy_nilgai'
 fits_s3s4 <- obj$enqueue_bulk(model_features[model_features$right_bias, ], s3s4_model)
 fits_s3s4 <- obj$task_bundle_get('trashy_nilgai')
-outfiles <- glue('stanfits/maxshed_28/s3s4mix/{model_features$model_prefix[model_features$right_bias]}_nf_fit.rds')
+outfiles <- glue('stanfits/maxshed21_nfpriors/s3s4mix/{model_features$model_prefix[model_features$right_bias]}_nf_fit.rds')
 purrr::walk2(fits_s3s4$results(), outfiles, function(x, y) saveRDS(x, y))
 
 # Fits with discrete pairs
@@ -38,6 +38,7 @@ fits_pairs <- obj$enqueue_bulk(model_features, fit_model_to_pairs)
 # 01.07.2021 Fit all models to discrete pairs only 'premythical_americankestrel'
 # 03.07.2021 Sensitivity analyses: max-shed 28 'sporadic_goshawk'
 # 05.07.2021 max shed 21 and Neil's priors 'zoometrical_xantusmurrelet'
-fits <- obj$task_bundle_get('zoometrical_xantusmurrelet')
-outfiles <- glue('stanfits/maxshed_28/discrete_pairs/{model_features$model_prefix}_nf_fit.rds')
+# 08.07.2021 max shed 21 and Neil's priors s3s4mix, discrete pairs operose_anemonecrab
+fits <- obj$task_bundle_get('operose_anemonecrab')
+outfiles <- glue('stanfits/maxshed21_nfpriors/discrete_pairs/{model_features$model_prefix}_nf_fit.rds')
 purrr::walk2(fits$results(), outfiles, function(x, y) saveRDS(x, y))
