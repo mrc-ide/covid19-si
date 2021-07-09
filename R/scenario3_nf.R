@@ -14,3 +14,8 @@ leaky_fits <- pmap(model_features[4, ], fit_leaky_model)
 
 
 
+fit <- stan(
+  file = "stan-models/scenario3a_skew_normal.stan",
+  data = s3data, verbose = TRUE, iter = iter,
+  chains = chains
+)
