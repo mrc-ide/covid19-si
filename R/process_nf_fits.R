@@ -1,5 +1,5 @@
 check <- "\U2713"
-meta_model <- "maxshed21_nfpriors/s3s4mix"
+meta_model <- "relaxed_priors"
 fit_dir <- glue("stanfits/{meta_model}")
 outdir <- glue("processed_stanfits/{meta_model}")
 figs_dir <- glue("figures/{meta_model}")
@@ -199,9 +199,9 @@ dic <- pmap_dbl(
     samples <- rstan::extract(fits)
     DIC_alt(
       log_likel(
-        samples, mixture, recall, "nf",
-        a_priors = list(mean = 4.28, sd = 0.74),
-        b_priors = list(mean = 1.44, sd = 0.12)
+        samples, mixture, recall, "nf"
+        ##a_priors = list(mean = 4.28, sd = 0.74),
+        ##b_priors = list(mean = 1.44, sd = 0.12)
       )
     )
   }
