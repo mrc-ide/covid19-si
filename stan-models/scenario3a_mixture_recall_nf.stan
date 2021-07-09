@@ -31,8 +31,10 @@ model{
   matrix[M, N] pdf_mat;
   int first_valid_nu = 1;
   // Priors suggested by Neil
-  a ~ normal(4, 1);
-  b ~ normal(1, 0.5);
+  //a ~ normal(4, 1);
+  //b ~ normal(1, 0.5);
+  a ~ normal(4.28, 0.74);
+  b ~ normal(1.44, 0.12);  
   pinvalid ~ beta(4, 10);
   pdf_mat = pdf_matrix(nu, si_vec, max_shed, a, b, c, tmax, 
                        recall, alpha2, beta2, width, first_valid_nu);
