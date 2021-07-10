@@ -16,10 +16,10 @@ leaky_fits <- pmap(model_features[4, ], fit_leaky_model)
 
 fit <- stan(
   file = "stan-models/scenario3a_skew_normal.stan",
-  data = s3data, verbose = TRUE
+  data = s3data, verbose = TRUE, chains = 2, iter = 15000
 )
 
-saveRDS("stanfits/skew_normal/scenario3a_skew_normal_fit.stan")
+saveRDS(fit, "stanfits/skew_normal/scenario3a_skew_normal_fit.stan")
 
 library(sn)
 tost <- rsn(

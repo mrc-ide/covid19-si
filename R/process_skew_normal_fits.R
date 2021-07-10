@@ -1,7 +1,7 @@
 check <- "\U2713"
 meta_model <- "relaxed_priors"
-fit_dir <- glue("stanfits/{meta_model}")
-outdir <- glue("processed_stanfits/{meta_model}")
+fit_dir <- glue("stanfits/skew_normal/")
+outdir <- glue("processed_stanfits/skew_normal")
 figs_dir <- glue("figures/{meta_model}")
 
 if (grepl("discrete_pairs", meta_model)) {
@@ -213,7 +213,7 @@ overall_table2 <- map_dfr(
   function(model_prefix) {
     out <- readRDS(glue("{outdir}/{model_prefix}_skew_normal_tab2.rds"))
     out <- tibble::rownames_to_column(out, var = "param")
-    out$DIC <- dic[[model_prefix]]
+    ##out$DIC <- dic[[model_prefix]]
     out$model <- model_prefix
 
     out
@@ -226,7 +226,7 @@ overall_table2$formatted_pars <-
     "({overall_table2$CrI_2.5} - {overall_table2$CrI_97.5})"
   )
 
-x <- overall_table2[ ,c("param", "formatted_pars", "model", "DIC")]
+x <- overall_table2[ ,c("param", "formatted_pars", "model")]
 x <- tidyr::spread(x, key = param, value = formatted_pars)
 x <- arrange(x, dic)
 saveRDS(x, glue("{outdir}/skew_normal_overall_table2.rds"))
