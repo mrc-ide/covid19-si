@@ -11,12 +11,12 @@ leaky_fits <- pmap(model_features[4, ], fit_leaky_model)
 ## leaky_fits <- obj$enqueue_bulk(model_features[model_features$right_bias, ], fit_leaky_model)
 
 
-
-
+s3data$max_invalid_si <- max_invalid_si
+s3data$min_invalid_si <- min_invalid_si
 
 fit <- stan(
-  file = "stan-models/scenario3a_skew_normal.stan",
-  data = s3data, verbose = TRUE, chains = 2, iter = 15000
+  file = "stan-models/scenario3a_mixture_skew_normal.stan",
+  data = s3data, verbose = TRUE, chains = 2, iter = 5000
 )
 
 saveRDS(fit, "stanfits/skew_normal/scenario3a_skew_normal_fit.stan")
