@@ -40,5 +40,5 @@ fits_pairs <- obj$enqueue_bulk(model_features, fit_model_to_pairs)
 # 05.07.2021 max shed 21 and Neil's priors 'zoometrical_xantusmurrelet'
 # 08.07.2021 max shed 21 and Neil's priors s3s4mix, discrete pairs operose_anemonecrab
 fits <- obj$task_bundle_get('operose_anemonecrab')
-outfiles <- glue('stanfits/maxshed21_nfpriors/discrete_pairs/{model_features$model_prefix}_nf_fit.rds')
+outfiles <- glue('stanfits/maxshed21_nfpriors/s3s4_discrete_pairs/{model_features$model_prefix}_nf_fit.rds')
 purrr::walk2(fits$results(), outfiles, function(x, y) saveRDS(x, y))

@@ -70,7 +70,7 @@ s3data <- list(
   M = length(si_vec), si_vec = si_vec, width = width
 )
 s3pairs <- list(
-  N = nrow(data_discrete_pairs), si = data_discrete_pairs$si, max_shed = max_shed,
+  N = nrow(data_discrete_pairs_s3_s4mix), si = data_discrete_pairs_s3_s4mix$si, max_shed = max_shed,
   alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
   M = length(si_vec), si_vec = si_vec, width = width
 )
