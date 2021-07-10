@@ -30,11 +30,11 @@ model{
   matrix[M, N] pdf_mat;
   int first_valid_nu = 1;
   pinvalid ~ beta(4, 10);
-  pdf_mat = pdf_matrix(nu, si_vec, max_shed, a, b, c, tmax, 
+  pdf_mat = pdf_matrix(nu, si_vec, max_shed, a, b, c, 
                        recall, alpha2, beta2, width, first_valid_nu);
   for (n in 1:N) {
     invalid = invalid_lpdf(si[n]|min_invalid_si, max_invalid_si);
-    valid = validnf_lpdf(si[n]|nu[n], max_shed, a, b, c, tmax, 
+    valid = validnf_lpdf(si[n]|nu[n], max_shed, a, b, c, 
                          recall, alpha2, beta2, width);
     denominator_valid = sum(col(pdf_mat, n));
     valid = valid - log(denominator_valid);      
