@@ -73,7 +73,8 @@ s3s4mix <- list(
   M = length(si_vec), si_vec = si_vec, width = width
 )
 s3s4mixdiscrete <- list(
-  N = nrow(data_discrete_pairs_s3_s4mix), si = data_discrete_pairs_s3_s4mix$si, max_shed = max_shed,
+  N = nrow(data_discrete_pairs_s3_s4mix), si = data_discrete_pairs_s3_s4mix$si, 
+  max_shed = max_shed,
   alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
   M = length(si_vec), si_vec = si_vec, width = width
 )
@@ -133,7 +134,7 @@ s3s4_model <- function(mixture, recall, right_bias, model_prefix, standata = s3s
 }
 
 
-fit_model_to_s3s4pairs  <- function(mixture, recall, right_bias, model_prefix, standata = s3pairs, obs = s3s4mixdiscrete) {
+fit_model_to_s3s4pairs  <- function(mixture, recall, right_bias, model_prefix, standata = s3pairs, obs = data_discrete_pairs_s3_s4mix ) {
   prefix <- glue("{model_prefix}_skew_normal")
   infile <- glue("stan-models/{prefix}.stan")
   message(infile)
