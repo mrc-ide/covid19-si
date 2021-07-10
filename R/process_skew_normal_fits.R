@@ -1,8 +1,8 @@
 check <- "\U2713"
-meta_model <- "relaxed_priors"
+##meta_model <- "relaxed_priors"
 fit_dir <- glue("stanfits/skew_normal/")
 outdir <- glue("processed_stanfits/skew_normal")
-figs_dir <- glue("figures/{meta_model}")
+figs_dir <- glue("figures/skew_normal")
 
 if (grepl("discrete_pairs", meta_model)) {
   obs_data <- data_discrete_pairs

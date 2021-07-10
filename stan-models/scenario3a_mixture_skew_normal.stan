@@ -7,6 +7,8 @@ data{
   real <lower = 0> beta2; // incubation period parameter
   real <lower = 0> width;
   int M;
+  real <lower = 0> max_invalid_si;
+  real <lower = -100> min_invalid_si;
   // Vector of SI from min_invalid_si to max_invalid_si, offset by
   // a small amount to avoid boundary issues.
   real si_vec[M];
