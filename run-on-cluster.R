@@ -18,10 +18,14 @@ ctx <-context_save(
 # [ save:name ]  beribboned_asiaticlesserfreshwaterclam
 obj <- didehpc::queue_didehpc(ctx)
 # 10.07.2021 'contemplative_arcticfox'
-fits <- obj$enqueue_bulk(model_features, fit_model)
+# fits <- obj$enqueue_bulk(model_features, fit_model)
+fits <- obj$task_bundle_get('contemplative_arcticfox')
 # 10.07.2021 'itchy_narwhale'
-fits_pairs <- obj$enqueue_bulk(model_features, fit_model_to_pairs)
+# fits_pairs <- obj$enqueue_bulk(model_features, fit_model_to_pairs)
+fits_pairs <- obj$task_bundle_get('itchy_narwhale')
 # 10.07.2021 s3s4 model 'combative_milksnake'
-fits_s3s4 <- obj$enqueue_bulk(model_features[model_features$right_bias, ], s3s4_model)
+# fits_s3s4 <- obj$enqueue_bulk(model_features[model_features$right_bias, ], s3s4_model)
+fits_s3s4 <- obj$task_bundle_get('combative_milksnake')
 # 10.07.2021 s3s4 model to discrete pairs 'cadaveric_cuscus'
-fits_s3s4pairs <- obj$enqueue_bulk(model_features[model_features$right_bias, ], fit_model_to_s3s4pairs)
+# fits_s3s4pairs <- obj$enqueue_bulk(model_features[model_features$right_bias, ], fit_model_to_s3s4pairs)
+fits_s3s4pairs <- obj$task_bundle_get('cadaveric_cuscus')
