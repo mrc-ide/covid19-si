@@ -29,3 +29,9 @@ fits_s3s4 <- obj$task_bundle_get('combative_milksnake')
 # 10.07.2021 s3s4 model to discrete pairs 'cadaveric_cuscus'
 # fits_s3s4pairs <- obj$enqueue_bulk(model_features[model_features$right_bias, ], fit_model_to_s3s4pairs)
 fits_s3s4pairs <- obj$task_bundle_get('cadaveric_cuscus')
+outfiles <- glue('stanfits/skew_normal/s3s4pairs/{model_features$model_prefix[model_features$right_bias]}_skew_normal_fit.rds')
+purrr::walk2(fits_s3s4pairs$results(), outfiles, function(x, y) saveRDS(x, y))
+
+
+outfiles <- glue('stanfits/skew_normal/discrete_pairs/{model_features$model_prefix}_skew_normal_fit.rds')
+purrr::walk2(fits_pairs$results(), outfiles, function(x, y) saveRDS(x, y))
