@@ -1,8 +1,9 @@
+source("R/utils_process_skew_normal_fits.R")
 check <- "\U2713"
 ##meta_model <- "relaxed_priors"
-fit_dir <- glue("stanfits/skew_normal/")
-outdir <- glue("processed_stanfits/skew_normal")
-figs_dir <- glue("figures/skew_normal")
+fit_dir <- "stanfits/skew_normal/s3s4pairs"
+outdir <- "processed_stanfits/skew_normal/s3s4pairs"
+figs_dir <- "figures/skew_normal/s3s4pairs"
 
 if (grepl("discrete_pairs", meta_model)) {
   obs_data <- data_discrete_pairs
@@ -11,6 +12,8 @@ if (grepl("discrete_pairs", meta_model)) {
 } else  {
   obs_data <- cowling_data
 }
+
+obs_data <- data_discrete_pairs_s3_s4mix
 
 index <- map_lgl(
   model_features$model_prefix,
@@ -209,7 +212,7 @@ overall_table2 <- map_dfr(
   function(model_prefix) {
     out <- readRDS(glue("{outdir}/{model_prefix}_skew_normal_tab2.rds"))
     out <- tibble::rownames_to_column(out, var = "param")
-    ##out$DIC <- dic[[model_prefix]]
+    out$DIC <- dic[[model_prefix]]
     out$model <- model_prefix
 
     out
@@ -222,7 +225,7 @@ overall_table2$formatted_pars <-
     "({overall_table2$CrI_2.5} - {overall_table2$CrI_97.5})"
   )
 
-x <- overall_table2[ ,c("param", "formatted_pars", "model")]
+x <- overall_table2[ ,c("param", "formatted_pars", "model", "DIC")]
 x <- tidyr::spread(x, key = param, value = formatted_pars)
 x <- arrange(x, dic)
 saveRDS(x, glue("{outdir}/skew_normal_overall_table2.rds"))
