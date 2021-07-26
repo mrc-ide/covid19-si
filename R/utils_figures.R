@@ -26,15 +26,15 @@ palette <- c(
 )
 
 
-meta_model <- "maxshed21_nfpriors/release"
-fit_dir <- glue("stanfits/{meta_model}")
-outdir <- glue("processed_stanfits/{meta_model}")
-figs_dir <- glue("figures/{meta_model}")
 
-overall_table2 <- readRDS(glue("{outdir}/nf_overall_table2.rds"))
+fit_dir <- "stanfits/skew_normal/s3s4pairs"
+outdir <- "processed_stanfits/skew_normal/s3s4pairs"
+figs_dir <- "figures/skew_normal/s3s4pairs"
+
+overall_table2 <- readRDS(glue("{outdir}/skew_normal_overall_table2.rds"))
 overall_table2 <- arrange(overall_table2, DIC)
 
-best_si <- readRDS(glue("{outdir}/best_si_nf.rds"))
+best_si <- readRDS(glue("{outdir}/best_si_skew_normal.rds"))
 names(best_si) <- model_features$model_prefix
 
 s3models <- c(

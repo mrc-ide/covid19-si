@@ -29,7 +29,6 @@ params_real <- list(
 
 model_features <- list(
   "mixture" = c(TRUE, FALSE),
-  ##"left_bias" = c(TRUE, FALSE),
   "recall"  = c(TRUE, FALSE),
   "right_bias" = c(TRUE, FALSE)
 )
@@ -44,12 +43,6 @@ model_features$model_prefix <-ifelse(
   model_features$model_prefix
 )
 
-## model_features$model_prefix <-ifelse(
-##   model_features$`left_bias`,
-##   glue::glue("{model_features$model_prefix}_leftbias"),
-##   model_features$model_prefix
-## )
-
 model_features$model_prefix <-ifelse(
   model_features$`recall`,
   glue::glue("{model_features$model_prefix}_recall"),
@@ -57,7 +50,7 @@ model_features$model_prefix <-ifelse(
 )
 
 short_run <- FALSE
-iter <- ifelse(short_run, 100, 3000)
+iter <- ifelse(short_run, 100, 10000)
 chains <- ifelse(short_run, 1, 2)
 
 params_inc <- params_real$inc_par2
@@ -79,11 +72,17 @@ s3s4mix <- list(
   alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
   M = length(si_vec), si_vec = si_vec, width = width
 )
+s3s4mixdiscrete <- list(
+  N = nrow(data_discrete_pairs_s3_s4mix), si = data_discrete_pairs_s3_s4mix$si, 
+  max_shed = max_shed,
+  alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
+  M = length(si_vec), si_vec = si_vec, width = width
+)
 
 #######
 
 fit_model <- function(mixture, recall, right_bias, model_prefix, standata = s3data, obs = cowling_data) {
-  prefix <- glue("{model_prefix}_nf")
+  prefix <- glue("{model_prefix}_skew_normal")
   infile <- glue("stan-models/{prefix}.stan")
   message(infile)
   if (!file.exists(infile)) message("Does not exist ", infile)
@@ -100,7 +99,7 @@ fit_model <- function(mixture, recall, right_bias, model_prefix, standata = s3da
 }
 
 fit_model_to_pairs  <- function(mixture, recall, right_bias, model_prefix, standata = s3pairs, obs = data_discrete_pairs) {
-  prefix <- glue("{model_prefix}_nf")
+  prefix <- glue("{model_prefix}_skew_normal")
   infile <- glue("stan-models/{prefix}.stan")
   message(infile)
   if (!file.exists(infile)) message("Does not exist ", infile)
@@ -118,7 +117,7 @@ fit_model_to_pairs  <- function(mixture, recall, right_bias, model_prefix, stand
 
 
 s3s4_model <- function(mixture, recall, right_bias, model_prefix, standata = s3s4mix, obs = data_s3_s4mix) {
-  prefix <- glue("{model_prefix}_nf")
+  prefix <- glue("{model_prefix}_skew_normal")
   infile <- glue("stan-models/{prefix}.stan")
   message(infile)
   if (!file.exists(infile)) message("Does not exist ", infile)
@@ -135,20 +134,19 @@ s3s4_model <- function(mixture, recall, right_bias, model_prefix, standata = s3s
 }
 
 
-fit_leaky_model <- function(mixture, recall, right_bias, model_prefix, standata = s3data, obs = cowling_data) {
-  prefix <- glue("{model_prefix}_leaky_nf")
+fit_model_to_s3s4pairs  <- function(mixture, recall, right_bias, model_prefix, standata = s3pairs, obs = data_discrete_pairs_s3_s4mix ) {
+  prefix <- glue("{model_prefix}_skew_normal")
   infile <- glue("stan-models/{prefix}.stan")
   message(infile)
   if (!file.exists(infile)) message("Does not exist ", infile)
-  standata$nu <- obs$nu
   if(mixture) {
     standata$max_invalid_si <- max_invalid_si
     standata$min_invalid_si <- min_invalid_si
   }
+  if (right_bias| recall) standata$nu <- obs$nu
   fit <- stan(
     file = infile, data = standata,  verbose = FALSE, iter = iter,
     chains = chains
   )
   fit
 }
-
