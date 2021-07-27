@@ -15,30 +15,16 @@ if (grepl("discrete_pairs", meta_model)) {
 
 obs_data <- data_discrete_pairs_s3_s4mix
 
-index <- map_lgl(
-  model_features$model_prefix,
-  function(model_prefix) {
-    infile <- glue("{fit_dir}/{model_prefix}_skew_normal_fit.rds")
-    message("Looking for ", infile)
-    file.exists(infile)
-  }
-)
-
-model_features <- model_features[index, ]
-
 if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
 if (! dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
 if (! dir.exists(figs_dir)) dir.create(figs_dir, recursive = TRUE)
 
+infiles <- glue("{fit_dir}/{model_features$model_prefix}_skew_normal_fit.rds")
+index <- map_lgl(infiles, file.exists)
+model_features <- model_features[index, ]
+infiles <- infiles[index]
 
-
-fits <- map(
-  model_features$model_prefix,
-  function(model_prefix) {
-    message("Reading fit file for ", model_prefix)
-    readRDS(glue("{fit_dir}/{model_prefix}_skew_normal_fit.rds"))
-  }
-)
+fits <- map(infiles, readRDS)
 
 table1 <- map2(
   fits, model_features$model_prefix,
