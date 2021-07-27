@@ -15,8 +15,8 @@ data{
   real si_vec[M];
 }
 parameters{
-  real <lower = 0> alpha1;
-  real <lower = 0> beta1;
+  real <lower = 0, upper = 100> alpha1;
+  real <lower = 0, upper = 100> beta1;
   real <lower = 0, upper = 5> recall;
   
 }
