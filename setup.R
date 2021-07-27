@@ -6,6 +6,7 @@ library(rstan)
 library(tibble)
 source("cowling-data-prep.R")
 source("R/utils.R")
+options(mc.cores=parallel::detectCores())
 max_shed <- 21
 min_valid_si <- -20
 max_valid_si <- 40
@@ -59,26 +60,22 @@ si_vec <- seq(min_valid_si, max_valid_si)
 ## For s3/s4 mix
 ## cowling_data <- data_s3_s4mix
 s3data <- list(
-  N = nrow(cowling_data), si = cowling_data$si, max_shed = max_shed,
+  N = nrow(cowling_data), si = cowling_data$si, max_shed = max_shed, offset = offset,
   alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
   M = length(si_vec), si_vec = si_vec, width = width
 )
-s3pairs <- list(
-  N = nrow(data_discrete_pairs_s3_s4mix), si = data_discrete_pairs_s3_s4mix$si, max_shed = max_shed,
-  alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
-  M = length(si_vec), si_vec = si_vec, width = width
-)
-s3s4mix <- list(
-  N = nrow(data_s3_s4mix), si = data_s3_s4mix$si, max_shed = max_shed,
-  alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
-  M = length(si_vec), si_vec = si_vec, width = width
-)
-s3s4mixdiscrete <- list(
-  N = nrow(data_discrete_pairs_s3_s4mix), si = data_discrete_pairs_s3_s4mix$si,
-  max_shed = max_shed,
-  alpha2 = params_inc[["shape"]], beta2 = 1 / params_inc[["scale"]],
-  M = length(si_vec), si_vec = si_vec, width = width
-)
+
+s3pairs <- s3data
+s3pairs$N <- nrow(data_discrete_pairs)
+s3pairs$si <- data_discrete_pairs$si
+
+s3s4mix <- s3data
+s3s4mix$N <- nrow(data_s3_s4mix)
+s3s4mix$si <- data_s3_s4mix$si
+
+s3s4mixdiscrete <- s3data
+s3s4mixdiscrete$N <- nrow(data_discrete_pairs_s3_s4mix)
+s3s4mixdiscrete$si <- data_discrete_pairs_s3_s4mix$si
 
 #######
 fit_model <- function(mixture, recall, right_bias, model_prefix, standata = s3data, obs = cowling_data) {

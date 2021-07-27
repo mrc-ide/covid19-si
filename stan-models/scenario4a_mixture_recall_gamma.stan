@@ -19,7 +19,7 @@ parameters{
   real <lower = 0, upper = 1> pinvalid;
   real <lower = 0, upper = 100> alpha1;
   real <lower = 0, upper = 100> beta1;
-  real <lower = 0, upper = 5> recall = 0;  
+  real <lower = 0, upper = 5> recall;  
 }
 model{
   real valid;

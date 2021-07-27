@@ -11,8 +11,8 @@ cowling_data <- readRDS("data/cowling_data_clean.rds") %>%
 ## possible under assumed offset. Do this
 ## here so that it will filter through to all
 ## datasets we create from cowling data
-cowling_data <- cowling_data[cowling_data$si > offset, ]
-cowling_data <- cowling_data[cowling_data$nu > offset, ]
+cowling_data <- cowling_data[cowling_data$si > -offset, ]
+cowling_data <- cowling_data[cowling_data$nu > -offset, ]
 cowling_data <- arrange(cowling_data, nu)
 
 # discrete pairs
