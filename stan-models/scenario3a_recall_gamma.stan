@@ -6,8 +6,6 @@ data{
   real offset;
   real <lower = 0> alpha2; // incubation period parameter
   real <lower = 0> beta2; // incubation period parameter
-  real <lower = 0> max_invalid_si;
-  real <lower = -100> min_invalid_si;
   real <lower = 0> width;
   int M;
   // Vector of SI from min_invalid_si to max_invalid_si, offset by
