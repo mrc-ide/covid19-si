@@ -9,9 +9,6 @@ data{
   real <lower = -100> min_invalid_si;
   real <lower = 0> width;
   int M;
-  // Vector of SI from min_invalid_si to max_invalid_si, offset by
-  // a small amount to avoid boundary issues.
-  real si_vec[M];
 }
 parameters{
   real <lower = 0, upper = 1> pinvalid;
@@ -29,18 +26,22 @@ model{
   real dummy[1];
   int first_valid_nu = 1;
   real flipped = -1 * offset;
+  // Vector of SI from min_invalid_si to max_invalid_si, offset by
+  // a small amount to avoid boundary issues.
+  real si_vec[M];  
   pinvalid ~ beta(4, 10);
-  print("flipped = ", flipped);
   // Since this model doesn't need nu, we set nu to be a value larger
   // than max_shed so that the division by F(nu) never takes place.
   dummy[1] = max_shed + 10;
-  pdf_mat = pdf_matrix(dummy, si_vec, max_shed, alpha1, beta1, offset,
-                       recall, alpha2, beta2, width, first_valid_nu);
-  denominator_valid = sum(col(pdf_mat, 1));
   for (n in 1:N) {
     invalid = invalid_lpdf(si[n]|min_invalid_si, max_invalid_si);
     if(si[n] > flipped) {
-      print(si[n], " > ", flipped);
+      for (i in 1:M) {
+        si_vec[i] = flipped + i * ((max_invalid_si - flipped) / M);
+      }
+      pdf_mat = pdf_matrix(dummy, si_vec, max_shed, alpha1, beta1, offset,
+                           recall, alpha2, beta2, width, first_valid_nu);
+      denominator_valid = sum(col(pdf_mat, 1));
       valid = validgamma_lpdf(si[n] |dummy[1], max_shed, alpha1, beta1, offset, 
                               recall, alpha2, beta2, width);
       valid = valid - log(denominator_valid);
