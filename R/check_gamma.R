@@ -1,5 +1,3 @@
-# offset - must be a positive number!
-offset <- 20
 
 # load the data
 data <- readRDS("data/cowling_data_clean.rds")
@@ -18,7 +16,7 @@ si_vec <- seq(-20, 40, 1)
 data_offset <- arrange(data_offset, nu)
 
 fit <- stan(
-  file = here::here("stan-models/scenario3a_mixture_gamma.stan"),
+  file = here::here("stan-models/scenario3a_recall_gamma.stan"),
   data = list(
     N = nrow(data_offset),
     si = data_offset$si,
@@ -35,7 +33,6 @@ fit <- stan(
     first_valid_nu = 1
     ##tmax = 0
   ),
-  chains = 1, iter = 2000,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
@@ -66,7 +63,7 @@ invalid_si <- runif(1e4, -20, 40)
 
 toss <- runif(1e4)
 
-valid <- which(toss > best_params$pinvalid)
+valid <- which(toss > 0)
 
 mixed <- c(
   si_posterior[valid], invalid_si[!valid]

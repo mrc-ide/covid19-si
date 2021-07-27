@@ -2,7 +2,7 @@ library(context)
 rstan::rstan_options(auto_write = FALSE)
 # config <- didehpc::didehpc_config(cluster = 'fi--didemrchnb')
 options(didehpc.cluster = 'fi--didemrchnb')
-root <- "skew_normal"
+root <- "gamma"
 packages <- c("rstan", "dplyr","purrr", "ggplot2", "epitrix",
               "glue", 'BH', 'RcppEigen')
 source_files <- c("setup.R", 'cowling-data-prep.R')
@@ -13,7 +13,7 @@ ctx <-context_save(
 )
 # [ init:id   ]  11c4dfc686e0f0f77e65012ddebdb350
 # [ init:db   ]  rds
-# [ init:path ]  skew_normal
+# [ init:path ]  gamma
 # [ save:id   ]  19bf1fa38fb7d6ff761c5d09ea1e7f0b
 # [ save:name ]  beribboned_asiaticlesserfreshwaterclam
 obj <- didehpc::queue_didehpc(ctx)
@@ -29,9 +29,9 @@ fits_s3s4 <- obj$task_bundle_get('combative_milksnake')
 # 10.07.2021 s3s4 model to discrete pairs 'cadaveric_cuscus'
 # fits_s3s4pairs <- obj$enqueue_bulk(model_features[model_features$right_bias, ], fit_model_to_s3s4pairs)
 fits_s3s4pairs <- obj$task_bundle_get('cadaveric_cuscus')
-outfiles <- glue('stanfits/skew_normal/s3s4pairs/{model_features$model_prefix[model_features$right_bias]}_skew_normal_fit.rds')
+outfiles <- glue('stanfits/gamma/s3s4pairs/{model_features$model_prefix[model_features$right_bias]}_gamma_fit.rds')
 purrr::walk2(fits_s3s4pairs$results(), outfiles, function(x, y) saveRDS(x, y))
 
 
-outfiles <- glue('stanfits/skew_normal/discrete_pairs/{model_features$model_prefix}_skew_normal_fit.rds')
+outfiles <- glue('stanfits/gamma/discrete_pairs/{model_features$model_prefix}_gamma_fit.rds')
 purrr::walk2(fits_pairs$results(), outfiles, function(x, y) saveRDS(x, y))
