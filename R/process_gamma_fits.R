@@ -10,7 +10,7 @@ estimated_TOST_gamma <- function(tab1, n = 1e4, fit, offset = 20) {
   best <- tab1$best
   names(best) <- rownames(tab1)
   TOST_bestpars <- rgamma(
-    n = n, shape = best_params[["alpha1"]], rate = best_params[["beta1"]]
+    n = n, shape = best[["alpha1"]], rate = best[["beta1"]]
   ) - offset
 
   mu_params <- tab1$mean
