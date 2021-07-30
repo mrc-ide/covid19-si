@@ -31,11 +31,9 @@ recall3_pairs <- obj$enqueue_bulk(model_features[6, ], fit_model_to_pairs)
 # fits_s3s4 <- obj$enqueue_bulk(model_features[model_features$right_bias, ], s3s4_model)
 fits_s3s4 <- obj$task_bundle_get('gullible_rasbora')
 # 27.07.2021 s3s4 model to discrete pairs 'pseudoliterary_tomtit'
-fits_s3s4pairs <- obj$enqueue_bulk(model_features[model_features$right_bias, ], fit_model_to_s3s4pairs)
+# fits_s3s4pairs <- obj$enqueue_bulk(model_features[model_features$right_bias, ], fit_model_to_s3s4pairs)
 fits_s3s4pairs <- obj$task_bundle_get('pseudoliterary_tomtit')
+
 outfiles <- glue('stanfits/gamma/s3s4pairs/{model_features$model_prefix[model_features$right_bias]}_gamma_fit.rds')
 purrr::walk2(fits_s3s4pairs$results(), outfiles, function(x, y) saveRDS(x, y))
 
-
-outfiles <- glue('stanfits/gamma/discrete_pairs/{model_features$model_prefix}_gamma_fit.rds')
-purrr::walk2(fits_pairs$results(), outfiles, function(x, y) saveRDS(x, y))
