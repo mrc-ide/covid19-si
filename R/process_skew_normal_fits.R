@@ -1,9 +1,9 @@
 source("R/utils_process_skew_normal_fits.R")
 check <- "\U2713"
-##meta_model <- "relaxed_priors"
-fit_dir <- "stanfits/skew_normal/s3s4pairs"
-outdir <- "processed_stanfits/skew_normal/s3s4pairs"
-figs_dir <- "figures/skew_normal/s3s4pairs"
+meta_model <- "discrete_pairs"
+fit_dir <- "stanfits/skew_normal/discrete_pairs"
+outdir <- "processed_stanfits/skew_normal/discrete_pairs"
+figs_dir <- "figures/skew_normal/releasediscrete_pairs"
 
 if (grepl("discrete_pairs", meta_model)) {
   obs_data <- data_discrete_pairs
@@ -13,32 +13,18 @@ if (grepl("discrete_pairs", meta_model)) {
   obs_data <- cowling_data
 }
 
-obs_data <- data_discrete_pairs_s3_s4mix
-
-index <- map_lgl(
-  model_features$model_prefix,
-  function(model_prefix) {
-    infile <- glue("{fit_dir}/{model_prefix}_skew_normal_fit.rds")
-    message("Looking for ", infile)
-    file.exists(infile)
-  }
-)
-
-model_features <- model_features[index, ]
+##obs_data <- data_discrete_pairs_s3_s4mix
 
 if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
 if (! dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
 if (! dir.exists(figs_dir)) dir.create(figs_dir, recursive = TRUE)
 
+infiles <- glue("{fit_dir}/{model_features$model_prefix}_skew_normal_fit.rds")
+index <- map_lgl(infiles, file.exists)
+model_features <- model_features[index, ]
+infiles <- infiles[index]
 
-
-fits <- map(
-  model_features$model_prefix,
-  function(model_prefix) {
-    message("Reading fit file for ", model_prefix)
-    readRDS(glue("{fit_dir}/{model_prefix}_skew_normal_fit.rds"))
-  }
-)
+fits <- map(infiles, readRDS)
 
 table1 <- map2(
   fits, model_features$model_prefix,
@@ -114,6 +100,11 @@ post_si <- pmap(
     message(
       glue("{check} Posterior SI distribution for model {model_prefix}")
     )
+    ## Posterior has many samples here. Thin it down.
+    ## Each column is a sample of length 10000 and there are 10000
+    ## of them
+    cols <- seq(1, ncol(tost$TOST_post), 2)
+    tost$TOST_post <- tost$TOST_post[, cols]
     x <- apply(
       tost$TOST_post, 2, function(inf_samples) {
         estimated_SI(
