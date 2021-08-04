@@ -36,20 +36,20 @@ estimated_TOST_gamma <- function(tab1, n = 1e4, fit, offset = 20) {
 }
 
 check <- "\U2713"
-meta_model <- "s3s4pairs"
-fit_dir <- "stanfits/gamma/s3s4pairs"
-outdir <- "processed_stanfits/gamma/s3s4pairs"
-figs_dir <- "figures/gamma/s3s4pairs"
+meta_model <- "s3s4"
+fit_dir <- "stanfits/gamma/release"
+outdir <- "processed_stanfits/gamma/release"
+figs_dir <- "figures/gamma/release"
 
 if (grepl("discrete_pairs", meta_model)) {
   obs_data <- data_discrete_pairs
-} else if (grepl("s3s4mix", meta_model)) {
-   obs_data <- data_s3_s4mix
+} else if (grepl("s3s4", meta_model)) {
+  obs_data <- data_s3_s4mix
 } else  {
   obs_data <- cowling_data
 }
 
-obs_data <- data_discrete_pairs_s3_s4mix
+##obs_data <- data_discrete_pairs_s3_s4mix
 
 if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
 if (! dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
