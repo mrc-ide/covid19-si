@@ -29,11 +29,11 @@ compare_across_distrs <- function(obs, nf, sn, gm) {
   p
 }
 
-obs_data <- data_s3_s4mix
-meta <- "s3s4"
-nf_dir <- "processed_stanfits/maxshed21_nfpriors/s3s4mix"
-gamma_dir <- "processed_stanfits/gamma/s3s4"
-sn_dir <- "processed_stanfits/skew_normal/s3s4mix"
+obs_data <- data_discrete_pairs_s3_s4mix
+meta <- "s3s4pairs"
+##nf_dir <- "processed_stanfits/maxshed21_nfpriors/discrete_pairs"
+gamma_dir <- "processed_stanfits/gamma/s3s4pairs"
+sn_dir <- "processed_stanfits/skew_normal/s3s4pairs"
 
 nf_si <- readRDS(glue("{nf_dir}/best_si_nf.rds"))
 sn_si <- readRDS(glue("{sn_dir}/best_si_skew_normal.rds"))
@@ -60,3 +60,18 @@ pwalk(
 
 
 
+## Table 2.
+outdir <- glue("processed_stanfits/compare_all/{meta}")
+if (! dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
+nf_t2 <- readRDS(glue("{nf_dir}/nf_overall_table2.rds"))
+nf_t2$TOST <- "NF"
+sn_t2 <- readRDS(glue("{sn_dir}/skew_normal_overall_table2.rds"))
+sn_t2$TOST <- "skew normal"
+gamma_t2 <- readRDS(glue("{gamma_dir}/gamma_overall_table2.rds"))
+gamma_t2$TOST <- "gamma"
+
+
+overall <- rbind(sn_t2, gamma_t2)
+overall$model <- nice_model_name(overall$model)
+##overall$model <- paste("S3S4", overall$model)
+saveRDS(overall, glue("{outdir}/table2_all_distrs.rds"))
