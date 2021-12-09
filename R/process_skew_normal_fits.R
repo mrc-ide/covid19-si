@@ -1,14 +1,14 @@
 source("R/utils_process_skew_normal_fits.R")
 check <- "\U2713"
-meta_model <- "discrete_pairs"
-fit_dir <- "stanfits/skew_normal/discrete_pairs"
-outdir <- "processed_stanfits/skew_normal/discrete_pairs"
-figs_dir <- "figures/skew_normal/releasediscrete_pairs"
+meta_model <- "s3s4mix"
+fit_dir <- glue("stanfits/skew_normal/{meta_model}")
+outdir <- glue("processed_stanfits/skew_normal/{meta_model}")
+figs_dir <- glue("figures/skew_normal/{meta_model}")
 
 if (grepl("discrete_pairs", meta_model)) {
   obs_data <- data_discrete_pairs
 } else if (grepl("s3s4mix", meta_model)) {
-   obs_data <- data_s3_s4mix
+  obs_data <- data_s3_s4mix
 } else  {
   obs_data <- cowling_data
 }
@@ -25,6 +25,8 @@ model_features <- model_features[index, ]
 infiles <- infiles[index]
 
 fits <- map(infiles, readRDS)
+
+names(fits) <- model_features$model_prefix
 
 table1 <- map2(
   fits, model_features$model_prefix,
@@ -203,7 +205,7 @@ overall_table2 <- map_dfr(
   function(model_prefix) {
     out <- readRDS(glue("{outdir}/{model_prefix}_skew_normal_tab2.rds"))
     out <- tibble::rownames_to_column(out, var = "param")
-    out$DIC <- dic[[model_prefix]]
+    ##out$DIC <- dic[[model_prefix]]
     out$model <- model_prefix
 
     out
@@ -216,10 +218,53 @@ overall_table2$formatted_pars <-
     "({overall_table2$CrI_2.5} - {overall_table2$CrI_97.5})"
   )
 
-x <- overall_table2[ ,c("param", "formatted_pars", "model", "DIC")]
+x <- overall_table2[ ,c("param", "formatted_pars", "model")]
 x <- tidyr::spread(x, key = param, value = formatted_pars)
-x <- arrange(x, dic)
+##x <- arrange(x, dic)
 saveRDS(x, glue("{outdir}/skew_normal_overall_table2.rds"))
+
+
+## For manuscript
+for_ms <- select(x, model, `Mean TOST` = mean_inf,
+                 `SD TOST` = sd_inf,
+                 `Mean SI` = mean_si,
+                 `SD SI` = sd_si)
+## Also the model paramters
+model_params <- map_dfr(
+  table1, function(x) {
+    x <- tibble::rownames_to_column(x, var = "parameter")
+    x <- x[, c("parameter", "mean", "sd")]
+    x$formatted <- glue("{x$mean} ({x$sd})")
+    x <- x[, c("parameter", "formatted")]
+    spread(x, parameter, formatted)
+  },
+  .id = "model"
+)
+
+####### Table 1 summary
+overall_table1 <- map_dfr(table1, function(x) {
+  x <- tibble::rownames_to_column(x, var = "parameter")
+  x <- mutate_if(x, is.numeric, round, 2)
+  x <- mutate_if(x, is.numeric, format, nsmall = 2)
+  x$formatted <- glue("{x$mean} ({x$sd})")
+  x <- select(x, parameter, formatted)
+  tidyr::spread(x, parameter, formatted)
+}, .id = "model")
+
+overall_table1$model <- nice_model_name(overall_table1$model)
+
+## desired order
+wanted <- c("BASELINE",
+            "BASELINE + ISOL",
+            "BASELINE + MIX",
+            "BASELINE + RECALL",
+            "BASELINE + ISOL + MIX",
+            "BASELINE + ISOL + RECALL",
+            "BASELINE + MIX + RECALL",
+            "BASELINE + ISOL + MIX + RECALL")
+overall_table1 <- overall_table1[match(wanted, overall_table1$model), ]
+overall_table1 <- select(overall_table1, -`lp__`)
+stargazer::stargazer(overall_table1, summary = FALSE, rownames = FALSE)
 
 
 

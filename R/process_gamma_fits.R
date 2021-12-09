@@ -37,9 +37,9 @@ estimated_TOST_gamma <- function(tab1, n = 1e4, fit, offset = 20) {
 
 check <- "\U2713"
 meta_model <- "s3s4"
-fit_dir <- "stanfits/gamma/release"
-outdir <- "processed_stanfits/gamma/release"
-figs_dir <- "figures/gamma/release"
+fit_dir <- "stanfits/gamma/s3s4"
+outdir <- "processed_stanfits/gamma/s3s4"
+figs_dir <- "figures/gamma/s3s4"
 
 if (grepl("discrete_pairs", meta_model)) {
   obs_data <- data_discrete_pairs
@@ -61,6 +61,8 @@ model_features <- model_features[index, ]
 infiles <- infiles[index]
 
 fits <- map(infiles, readRDS)
+
+names(fits) <- model_features$model_prefix
 
 table1 <- map2(
   fits, model_features$model_prefix,

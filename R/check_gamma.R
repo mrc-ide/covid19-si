@@ -16,23 +16,23 @@ si_vec <- seq(-20, 40, 1)
 data_offset <- arrange(data_offset, nu)
 
 fit <- stan(
-  file = here::here("stan-models/scenario3a_recall_gamma.stan"),
+  file = here::here("stan-models/scenario3b_mixture_gamma.stan"),
   data = list(
     N = nrow(data_offset),
     si = data_offset$si,
-    nu = data_offset$nu,
+    ##nu = data_offset$nu,
     max_shed = 21,
-    offset = offset,
     alpha2 = params_real$inc_par2[["shape"]],
     beta2 = 1 / params_real$inc_par2[["scale"]],
     max_invalid_si = 40,
     min_invalid_si = -20,
     width = 1,
     M = length(si_vec),
-    si_vec = si_vec,
+    ##si_vec = si_vec,
     first_valid_nu = 1
     ##tmax = 0
   ),
+  chains = 1, iter = 50,
   verbose = TRUE
   ##control = list(adapt_delta = 0.99)
 )
