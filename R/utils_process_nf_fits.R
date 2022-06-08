@@ -142,7 +142,7 @@ SI_figure <- function(SI, data) {
       label = paste(
         " mean:\n", round(mean(SI), 1), " days",
         sep = ""
-      ),
+      ), size = 10,
       hjust = -0.1) +
     theme(legend.title = element_blank()) +
     theme(legend.position = "bottom")
@@ -183,12 +183,12 @@ plot_both_SIs <- function(SI1, SI2, data) {
     annotate(
       geom = "text", x = mean(SI1), y = 0.055, color = "red",
       label = paste(" Mean:\n", format(round(mean(SI1), 1), nsmall = 1), " days", sep = ""),
-      hjust = -0.1
+      hjust = -0.1, size = 10
     ) +
     annotate(
       geom = "text", x = mean(SI2), y = 0.095, color = "blue",
       label = paste(" Mean:\n", format(round(mean(SI2), 1), nsmall = 1), " days", sep = ""),
-      hjust = -0.1
+      hjust = -0.1, size = 10
     ) +
     theme(legend.title = element_blank()) +
     guides(

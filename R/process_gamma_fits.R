@@ -1,13 +1,49 @@
-source("R/utils_process_skew_normal_fits.R")
+## Returns TOST for
+## (a) parameters with maximum posterior likelihood
+## (b) at the mean of the posterior distribution
+## (c) a distribution of distributions of TOST ; 1
+## distribution for each parameter in the posterior
+## distributions of xi, omega, and alpha  sampled jointly.
+## tab1 is the output from fitted_params function
+estimated_TOST_gamma <- function(tab1, n = 1e4, fit, offset = 20) {
+  # TOST
+  best <- tab1$best
+  names(best) <- rownames(tab1)
+  TOST_bestpars <- rgamma(
+    n = n, shape = best[["alpha1"]], rate = best[["beta1"]]
+  ) - offset
+
+  mu_params <- tab1$mean
+  names(mu_params) <- rownames(tab1)
+  TOST_meanpars <- rgamma(
+    n = n, shape = mu_params["alpha1"], rate = mu_params["beta1"],
+  ) - offset
+
+  TOST_post <- matrix(nrow = n, ncol = length(fit$alpha1))
+  for (i in 1:(length(fit$alpha1))) {
+    TOST_post[, i] <- rgamma(
+      n = n, shape = fit$alpha1[i], rate = fit$beta1[i]
+    ) - offset
+  }
+
+  TOST_post <- as.data.frame(TOST_post)
+
+  list(
+    TOST_bestpars = TOST_bestpars,
+    TOST_meanpars = TOST_meanpars,
+    TOST_post = TOST_post
+  )
+}
+
 check <- "\U2713"
-meta_model <- "s3s4mix"
-fit_dir <- glue("stanfits/skew_normal/{meta_model}")
-outdir <- glue("processed_stanfits/skew_normal/{meta_model}")
-figs_dir <- glue("figures/skew_normal/{meta_model}")
+meta_model <- "s3s4"
+fit_dir <- "stanfits/gamma/s3s4"
+outdir <- "processed_stanfits/gamma/s3s4"
+figs_dir <- "figures/gamma/s3s4"
 
 if (grepl("discrete_pairs", meta_model)) {
   obs_data <- data_discrete_pairs
-} else if (grepl("s3s4mix", meta_model)) {
+} else if (grepl("s3s4", meta_model)) {
   obs_data <- data_s3_s4mix
 } else  {
   obs_data <- cowling_data
@@ -19,7 +55,7 @@ if (! dir.exists("processed_stanfits")) dir.create("processed_stanfits")
 if (! dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
 if (! dir.exists(figs_dir)) dir.create(figs_dir, recursive = TRUE)
 
-infiles <- glue("{fit_dir}/{model_features$model_prefix}_skew_normal_fit.rds")
+infiles <- glue("{fit_dir}/{model_features$model_prefix}_gamma_fit.rds")
 index <- map_lgl(infiles, file.exists)
 model_features <- model_features[index, ]
 infiles <- infiles[index]
@@ -36,7 +72,7 @@ table1 <- map2(
       glue("{check} Extracted parameters for model {model_prefix}")
     )
     saveRDS(
-      tab1, glue("{outdir}/{model_prefix}_skew_normal_tab1.rds")
+      tab1, glue("{outdir}/{model_prefix}_gamma_tab1.rds")
     )
     tab1
   }
@@ -44,18 +80,18 @@ table1 <- map2(
 
 ## table1 <- map(
 ##   model_features$model_prefix,
-##   function(x) readRDS(glue("{outdir}/{x}_skew_normal_tab1.rds"))
+##   function(x) readRDS(glue("{outdir}/{x}_gamma_tab1.rds"))
 ## )
 
 samples_tost <- map2(
   table1, fits, function(tab1, fit) {
-    estimated_TOST_skew_normal(
+    estimated_TOST_gamma(
       tab1, n = 1e4, rstan::extract(fit)
     )
   }
 )
 
-saveRDS(samples_tost, glue("{outdir}/samples_tost_skew_normal.rds"))
+saveRDS(samples_tost, glue("{outdir}/samples_tost_gamma.rds"))
 
 best_si <- pmap(
   list(
@@ -73,7 +109,7 @@ best_si <- pmap(
   }
 )
 
-saveRDS(best_si, glue("{outdir}/best_si_skew_normal.rds"))
+saveRDS(best_si, glue("{outdir}/best_si_gamma.rds"))
 
 mean_si <- pmap(
   list(
@@ -91,7 +127,7 @@ mean_si <- pmap(
   }
 )
 
-saveRDS(mean_si, glue("{outdir}/mean_si_skew_normal.rds"))
+saveRDS(mean_si, glue("{outdir}/mean_si_gamma.rds"))
 
 post_si <- pmap(
   list(
@@ -120,8 +156,8 @@ post_si <- pmap(
   }
 )
 
-saveRDS(post_si, glue("{outdir}/skew_normal_post_si.rds"))
-## post_si <- readRDS("{outdir}/skew_normal_post_si.rds")
+saveRDS(post_si, glue("{outdir}/gamma_post_si.rds"))
+## post_si <- readRDS("{outdir}/gamma_post_si.rds")
 
 table2 <- pmap(
   list(
@@ -141,7 +177,7 @@ table2 <- pmap(
     ## table 2 - summary stats for sampled distributions
     tab2 <- tost_si_summary(tost, samples_si)
     saveRDS(
-      tab2, glue("{outdir}/{model_prefix}_skew_normal_tab2.rds")
+      tab2, glue("{outdir}/{model_prefix}_gamma_tab2.rds")
     )
     tab2
   }
@@ -152,7 +188,7 @@ walk2(
   function(tost, model_prefix) {
   p1 <- TOST_figure(tost$TOST_bestpars)
   ggsave(
-    filename = glue("{figs_dir}/{model_prefix}_skew_normal_tost.png"), p1
+    filename = glue("{figs_dir}/{model_prefix}_gamma_tost.png"), p1
   )
 })
 
@@ -162,7 +198,7 @@ walk2(
   function(si, model_prefix) {
   psi <- SI_figure(si[[2]], obs_data)
   ggsave(
-    filename = glue("{figs_dir}/{model_prefix}_skew_normal_si.png"), psi
+    filename = glue("{figs_dir}/{model_prefix}_gamma_si.png"), psi
   )
 })
 
@@ -180,7 +216,7 @@ pwalk(
           data = obs_data
         )
         ggsave(
-          filename = glue("{figs_dir}/{model_prefix}_skew_normal_si.png"), psi2
+          filename = glue("{figs_dir}/{model_prefix}_gamma_si.png"), psi2
         )
     }
   }
@@ -193,7 +229,7 @@ dic <- pmap_dbl(
   x, function(mixture, recall, right_bias, model_prefix, fits) {
     samples <- rstan::extract(fits)
     DIC_alt(
-      log_likel(samples, mixture, recall, "skew_normal")
+      log_likel(samples, mixture, recall, "gamma")
     )
   }
 )
@@ -203,9 +239,9 @@ names(dic) <- x$model_prefix
 overall_table2 <- map_dfr(
   model_features$model_prefix,
   function(model_prefix) {
-    out <- readRDS(glue("{outdir}/{model_prefix}_skew_normal_tab2.rds"))
+    out <- readRDS(glue("{outdir}/{model_prefix}_gamma_tab2.rds"))
     out <- tibble::rownames_to_column(out, var = "param")
-    ##out$DIC <- dic[[model_prefix]]
+    out$DIC <- dic[[model_prefix]]
     out$model <- model_prefix
 
     out
@@ -218,58 +254,15 @@ overall_table2$formatted_pars <-
     "({overall_table2$CrI_2.5} - {overall_table2$CrI_97.5})"
   )
 
-x <- overall_table2[ ,c("param", "formatted_pars", "model")]
+x <- overall_table2[ ,c("param", "formatted_pars", "model", "DIC")]
 x <- tidyr::spread(x, key = param, value = formatted_pars)
-##x <- arrange(x, dic)
-saveRDS(x, glue("{outdir}/skew_normal_overall_table2.rds"))
-
-
-## For manuscript
-for_ms <- select(x, model, `Mean TOST` = mean_inf,
-                 `SD TOST` = sd_inf,
-                 `Mean SI` = mean_si,
-                 `SD SI` = sd_si)
-## Also the model paramters
-model_params <- map_dfr(
-  table1, function(x) {
-    x <- tibble::rownames_to_column(x, var = "parameter")
-    x <- x[, c("parameter", "mean", "sd")]
-    x$formatted <- glue("{x$mean} ({x$sd})")
-    x <- x[, c("parameter", "formatted")]
-    spread(x, parameter, formatted)
-  },
-  .id = "model"
-)
-
-####### Table 1 summary
-overall_table1 <- map_dfr(table1, function(x) {
-  x <- tibble::rownames_to_column(x, var = "parameter")
-  x <- mutate_if(x, is.numeric, round, 2)
-  x <- mutate_if(x, is.numeric, format, nsmall = 2)
-  x$formatted <- glue("{x$mean} ({x$sd})")
-  x <- select(x, parameter, formatted)
-  tidyr::spread(x, parameter, formatted)
-}, .id = "model")
-
-overall_table1$model <- nice_model_name(overall_table1$model)
-
-## desired order
-wanted <- c("BASELINE",
-            "BASELINE + ISOL",
-            "BASELINE + MIX",
-            "BASELINE + RECALL",
-            "BASELINE + ISOL + MIX",
-            "BASELINE + ISOL + RECALL",
-            "BASELINE + MIX + RECALL",
-            "BASELINE + ISOL + MIX + RECALL")
-overall_table1 <- overall_table1[match(wanted, overall_table1$model), ]
-overall_table1 <- select(overall_table1, -`lp__`)
-stargazer::stargazer(overall_table1, summary = FALSE, rownames = FALSE)
+x <- arrange(x, dic)
+saveRDS(x, glue("{outdir}/gamma_overall_table2.rds"))
 
 
 
 ## For manuscript
-## for_ms <- select(x, model, mean_iskew_normal, sd_inf, mean_si, sd_si, DIC)
+## for_ms <- select(x, model, mean_igamma, sd_inf, mean_si, sd_si, DIC)
 ## for_ms <- arrange(for_ms, DIC)
 ## for_ms <- left_join(
 ##   for_ms, model_features, by = c("model" = "model_prefix")

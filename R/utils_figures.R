@@ -1,19 +1,3 @@
-nice_model_name <- function(model) {
-  prefix <- case_when(
-    grepl("scenario3", model) ~ "BASELINE",
-    grepl("scenario4", model) ~ "ISOL"
-  )
-  suffix1 <- case_when(
-    grepl("mixture", model) ~ " + MIX",
-    TRUE ~ ""
-  )
-  suffix2 <- case_when(
-    grepl("recall", model) ~ " + RECALL",
-    TRUE ~ ""
-  )
-
-  paste0(prefix, suffix1, suffix2)
-}
 
 palette <- c(
   scenario3a = "#56B4E9", scenario4a = "#56B4E9",

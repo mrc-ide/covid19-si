@@ -96,7 +96,7 @@ fit_model <- function(mixture, recall, right_bias, model_prefix, standata = s3da
 }
 
 fit_model_to_pairs  <- function(mixture, recall, right_bias, model_prefix, standata = s3pairs, obs = data_discrete_pairs) {
-  prefix <- glue("{model_prefix}_skew_normal")
+  prefix <- glue("{model_prefix}_gamma")
   infile <- glue("stan-models/{prefix}.stan")
   message(infile)
   if (!file.exists(infile)) message("Does not exist ", infile)

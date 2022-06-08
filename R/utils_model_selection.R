@@ -39,9 +39,18 @@ log_prior_skew_normal <- function(params, mixture, recall) {
     log(prob_pinvalid) + log(prob_recall)
 }
 
+log_prior_gamma <- function(params, mixture, recall) {
+
+  prob_a <- dunif(params$alpha1, min = 0, max = 100)
+  prob_b <-  dunif(params$beta1, min = 0, max = 100)
+  out <- log(prob_a) + log(prob_b)
+  out <- ifelse(mixture, out + dbeta(params$pinvalid, shape1 = 4, shape2 = 10), out)
+  out <- ifelse(recall, out + dunif(params$recall, min = 0, max = 5), out)
+  out
+}
 
 log_likel <- function(samples, mixture, recall,
-                      model = c("nf", "beta", "skew_normal"),
+                      model = c("nf", "beta", "skew_normal", "gamma"),
                       a_priors = list(mean = 4, sd = 1),
                       b_priors = list(mean = 1, sd = 0.5)) {
   map_dbl(
@@ -51,6 +60,8 @@ log_likel <- function(samples, mixture, recall,
         log_prior <- log_prior_nf(params, mixture, recall, a_priors, b_priors)
       } else if (model == "skew_normal") {
         log_prior <- log_prior_skew_normal(params, mixture, recall)
+      } else if (model == "gamma") {
+        log_prior <- log_prior_gamma(params, mixture, recall)
       } else {
         log_prior <- log_prior_beta(params, mixture, recall)
       }

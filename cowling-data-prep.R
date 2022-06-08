@@ -1,13 +1,19 @@
 ## Read and clean data here so all scripts use the
 ## same data. Model specific filters to be applied
 ## in model specific files
+# offset - must be a positive number!
+offset <- 20
 cowling_data <- readRDS("data/cowling_data_clean.rds") %>%
   mutate(si = as.numeric(si))%>%
    rename(nu = onset_first_iso)%>%
    filter(!is.na(nu))
-
+## For gamma fits, filter to keep si and nu
+## possible under assumed offset. Do this
+## here so that it will filter through to all
+## datasets we create from cowling data
+cowling_data <- cowling_data[cowling_data$si > -offset, ]
+cowling_data <- cowling_data[cowling_data$nu > -offset, ]
 cowling_data <- arrange(cowling_data, nu)
-
 
 # discrete pairs
 data_discrete_pairs <- filter(cowling_data, cluster_size == 2)

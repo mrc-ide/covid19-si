@@ -1,4 +1,20 @@
-# extract fitted parameters
+nice_model_name <- function(model) {
+  suffix <- case_when(
+    grepl("scenario3", model) ~ "BASELINE",
+    grepl("scenario4", model) ~ "BASELINE + ISOL"
+  )
+  suffix1 <- case_when(
+    grepl("mixture", model) ~ " + MIX",
+    TRUE ~ ""
+  )
+  suffix2 <- case_when(
+    grepl("recall", model) ~ " + RECALL",
+    TRUE ~ ""
+  )
+  paste0(suffix, suffix1, suffix2)
+}
+
+### extract fitted parameters
 fitted_params <- function(fit, digits = 2) {
   tab1 <- as.data.frame(rstan::summary(fit)$summary)
   fit <- rstan::extract(fit)
